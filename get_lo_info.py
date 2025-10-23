@@ -55,6 +55,7 @@ except KeyError:
 if str(HOME) == '/home/tbottger':
     lo_env = 'tia_pc'
 
+# Parker
 elif (str(HOME) == '/home/parker') & ('perigee' in HOSTNAME):
     lo_env = 'pm_perigee'
     roms_out1 = Path('/agdat1/parker/LO_roms')
@@ -75,6 +76,20 @@ elif ((str(HOME) == '/mmfs1/home/pmacc') or (str(HOME) == '/mmfs1/home/darrd')):
     remote_machine = 'apogee.ocean.washington.edu'
     remote_dir0 = '/dat1/parker'
     local_user = 'pmacc'
+
+# Tia            
+elif (str(HOME) == '/home/tbottger') & ('apogee' in HOSTNAME):
+    lo_env = 'tb_apogee'
+    roms_out1 = Path('/dat1/parker/LO_roms')
+    roms_out2 = Path('/dat2/parker/LO_roms')
+    roms_out3 = Path('/dat2/tbottger/LO_roms')
+
+elif (str(HOME) == '/mmfs1/home/tbottger'):
+    lo_env = 'tb_klone'
+    remote_user = 'tbottger'
+    remote_machine = 'apogee.ocean.washington.edu'
+    remote_dir0 = '/dat2/tbottger'
+    local_user = 'tbottger'
 
 Ldir0 = dict()
 Ldir0['lo_env'] = lo_env
