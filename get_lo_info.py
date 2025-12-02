@@ -12,6 +12,7 @@ their own GitHub repo.
 
 """
 import os
+import socket
 from pathlib import Path
 
 # defaults that should work on all machines
@@ -43,7 +44,8 @@ local_user = 'BLANK'
 
 HOME = Path.home()
 try:
-    HOSTNAME = os.environ['HOSTNAME']
+    # HOSTNAME = os.environ['HOSTNAME'] # works less consistently for WSL on PC
+    HOSTNAME = socket.gethostname() # Tia replaced socket with of os for windows compatibility
 except KeyError:
     HOSTNAME = 'BLANK'
     
