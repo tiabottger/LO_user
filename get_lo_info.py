@@ -52,7 +52,7 @@ except KeyError:
 # print('HOME = ' + str(HOME))
 # print('HOSTNAME = ' + HOSTNAME)
 
-if str(HOME) == '/home/tbottger':
+if (str(HOME) == '/home/tbottger') & ('DESKTOP' in HOSTNAME):
     lo_env = 'tia_pc'
 
 # Parker
@@ -80,9 +80,9 @@ elif ((str(HOME) == '/mmfs1/home/pmacc') or (str(HOME) == '/mmfs1/home/darrd')):
 # Tia            
 elif (str(HOME) == '/home/tbottger') & ('apogee' in HOSTNAME):
     lo_env = 'tb_apogee'
-    roms_out1 = Path('/dat1/parker/LO_roms') #most things here (active)
-    roms_out2 = Path('/dat1/dakotamm/LO_roms') #whidbey model
-    roms_out3 = Path('/dat2/parker/LO_roms') #long hindcast
+    roms_out1 = Path('/dat1/parker/LO_roms') # most things here (active)
+    roms_out2 = Path('/dat1/dakotamm/LO_roms') # whidbey model
+    roms_out3 = Path('/dat2/parker/LO_roms') # long hindcast
 
 elif (str(HOME) == '/mmfs1/home/tbottger'):
     lo_env = 'tb_klone'
