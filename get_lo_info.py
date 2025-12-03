@@ -45,7 +45,7 @@ local_user = 'BLANK'
 HOME = Path.home()
 try:
     # HOSTNAME = os.environ['HOSTNAME'] # works less consistently for WSL on PC
-    HOSTNAME = socket.gethostname() # Tia replaced socket with of os for windows compatibility
+    HOSTNAME = socket.gethostname() # Tia replaced os with socket for PC compatibility
 except KeyError:
     HOSTNAME = 'BLANK'
     
