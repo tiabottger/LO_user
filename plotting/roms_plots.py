@@ -778,7 +778,9 @@ def P_Chl_DO(in_dict):
         plt.savefig(in_dict['fn_out'])
         plt.close()
     else:
-        plt.show()
+        # plt.show()
+        # plt.savefig(in_dict['fn_out'])
+        plt.savefig('plot.png')
         
 def P_bot_top_arag(in_dict):
     # START
