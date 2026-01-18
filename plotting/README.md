@@ -24,6 +24,6 @@ A module of scaling factors, colormaps, and other dicts that help keep the plot 
 
 ---
 
-#### `create_sect_lines.p`
+#### `create_sect_lines.py`
 
 An interactive GUI tool for creating section lines, based on `LO/extract/tef2/create_sections.py`. At the command line you specify a grid to use (from your collection in LO_data/grids), and then you click to create one or more sections. These are saved in `LO_output/section_lines` as pickled DataFrames. The plotting function `roms_plots.P_sect_hc()` is the first instance of a plot that looks in that location for the section(s) it will use.
