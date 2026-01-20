@@ -1432,6 +1432,188 @@ def P_sect(in_dict):
     else:
         plt.show()
         
+def P_sect_ae0(in_dict):
+    """
+    This plots a map and a section (distance, z), and makes sure
+    that the color limits are identical.  If the color limits are
+    set automatically then the section is the preferred field for
+    setting the limits.
+    
+    2 panel figure:
+    - map with surface salinity and section line
+    - vertical profile of salinity vs depth along the section line
+    
+    Tia edited:
+    Hard-codes section track by hand instead of reading from section_lines (created in create_sect_lines.py)
+    Coordinates selected for ae0 idealized estuary grid exploration, removes coast map
+    """
+    # START
+    fs = 14
+    pfun.start_plot(fs=fs, figsize=(20,9))
+    fig = plt.figure()
+    ds = xr.open_dataset(in_dict['fn'])
+    # PLOT CODE
+    vn = 'salt' # plots salinity
+    if vn == 'salt':
+        pinfo.cmap_dict[vn] = 'viridis'
+    # GET DATA
+    G, S, T = zrfun.get_basic_info(in_dict['fn']) # reads grid G, vertical coordinates S, and time T
+    # CREATE THE SECTION
+    # create track by hand
+    lon = G['lon_rho']
+    lat = G['lat_rho']
+    zdeep = -30 # sets the depth limit for the section plot
+    
+    x_e = np.linspace(-2, 1.0, 500)  # longitude array
+    y_e = 45 * np.ones(x_e.shape) # latitude array, set latitude array to constant value along estuary centerline
+                
+    x, y, dist, dist_e, zbot, ztop, dist_se, zw_se, fld_s, lon, lat = \
+        pfun.get_sect(in_dict['fn'], vn, x_e, y_e)
+    
+    # COLOR
+    # scaled section data
+    sf = pinfo.fac_dict[vn] * fld_s
+    # now we use the scaled section as the preferred field for setting the
+    # color limits of both figures in the case -avl True
+    if in_dict['auto_vlims']:
+        pinfo.vlims_dict[vn] = pfun.auto_lims(sf)
+    
+    # PLOTTING
+    # map with section line
+    ax = fig.add_subplot(1, 3, 1)
+    cs = pfun.add_map_field(ax, ds, vn, pinfo.vlims_dict,
+            cmap=pinfo.cmap_dict[vn], fac=pinfo.fac_dict[vn], do_mask_edges=True)
+    # fig.colorbar(cs, ax=ax) # It is identical to that of the section
+   
+    pfun.add_info(ax, in_dict['fn'], loc='upper_right')
+    ax.set_title('Surface %s %s' % (pinfo.tstr_dict[vn],pinfo.units_dict[vn]))
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+    # add section track
+    ax.plot(x, y, '-r', linewidth=2)
+    ax.plot(x[0], y[0], 'or', markersize=5, markerfacecolor='w',
+        markeredgecolor='r', markeredgewidth=2)
+    # ax.set_xticks([-125, -124, -123])
+    # ax.set_yticks([47, 48, 49, 50])
+
+    # section
+    ax = fig.add_subplot(1, 3, (2, 3))
+    
+    ax.plot(dist_se[0,:], zw_se[0,:], '-k', linewidth=2)
+    ax.plot(dist_se[-1,:], zw_se[-1,:], '-k', linewidth=1)
+    ax.set_xlim(dist.min(), dist.max())
+    ax.set_ylim(zdeep, 5)
+    
+    # plot section
+    svlims = pinfo.vlims_dict[vn]
+    cs = ax.pcolormesh(dist_se,zw_se,sf,
+                       vmin=svlims[0], vmax=svlims[1], cmap=pinfo.cmap_dict[vn])
+    fig.colorbar(cs, ax=ax)
+    ax.set_xlabel('Distance (km)')
+    ax.set_ylabel('Z (m)')
+    ax.set_title('Section %s %s' % (pinfo.tstr_dict[vn],pinfo.units_dict[vn]))
+    fig.tight_layout()
+    # FINISH
+    ds.close()
+    pfun.end_plot()
+    
+    if len(str(in_dict['fn_out'])) > 0:
+        plt.savefig(in_dict['fn_out'])
+        plt.close()
+    else:
+        plt.show()
+        plt.savefig('ae0_sect_salinity.png')
+
+def P_sect_ae0_tides(in_dict):
+    """
+    This plots a map and a section (distance, z), and makes sure
+    that the color limits are identical.  If the color limits are
+    set automatically then the section is the preferred field for
+    setting the limits.
+    
+    3 panel figure:
+    - map with surface salinity and section line
+    - vertical profile of salinity vs depth along the section line
+    - sea surface height 
+    
+    Tia edited:
+    Hard-codes section track by hand instead of reading from section_lines (created in create_sect_lines.py)
+    Coordinates selected for ae0 idealized estuary grid exploration, removes coast map
+    """
+    # START
+    fs = 14
+    pfun.start_plot(fs=fs, figsize=(20,9))
+    fig = plt.figure()
+    ds = xr.open_dataset(in_dict['fn'])
+    # PLOT CODE
+    vn = 'salt' # plots salinity
+    if vn == 'salt':
+        pinfo.cmap_dict[vn] = 'viridis'
+    # GET DATA
+    G, S, T = zrfun.get_basic_info(in_dict['fn']) # reads grid G, vertical coordinates S, and time T
+    # CREATE THE SECTION
+    # create track by hand
+    lon = G['lon_rho']
+    lat = G['lat_rho']
+    zdeep = -30 # sets the depth limit for the section plot
+    
+    x_e = np.linspace(-2, 1.0, 500)  # longitude array
+    y_e = 45 * np.ones(x_e.shape) # latitude array, set latitude array to constant value along estuary centerline
+                
+    x, y, dist, dist_e, zbot, ztop, dist_se, zw_se, fld_s, lon, lat = \
+        pfun.get_sect(in_dict['fn'], vn, x_e, y_e)
+    
+    # COLOR
+    # scaled section data
+    sf = pinfo.fac_dict[vn] * fld_s
+    # now we use the scaled section as the preferred field for setting the
+    # color limits of both figures in the case -avl True
+    if in_dict['auto_vlims']:
+        pinfo.vlims_dict[vn] = pfun.auto_lims(sf)
+    
+    # PLOTTING
+    # map with section line
+    ax = fig.add_subplot(1, 3, 1)
+    cs = pfun.add_map_field(ax, ds, vn, pinfo.vlims_dict,
+            cmap=pinfo.cmap_dict[vn], fac=pinfo.fac_dict[vn], do_mask_edges=True)
+    # fig.colorbar(cs, ax=ax) # It is identical to that of the section
+   
+   
+    pfun.add_info(ax, in_dict['fn'], loc='upper_right')
+    ax.set_title('Surface %s %s' % (pinfo.tstr_dict[vn],pinfo.units_dict[vn]))
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+    # add section track
+    ax.plot(x, y, '-r', linewidth=2)
+    ax.plot(x[0], y[0], 'or', markersize=5, markerfacecolor='w',
+        markeredgecolor='r', markeredgewidth=2)
+    # ax.set_xticks([-125, -124, -123])
+    # ax.set_yticks([47, 48, 49, 50])
+
+    # section
+    ax = fig.add_subplot(1, 3, (2, 3))
+    
+    ax.plot(dist_se[0,:], zw_se[0,:], '-k', linewidth=2)
+    ax.plot(dist_se[-1,:], zw_se[-1,:], '-k', linewidth=1)
+    ax.set_xlim(dist.min(), dist.max())
+    ax.set_ylim(zdeep, 5)
+    
+    # plot section
+    svlims = pinfo.vlims_dict[vn]
+    cs = ax.pcolormesh(dist_se,zw_se,sf,
+                       vmin=svlims[0], vmax=svlims[1], cmap=pinfo.cmap_dict[vn])
+    fig.colorbar(cs, ax=ax)
+    ax.set_xlabel('Distance (km)')
+    ax.set_ylabel('Z (m)')
+    ax.set_title('Section %s %s' % (pinfo.tstr_dict[vn],pinfo.units_dict[vn]))
+    fig.tight_layout()
+    # FINISH
+    ds.close()
+    pfun.end_plot()
+    plt.show()
+    
+    plt.savefig('ae0_sect_salinity.png')            
+        
 def P_sect_CR(in_dict):
     """
     This plots a map and a section (distance, z), and makes sure
@@ -1571,6 +1753,7 @@ def P_sect_CR(in_dict):
     else:
         plt.show()
         
+
 def P_sect_hc(in_dict):
     """
     This plots a map and a section (distance, z), and makes sure
