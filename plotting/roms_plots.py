@@ -1464,7 +1464,7 @@ def P_sect_ae0(in_dict):
     lat = G['lat_rho']
     zdeep = -30 # sets the depth limit for the section plot
     
-    x_e = np.linspace(-2, 1.0, 500)  # longitude array
+    x_e = np.linspace(0, 1.1, 500)  # longitude array
     y_e = 45 * np.ones(x_e.shape) # latitude array, set latitude array to constant value along estuary centerline
                 
     x, y, dist, dist_e, zbot, ztop, dist_se, zw_se, fld_s, lon, lat = \
@@ -1512,6 +1512,7 @@ def P_sect_ae0(in_dict):
     ax.set_xlabel('Distance (km)')
     ax.set_ylabel('Z (m)')
     ax.set_title('Section %s %s' % (pinfo.tstr_dict[vn],pinfo.units_dict[vn]))
+    ax.grid()
     fig.tight_layout()
     # FINISH
     ds.close()
@@ -1522,7 +1523,7 @@ def P_sect_ae0(in_dict):
         plt.close()
     else:
         plt.show()
-        plt.savefig('ae0_sect_salinity.png')
+        plt.savefig('ae0_sect_slope2.png')
 
 def P_sect_ae0_tides(in_dict):
     """
