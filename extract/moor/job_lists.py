@@ -145,13 +145,13 @@ def get_sta_dict(job_name):
             'M1': (-122.693533, 48.229264)}
     
     elif job_name == 'ae0':
-    # Tia analytical estuary boundary, ocean, mouth, estuary, and river moorings
+    # Tia analytical estuary moorings along centerline
         sta_dict = {
-            'boundary': (-2, 45),
-            'ocean': (-1, 45),
-            'est_mouth': (0, 45),
-            'est_middle': (0.5, 45),
-            'river': (1.1, 45)}
+            'boundary': (45, -2),
+            'ocean': (45, -1),
+            'est_mouth': (45, 0),
+            'est_middle': (45, 0.5),
+            'river': (45, 1.1)}
         
     else:
         print('Unsupported job name!')
