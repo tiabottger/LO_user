@@ -143,6 +143,15 @@ def get_sta_dict(job_name):
         # DM defined 11/12/2025 for teaching with Tia and Maia
         sta_dict = {
             'M1': (-122.693533, 48.229264)}
+    
+    elif job_name == 'ae0':
+    # Tia analytical estuary boundary, ocean, mouth, estuary, and river moorings
+        sta_dict = {
+            'boundary': (-2, 45),
+            'ocean': (-1, 45),
+            'est_mouth': (0, 45),
+            'est_middle': (0.5, 45),
+            'river': (1.1, 45)}
         
     else:
         print('Unsupported job name!')

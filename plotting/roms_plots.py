@@ -1464,7 +1464,8 @@ def P_sect_ae0(in_dict):
     lat = G['lat_rho']
     zdeep = -30 # sets the depth limit for the section plot
     
-    x_e = np.linspace(0, 1.1, 500)  # longitude array
+    # x_e = np.linspace(0, 1.1, 500)  # longitude array inside estuary
+    x_e = np.linspace(-1.9, 1.1, 500) # longitude array from boundary
     y_e = 45 * np.ones(x_e.shape) # latitude array, set latitude array to constant value along estuary centerline
                 
     x, y, dist, dist_e, zbot, ztop, dist_se, zw_se, fld_s, lon, lat = \
