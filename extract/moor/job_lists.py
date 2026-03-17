@@ -145,7 +145,7 @@ def get_sta_dict(job_name):
             'M1': (-122.693533, 48.229264)}
     
     elif job_name == 'ae0':
-    # Tia analytical estuary moorings along centerline
+    # Tia analytical estuary moorings along 45 lat centerline
         sta_dict = {
             'boundary': (-2, 45),
             'ocean': (-1, 45),

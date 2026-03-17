@@ -35,6 +35,7 @@ else: # remote linux version
 import matplotlib.pyplot as plt
 
 from cmocean import cm # have to import after matplotlib to work on remote machine
+
     
 def P_basic(in_dict):
     # START
@@ -1494,8 +1495,6 @@ def P_sect_ae0(in_dict):
     ax.plot(x, y, '-r', linewidth=2)
     ax.plot(x[0], y[0], 'or', markersize=5, markerfacecolor='w',
         markeredgecolor='r', markeredgewidth=2)
-    # ax.set_xticks([-125, -124, -123])
-    # ax.set_yticks([47, 48, 49, 50])
 
     # section
     ax = fig.add_subplot(1, 3, (2, 3))
@@ -1547,8 +1546,11 @@ def P_sect_ae0_tides(in_dict):
     pfun.start_plot(fs=fs, figsize=(20,9))
     fig = plt.figure()
     ds = xr.open_dataset(in_dict['fn'])
+    # hard-coded version to play around with in script (not command line)
+    # ds = xr.open_dataset('~/LO_roms/ae0_t0_xa0/f2020.01.01/ocean_his_0001.nc')
     # PLOT CODE
     vn = 'salt' # plots salinity
+    # other options #temp #u #v #zeta
     if vn == 'salt':
         pinfo.cmap_dict[vn] = 'viridis'
     # GET DATA
