@@ -236,7 +236,12 @@ fills, labels1 = ax1.get_legend_handles_labels()
 lines, labels2 = ax2.get_legend_handles_labels()
 ax2.legend(fills + lines, labels1 + labels2, loc='upper left', fontsize=12)
 
+# print where figure is saved
+import os
+print(os.getcwd())
+
 plt.tight_layout()
-plt.show()
+# plt.show()
+plt.savefig('hypvol_comparison_fig.png')
 
 print('Done')
