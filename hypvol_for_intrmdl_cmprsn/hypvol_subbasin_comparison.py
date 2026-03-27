@@ -150,14 +150,18 @@ ax0.tick_params(axis='both', labelsize=12)
 # plot map of Puget Sound
 ax0.pcolormesh(plon, plat, np.where(mask_rho == 0, np.nan, mask_rho),
                 vmin=0, vmax=10, cmap='Blues')
-ax0.pcolormesh(plon, plat, np.where(mask_hc == 0, np.nan, mask_hc),
-                vmin=0, vmax=2, cmap='Blues')
-ax0.pcolormesh(plon, plat, np.where(mask_ss == 0, np.nan, mask_ss),
-                vmin=0, vmax=4, cmap='Blues')
-ax0.pcolormesh(plon, plat, np.where(mask_mb == 0, np.nan, mask_mb),
-                vmin=0, vmax=6, cmap='Blues')
-ax0.pcolormesh(plon, plat, np.where(mask_wb == 0, np.nan, mask_wb),
-                vmin=0, vmax=8, cmap='Blues')
+# Hood Canal
+ax.pcolormesh(plon, plat, np.where(mask_hc == 0, np.nan, mask_hc),
+            vmin=0, vmax=2, cmap='RdPu' )
+# South Sound
+ax.pcolormesh(plon, plat, np.where(mask_ss == 0, np.nan, mask_ss),
+              vmin=0, vmax=3, cmap='magma' )
+# Main Basin
+ax.pcolormesh(plon, plat, np.where(mask_mb == 0, np.nan, mask_mb),
+              vmin=0, vmax=1.5, cmap='summer' )
+# # Whidbey Basin
+ax.pcolormesh(plon, plat, np.where(mask_wb == 0, np.nan, mask_wb),
+              vmin=0, vmax=3, cmap='cool' )
 
 pfun.dar(ax0)
 ax0.set_title('(a)', fontsize = 14, loc='left', fontweight='bold')
