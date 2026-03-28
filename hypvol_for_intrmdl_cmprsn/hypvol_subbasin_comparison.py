@@ -10,6 +10,7 @@ import numpy as np
 import xarray as xr
 import pandas as pd
 import matplotlib.pylab as plt
+import matplotlib.cm as cm
 
 from lo_tools import Lfun
 from lo_tools import plotting_functions as pfun
@@ -35,6 +36,7 @@ years =  ['2015','2016','2017','2018','2019','2020']
 
 # which  model run to look at?
 gtagexes = ['cas7_t1_x11ab','cas7_t1noDIN_x11ab']
+# gtagex cas7_t1noDIN_x11ab is no-loading, cas7_t1_x11ab is loading
 
 # # where to put output figures
 # out_dir = Ldir['LOo'] / 'chapter_2' / 'figures'
@@ -91,35 +93,51 @@ mask_ss = basin_mask_ds.mask_southsound.values
 mask_mb = basin_mask_ds.mask_mainbasin.values
 mask_wb = basin_mask_ds.mask_whidbeybasin.values
 
+# subbasin masks dictionary
+subbasin_masks = {
+    'PugetSound': mask_ps,
+    'HoodCanal': mask_hc,
+    'SouthSound': mask_ss,
+    'MainBasin': mask_mb,
+    'WhidbeyBasin': mask_wb
+}
+
 # initialize dictionary for hypoxic volume [km3]
 hyp_vol = {}
 water_volume = {}
 onemgL_vol = {}
 threemgL_vol = {}
+
 for year in years:
     for gtagex in gtagexes:
-        # get thicknesses
-        hyp_thick = hyp_thick_dict[gtagex+region+year]/1000 # [km]
-        water_depth_km = water_depth_dict[gtagex+region+year]/1000 # [km]
-        one_mgL_thick = one_mgL_thick_dict[gtagex+region+year]/1000 # [km]
-        three_mgL_thick = three_mgL_thick_dict[gtagex+region+year]/1000 # [km]
 
-        # apply Puget Sound mask and sum on every day of the year to get time series of volume
-        hyp_thick = hyp_thick * mask_ps
-        hyp_vol_timeseries = np.nansum(hyp_thick * DA, axis=(1, 2)) # km^3
-        hyp_vol[gtagex+region+year] = hyp_vol_timeseries
+        # get thicknesses (km)
+        hyp_thick = hyp_thick_dict[gtagex + region + year] / 1000
+        water_depth_km = water_depth_dict[gtagex + region + year] / 1000
+        one_mgL_thick = one_mgL_thick_dict[gtagex + region + year] / 1000
+        three_mgL_thick = three_mgL_thick_dict[gtagex + region + year] / 1000
 
-        water_depth_km = water_depth_km * mask_ps
-        water_vol_timeseries = np.nansum(water_depth_km * DA, axis=(1, 2)) # km^3
-        water_volume[gtagex+region+year] = water_vol_timeseries
+        for subbasin, mask in mask_dict.items():
 
-        one_mgL_thick = one_mgL_thick * mask_ps
-        onemgL_vol_timeseries = np.sum(one_mgL_thick * DA, axis=(1, 2)) # km^3
-        onemgL_vol[gtagex+region+year] = onemgL_vol_timeseries
+            # hypoxic volume
+            hyp_thick_masked = hyp_thick * mask
+            hyp_vol_timeseries = np.nansum(hyp_thick_masked * DA, axis=(1, 2))  # km^3
+            hyp_vol[gtagex + region + subbasin + year] = hyp_vol_timeseries
 
-        three_mgL_thick = three_mgL_thick * mask_ps
-        threemgL_vol_timeseries = np.sum(three_mgL_thick * DA, axis=(1, 2)) # km^3
-        threemgL_vol[gtagex+region+year] = threemgL_vol_timeseries
+            # total water volume
+            water_depth_masked = water_depth_km * mask
+            water_vol_timeseries = np.nansum(water_depth_masked * DA, axis=(1, 2))  # km^3
+            water_volume[gtagex + region + subbasin + year] = water_vol_timeseries
+            
+            # 1 mg/L volume 
+            one_mgL_masked = one_mgL_thick * mask
+            onemgL_vol_timeseries = np.nansum(one_mgL_masked * DA, axis=(1, 2))  # km^3
+            onemgL_vol[gtagex + region + subbasin + year] = onemgL_vol_timeseries
+
+            # 3 mg/L volume
+            three_mgL_masked = three_mgL_thick * mask
+            threemgL_vol_timeseries = np.nansum(three_mgL_masked * DA, axis=(1, 2))  # km^3
+            threemgL_vol[gtagex + region + subbasin + year] = threemgL_vol_timeseries
 
 
 # get lon and lat for making pcolormesh plot
@@ -170,34 +188,59 @@ ax0.set_title('(a)', fontsize = 14, loc='left', fontweight='bold')
 PS_vol = np.nansum(basin_mask_ds['h'].values/1000 * DA * mask_ps) # [km^3]
 print('Puget Sound volume: {} km3'.format(round(PS_vol,1)))
 
-# set values for looping
-colors = ['mediumvioletred','royalblue']
-linewidths = [2,2]
-alphas = [1,1]
-linestyles = ['-','-']
-labels=['Loading','No-loading']
 
-# plot timeseries
+subbasin_colors = {
+    'PugetSound': cm.Blues(0.7),
+    'HoodCanal': cm.RdPu(0.7),
+    'SouthSound': cm.magma(0.7),
+    'MainBasin': cm.summer(0.7),
+    'WhidbeyBasin': cm.cool(0.7),
+}
+
+subbasins = list(subbasin_colors.keys())
+
+gtagex = gtagexes[0]  # loading run only
+
+# make twin axis
+ax2 = ax1.twinx()
+
+# plot hypoxic volume timeseries
 for year in years:
-    # create time vector
-    startdate = year+'.01.01'
-    enddate = year+'.12.31'
-    dates = pd.date_range(start= startdate, end= enddate, freq= '1d')
-    dates_local = [pfun.get_dt_local(x) for x in dates]
-    # plot the loading and no-loading runs
-    for i,gtagex in enumerate(gtagexes):
-        # plot hypoxic volume timeseries
-        if year == '2015':
-            ax1.plot(dates_local, hyp_vol[gtagex+'pugetsoundDO'+year],color=colors[i],alpha=alphas[i],
-                     label=labels[i], linewidth=linewidths[i])
-            ax1.fill_between(dates_local, onemgL_vol[gtagex+'pugetsoundDO'+year],
-                             threemgL_vol[gtagex+'pugetsoundDO'+year],color=colors[i],alpha=0.2,linewidth=1)
-        else:
-            ax1.plot(dates_local, hyp_vol[gtagex+'pugetsoundDO'+year],color=colors[i],alpha=alphas[i],
-                     linewidth=linewidths[i])
-            ax1.fill_between(dates_local, onemgL_vol[gtagex+'pugetsoundDO'+year],
-                             threemgL_vol[gtagex+'pugetsoundDO'+year],color=colors[i],alpha=0.2,linewidth=1)
 
+    startdate = year + '.01.01'
+    enddate = year + '.12.31'
+    dates = pd.date_range(start=startdate, end=enddate, freq='1d')
+    dates_local = [pfun.get_dt_local(x) for x in dates]
+
+    for subbasin in subbasin_colors.keys():
+
+        key = gtagex + region + subbasin + year
+
+        # Puget Sound goes on right axis
+        if subbasin == 'PugetSound':
+            ax = ax2
+        else:
+            ax = ax1
+
+        # label only once
+        if year == years[0]:
+            ax.plot(dates_local, hyp_vol[key],
+                    color=subbasin_colors[subbasin],
+                    linewidth=2,
+                    label=subbasin)
+        else:
+            ax.plot(dates_local, hyp_vol[key],
+                    color=subbasin_colors[subbasin],
+                    linewidth=2)
+
+# axis labels
+ax1.set_ylabel('Hypoxic Volume (km$^3$) Subbasins')
+ax2.set_ylabel('Hypoxic Volume (km$^3$) Puget Sound')
+
+# combine legends from both axes
+lines1, labels1 = ax1.get_legend_handles_labels()
+lines2, labels2 = ax2.get_legend_handles_labels()
+ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper right')
 
 # format figure
 ax1.grid(visible=True, axis='both', color='silver', linestyle='--')
@@ -214,46 +257,10 @@ dates_local = [pfun.get_dt_local(x) for x in dates]
 ax1.set_xlim([dates_local[0],dates_local[-1]])
 ax1.set_ylim([0,14])
 
-difference_all_years = []
-
-# plot timeseries
-for year in years:
-    # create time vector
-    startdate = year+'.01.01'
-    enddate = year+'.12.31'
-    dates = pd.date_range(start= startdate, end= enddate, freq= '1d')
-    dates_local = [pfun.get_dt_local(x) for x in dates]
-    # plot the difference between loading and no-loading runs
-    loading = hyp_vol['cas7_t1_x11ab'+'pugetsoundDO'+year]
-    noloading = hyp_vol['cas7_t1noDIN_x11ab'+'pugetsoundDO'+year]
-    difference_all_years = difference_all_years + (loading-noloading).tolist()
-
-# mean hypoxic volume difference
-difference_all_years_nozeros = [np.nan if diff == 0 else diff for diff in difference_all_years]
-mean_diff = np.nanmean(difference_all_years_nozeros)
-print('Mean difference in hypoxic volume = {} km3'.format(round(mean_diff,2)))
-
- # convert hypoxic volume to percent hypoxic volume
-percent = lambda hyp_vol: hyp_vol/PS_vol*100
-# get left axis limits
-ymin, ymax = ax1.get_ylim()
-# match ticks
-ax2 = ax1.twinx()
-ax2.set_ylim((percent(ymin),percent(ymax)))
-ax2.tick_params(axis='both', labelsize=12)
-ax2.plot([],[])
-for border in ['top','right','bottom','left']:
-    ax2.spines[border].set_visible(False)
-ax2.set_ylabel(r'Percent of regional volume [%]', fontsize=12)
-
 # add legend
 fills, labels1 = ax1.get_legend_handles_labels()
 lines, labels2 = ax2.get_legend_handles_labels()
 ax2.legend(fills + lines, labels1 + labels2, loc='upper left', fontsize=12)
-
-# print where figure is saved
-import os
-print(os.getcwd())
 
 plt.tight_layout()
 # plt.show()
