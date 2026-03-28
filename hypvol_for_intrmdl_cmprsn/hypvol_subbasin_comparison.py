@@ -255,12 +255,6 @@ enddate = years[-1]+'.12.31'
 dates = pd.date_range(start= startdate, end= enddate, freq= '1d')
 dates_local = [pfun.get_dt_local(x) for x in dates]
 ax1.set_xlim([dates_local[0],dates_local[-1]])
-ax1.set_ylim([0,14])
-
-# add legend
-fills, labels1 = ax1.get_legend_handles_labels()
-lines, labels2 = ax2.get_legend_handles_labels()
-ax2.legend(fills + lines, labels1 + labels2, loc='upper left', fontsize=12)
 
 plt.tight_layout()
 # plt.show()
