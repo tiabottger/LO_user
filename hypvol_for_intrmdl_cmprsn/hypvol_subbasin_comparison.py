@@ -117,7 +117,7 @@ for year in years:
         one_mgL_thick = one_mgL_thick_dict[gtagex + region + year] / 1000
         three_mgL_thick = three_mgL_thick_dict[gtagex + region + year] / 1000
 
-        for subbasin, mask in mask_dict.items():
+        for subbasin, mask in subbasin_masks.items():
 
             # hypoxic volume
             hyp_thick_masked = hyp_thick * mask
