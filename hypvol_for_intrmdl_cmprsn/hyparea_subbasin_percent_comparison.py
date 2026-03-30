@@ -209,6 +209,6 @@ for year in years:
 
     plt.tight_layout()
     # plt.show()
-    plt.savefig('hyparea_subbasin_percent_{year}_fig.png')
+    plt.savefig(f'hyparea_subbasin_percent_{year}_fig.png')
 
 print('Done')
