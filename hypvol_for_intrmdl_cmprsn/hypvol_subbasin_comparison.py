@@ -190,11 +190,11 @@ print('Puget Sound volume: {} km3'.format(round(PS_vol,1)))
 
 
 subbasin_colors = {
-    'PugetSound': cm.Blues(0.7),
-    'HoodCanal': cm.RdPu(0.7),
-    'SouthSound': cm.magma(0.7),
-    'MainBasin': cm.summer(0.7),
-    'WhidbeyBasin': cm.cool(0.7),
+    'PugetSound': cm.Blues(1),
+    'HoodCanal': cm.RdPu(0.6),
+    'SouthSound': cm.magma(0.9),
+    'MainBasin': cm.summer(0.5),
+    'WhidbeyBasin': cm.cool(0.9),
 }
 
 subbasins = list(subbasin_colors.keys())
@@ -214,27 +214,27 @@ for year in years:
         key = gtagex + region + subbasin + year
         
         if year == years[0]:
-            ax.plot(dates_local, hyp_vol[key],
+            ax1.plot(dates_local, hyp_vol[key],
                     color=subbasin_colors[subbasin],
                     linewidth=2,
                     label=subbasin)
         else:
-            ax.plot(dates_local, hyp_vol[key],
+            ax1.plot(dates_local, hyp_vol[key],
                     color=subbasin_colors[subbasin],
                     linewidth=2)
 
 # axis labels
-ax.set_ylabel('Hypoxic Volume (km$^3$)', fontsize=12)
+ax1.set_ylabel('Hypoxic Volume (km$^3$)', fontsize=12)
 
 # combine legends from both axes
-lines, labels = ax.get_legend_handles_labels()
-ax.legend(lines, labels, loc='upper right')
+lines, labels = ax1.get_legend_handles_labels()
+ax1.legend(lines, labels, loc='upper right')
 
 # format figure
-ax.grid(visible=True, axis='both', color='silver', linestyle='--')
-ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-ax.tick_params(axis='x', rotation=30, labelsize=12)
-ax.tick_params(axis='y', labelsize=12)
+ax1.grid(visible=True, axis='both', color='silver', linestyle='--')
+ax1.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+ax1.tick_params(axis='x', rotation=30, labelsize=12)
+ax1.tick_params(axis='y', labelsize=12)
 
 plt.title('(b)', fontsize = 14, loc='left', fontweight='bold')
 # create time vector
