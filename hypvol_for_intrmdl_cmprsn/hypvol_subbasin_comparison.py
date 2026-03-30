@@ -235,6 +235,7 @@ ax1.grid(visible=True, axis='both', color='silver', linestyle='--')
 ax1.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
 ax1.tick_params(axis='x', rotation=30, labelsize=12)
 ax1.tick_params(axis='y', labelsize=12)
+ax1.set_ylim(0,5.5)
 
 plt.title('(b)', fontsize = 14, loc='left', fontweight='bold')
 # create time vector
