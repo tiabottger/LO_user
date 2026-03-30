@@ -163,10 +163,9 @@ ax0.pcolormesh(plon, plat, np.where(mask_wb == 0, np.nan, mask_wb),
 pfun.dar(ax0)
 ax0.set_title('(a)', fontsize = 14, loc='left', fontweight='bold')
 
-# Get nominal Puget Sound volume (non time-varying)
-PS_vol = np.nansum(basin_mask_ds['h'].values/1000 * DA * mask_ps) # [km^3]
-print('Puget Sound volume: {} km3'.format(round(PS_vol,1)))
-
+# Get nominal Puget Sound area (non time-varying)
+PS_area = np.nansum( DA * mask_ps) # [km^2]
+print('Puget Sound area: {} km2'.format(round(PS_area,1)))
 
 subbasin_colors = {
     'PugetSound': cm.Blues(0.9),
