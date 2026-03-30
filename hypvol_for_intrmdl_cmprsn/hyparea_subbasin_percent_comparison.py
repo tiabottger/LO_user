@@ -181,57 +181,34 @@ gtagex = gtagexes[0]  # loading run only
 
 # plot hypoxic area subbasin percent of overall hypoxic area bar chart
 for year in years:
+    
+    # Puget Sound reference (timeseries)
+    key_PS = gtagex + region + 'PugetSound' + year
+    hyp_area_PS = hyp_area[key_PS]   # timeseries
+    hyp_area_PS_tot = np.sum(hyp_area_PS)
 
     hyp_area_percents = []
     for subbasin in subbasins:
         key = gtagex + region + subbasin + year
-        hyp_area_percent = (hyp_area[key] / PS_area) * 100
+        hyp_area_tot = np.sum(hyp_area[key]) # total hypoxic area for subbasin and year
+        
+        hyp_area_percent = (hyp_area_tot / hyp_area_PS_tot) * 100
         hyp_area_percents.append(hyp_area_percent)
 
     ax1.bar(subbasins, hyp_area_percents, color=[subbasin_colors[subbasin] for subbasin in subbasins], label=year)
 
-# plot hypoxic area timeseries
-for year in years:
-
-    startdate = year + '.01.01'
-    enddate = year + '.12.31'
-    dates = pd.date_range(start=startdate, end=enddate, freq='1d')
-    dates_local = [pfun.get_dt_local(x) for x in dates]
-
-    for subbasin in subbasin_colors.keys():
-
-        key = gtagex + region + subbasin + year
-        
-        if year == years[0]:
-            ax1.plot(dates_local, hyp_area[key],
-                    color=subbasin_colors[subbasin],
-                    linewidth=2,
-                    label=subbasin)
-        else:
-            ax1.plot(dates_local, hyp_area[key],
-                    color=subbasin_colors[subbasin],
-                    linewidth=2)
-
 # axis labels
-ax1.set_ylabel('Hypoxic Area (km$^2$)', fontsize=12)
+ax1.set_ylabel('Percent Hypoxic Area (%)', fontsize=12)
 
-# combine legends from both axes
-lines, labels = ax1.get_legend_handles_labels()
-ax1.legend(lines, labels, loc='upper right')
-
-# format figure
-ax1.grid(visible=True, axis='both', color='silver', linestyle='--')
-ax1.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+# bar chart formatting
+ax1.grid(True, axis='y', color='silver', linestyle='--')
 ax1.tick_params(axis='x', rotation=30, labelsize=12)
 ax1.tick_params(axis='y', labelsize=12)
 
 plt.title('(b)', fontsize = 14, loc='left', fontweight='bold')
-# create time vector
-startdate = years[0]+'.01.01'
-enddate = years[-1]+'.12.31'
-dates = pd.date_range(start= startdate, end= enddate, freq= '1d')
-dates_local = [pfun.get_dt_local(x) for x in dates]
-ax1.set_xlim([dates_local[0],dates_local[-1]])
+
+# legend (years)
+ax1.legend(title='Year', loc='upper right', fontsize=11, title_fontsize=12)
 
 plt.tight_layout()
 # plt.show()

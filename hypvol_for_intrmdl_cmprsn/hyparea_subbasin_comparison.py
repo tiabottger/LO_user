@@ -204,7 +204,6 @@ for year in years:
 # axis labels
 ax1.set_ylabel('Hypoxic Area (km$^2$)', fontsize=12)
 
-# combine legends from both axes
 lines, labels = ax1.get_legend_handles_labels()
 ax1.legend(lines, labels, loc='upper right')
 
