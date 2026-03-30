@@ -197,21 +197,18 @@ for year in years:
 
     ax1.bar(subbasins, hyp_area_percents, color=[subbasin_colors[subbasin] for subbasin in subbasins], label=year)
 
-# axis labels
-ax1.set_ylabel('Percent Hypoxic Area (%)', fontsize=12)
+    # axis labels
+    ax1.set_ylabel('Percent Hypoxic Area (%)', fontsize=12)
 
-# bar chart formatting
-ax1.grid(True, axis='y', color='silver', linestyle='--')
-ax1.tick_params(axis='x', rotation=30, labelsize=12)
-ax1.tick_params(axis='y', labelsize=12)
+    # bar chart formatting
+    ax1.grid(True, axis='y', color='silver', linestyle='--')
+    ax1.tick_params(axis='x', rotation=30, labelsize=12)
+    ax1.tick_params(axis='y', labelsize=12)
 
-plt.title('(b)', fontsize = 14, loc='left', fontweight='bold')
+    plt.title(f'(b) {year}', fontsize = 14, loc='left', fontweight='bold')
 
-# legend (years)
-ax1.legend(title='Year', loc='upper right', fontsize=11, title_fontsize=12)
-
-plt.tight_layout()
-# plt.show()
-plt.savefig('hyparea_subbasin_percent_comparison_fig.png')
+    plt.tight_layout()
+    # plt.show()
+    plt.savefig('hyparea_subbasin_percent_{year}_fig.png')
 
 print('Done')
