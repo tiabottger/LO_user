@@ -201,6 +201,9 @@ subbasins = list(subbasin_colors.keys())
 
 gtagex = gtagexes[0]  # loading run only
 
+# make twin axis
+ax2 = ax1.twinx()
+
 # plot hypoxic volume timeseries
 for year in years:
 
@@ -212,7 +215,14 @@ for year in years:
     for subbasin in subbasin_colors.keys():
 
         key = gtagex + region + subbasin + year
-        
+
+        # Puget Sound goes on right axis
+        if subbasin == 'PugetSound':
+            ax = ax2
+        else:
+            ax = ax1
+
+        # label only once
         if year == years[0]:
             ax.plot(dates_local, hyp_vol[key],
                     color=subbasin_colors[subbasin],
@@ -224,17 +234,24 @@ for year in years:
                     linewidth=2)
 
 # axis labels
-ax.set_ylabel('Hypoxic Volume (km$^3$)', fontsize=12)
+ax1.set_ylabel('Hypoxic Volume (km$^3$) Subbasins')
+ax2.set_ylabel('Hypoxic Volume (km$^3$) Puget Sound')
 
 # combine legends from both axes
-lines, labels = ax.get_legend_handles_labels()
-ax.legend(lines, labels, loc='upper right')
+lines1, labels1 = ax1.get_legend_handles_labels()
+lines2, labels2 = ax2.get_legend_handles_labels()
+ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper right')
 
 # format figure
-ax.grid(visible=True, axis='both', color='silver', linestyle='--')
-ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-ax.tick_params(axis='x', rotation=30, labelsize=12)
-ax.tick_params(axis='y', labelsize=12)
+ax1.grid(visible=True, axis='both', color='silver', linestyle='--')
+ax1.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+ax1.tick_params(axis='x', rotation=30, labelsize=12)
+ax1.tick_params(axis='y', labelsize=12)
+ax1.set_ylabel(r'Subbasin hypoxic volume [km$^3$]', fontsize=12)
+
+# format right axis (Puget Sound)
+ax2.tick_params(axis='y', labelsize=12)
+ax2.set_ylabel(r'Puget Sound hypoxic volume [km$^3$]', fontsize=12)
 
 plt.title('(b)', fontsize = 14, loc='left', fontweight='bold')
 # create time vector
