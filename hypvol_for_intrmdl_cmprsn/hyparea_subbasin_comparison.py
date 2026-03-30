@@ -118,11 +118,6 @@ for year in years:
             hyp_area_timeseries = np.nansum(hyp_area_masked * DA, axis=(1, 2))  # km^2
             hyp_area[gtagex + region + subbasin + year] = hyp_area_timeseries
 
-            # total water area
-            water_area_masked = DA * mask
-            water_area_timeseries = np.nansum(water_area_masked, axis=(1, 2))  # km^2
-            water_area[gtagex + region + subbasin + year] = water_area_timeseries
-
 
 # get lon and lat for making pcolormesh plot
 lon = basin_mask_ds.lon_rho.values
