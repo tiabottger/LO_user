@@ -104,12 +104,12 @@ subbasin_masks = {
 
 # initialize dictionary for hypoxic area [km^2]
 hyp_area = {}
-water_area = {}
 
 for year in years:
     for gtagex in gtagexes:
         
-        hypoxic_bot_filter = DO_bot < 2 # boolean filter for hypoxic bottom water (DO < 2 mg/L)
+        DO_bot = DO_bot_dict[gtagex + region + year] 
+        hypoxic_bot_filter = DO_bot < 2 # boolean array where True means hypoxic bottom water
 
         for subbasin, mask in subbasin_masks.items():
 
