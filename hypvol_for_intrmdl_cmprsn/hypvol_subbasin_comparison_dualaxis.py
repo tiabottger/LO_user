@@ -190,11 +190,11 @@ print('Puget Sound volume: {} km3'.format(round(PS_vol,1)))
 
 
 subbasin_colors = {
-    'PugetSound': cm.Blues(0.7),
-    'HoodCanal': cm.RdPu(0.7),
-    'SouthSound': cm.magma(0.7),
-    'MainBasin': cm.summer(0.7),
-    'WhidbeyBasin': cm.cool(0.7),
+    'PugetSound': cm.Blues(0.9),
+    'HoodCanal': cm.RdPu(0.6),
+    'SouthSound': cm.magma(0.3),
+    'MainBasin': cm.summer(0.5),
+    'WhidbeyBasin': cm.cool(0.3),
 }
 
 subbasins = list(subbasin_colors.keys())
