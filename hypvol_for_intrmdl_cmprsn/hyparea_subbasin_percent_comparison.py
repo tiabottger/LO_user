@@ -179,6 +179,17 @@ subbasins = list(subbasin_colors.keys())
 
 gtagex = gtagexes[0]  # loading run only
 
+# plot hypoxic area subbasin percent of overall hypoxic area bar chart
+for year in years:
+
+    hyp_area_percents = []
+    for subbasin in subbasins:
+        key = gtagex + region + subbasin + year
+        hyp_area_percent = (hyp_area[key] / PS_area) * 100
+        hyp_area_percents.append(hyp_area_percent)
+
+    ax1.bar(subbasins, hyp_area_percents, color=[subbasin_colors[subbasin] for subbasin in subbasins], label=year)
+
 # plot hypoxic area timeseries
 for year in years:
 
