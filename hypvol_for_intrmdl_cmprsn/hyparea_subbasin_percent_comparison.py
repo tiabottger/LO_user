@@ -212,6 +212,6 @@ ax1.legend(title='Year', loc='upper right', fontsize=11, title_fontsize=12)
 
 plt.tight_layout()
 # plt.show()
-plt.savefig('hyparea_subbasin_comparison_fig.png')
+plt.savefig('hyparea_subbasin_percent_comparison_fig.png')
 
 print('Done')
