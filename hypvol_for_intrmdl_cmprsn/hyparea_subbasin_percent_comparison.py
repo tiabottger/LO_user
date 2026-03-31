@@ -134,35 +134,6 @@ xmax = -122.1
 ymin = 46.95
 ymax = 48.6
 
-# initialize figure
-fig, (ax0, ax1) = plt.subplots(1,2,figsize = (12,5),gridspec_kw={'width_ratios': [1, 3.5]})
-# fig, (ax0, ax1) = plt.subplots(1,2,figsize = (6,3),gridspec_kw={'width_ratios': [1, 2.8]})
-
-# format figure
-ax0.set_xlim([xmin,xmax])
-ax0.set_ylim([ymin,ymax])
-ax0.set_ylabel('Latitude', fontsize=12)
-ax0.set_xlabel('Longitude', fontsize=12)
-ax0.tick_params(axis='both', labelsize=12)
-# plot map of Puget Sound
-ax0.pcolormesh(plon, plat, np.where(mask_rho == 0, np.nan, mask_rho),
-                vmin=0, vmax=10, cmap='Blues')
-# Hood Canal
-ax0.pcolormesh(plon, plat, np.where(mask_hc == 0, np.nan, mask_hc),
-            vmin=0, vmax=2, cmap='RdPu' )
-# South Sound
-ax0.pcolormesh(plon, plat, np.where(mask_ss == 0, np.nan, mask_ss),
-              vmin=0, vmax=3, cmap='magma' )
-# Main Basin
-ax0.pcolormesh(plon, plat, np.where(mask_mb == 0, np.nan, mask_mb),
-              vmin=0, vmax=1.5, cmap='summer' )
-# # Whidbey Basin
-ax0.pcolormesh(plon, plat, np.where(mask_wb == 0, np.nan, mask_wb),
-              vmin=0, vmax=3, cmap='cool' )
-
-pfun.dar(ax0)
-ax0.set_title('(a)', fontsize = 14, loc='left', fontweight='bold')
-
 # Get nominal Puget Sound area (non time-varying)
 PS_area = np.nansum( DA * mask_ps) # [km^2]
 print('Puget Sound area: {} km2'.format(round(PS_area,1)))
@@ -182,6 +153,35 @@ gtagex = gtagexes[0]  # loading run only
 # plot hypoxic area subbasin percent of overall hypoxic area bar chart
 for year in years:
     
+        # initialize figure
+    fig, (ax0, ax1) = plt.subplots(1,2,figsize = (12,5),gridspec_kw={'width_ratios': [1, 3.5]})
+    # fig, (ax0, ax1) = plt.subplots(1,2,figsize = (6,3),gridspec_kw={'width_ratios': [1, 2.8]})
+
+    # format figure
+    ax0.set_xlim([xmin,xmax])
+    ax0.set_ylim([ymin,ymax])
+    ax0.set_ylabel('Latitude', fontsize=12)
+    ax0.set_xlabel('Longitude', fontsize=12)
+    ax0.tick_params(axis='both', labelsize=12)
+    # plot map of Puget Sound
+    ax0.pcolormesh(plon, plat, np.where(mask_rho == 0, np.nan, mask_rho),
+                    vmin=0, vmax=10, cmap='Blues')
+    # Hood Canal
+    ax0.pcolormesh(plon, plat, np.where(mask_hc == 0, np.nan, mask_hc),
+                vmin=0, vmax=2, cmap='RdPu' )
+    # South Sound
+    ax0.pcolormesh(plon, plat, np.where(mask_ss == 0, np.nan, mask_ss),
+                vmin=0, vmax=3, cmap='magma' )
+    # Main Basin
+    ax0.pcolormesh(plon, plat, np.where(mask_mb == 0, np.nan, mask_mb),
+                vmin=0, vmax=1.5, cmap='summer' )
+    # # Whidbey Basin
+    ax0.pcolormesh(plon, plat, np.where(mask_wb == 0, np.nan, mask_wb),
+                vmin=0, vmax=3, cmap='cool' )
+
+    pfun.dar(ax0)
+    ax0.set_title('(a)', fontsize = 14, loc='left', fontweight='bold')
+    
     # Puget Sound reference (timeseries)
     key_PS = gtagex + region + 'PugetSound' + year
     hyp_area_PS = hyp_area[key_PS]   # timeseries
@@ -195,7 +195,7 @@ for year in years:
         hyp_area_percent = (hyp_area_tot / hyp_area_PS_tot) * 100
         hyp_area_percents.append(hyp_area_percent)
 
-    bars = ax1.bar(subbasins, hyp_area_percents, color=[subbasin_colors[subbasin] for subbasin in subbasins], label=year)
+    bars = ax1.bar(subbasins, hyp_area_percent, color=[subbasin_colors[subbasin] for subbasin in subbasins])
     ax1.bar_label(bars, fmt="%.1f", padding=3, fontsize=10)
     
     # axis labels
