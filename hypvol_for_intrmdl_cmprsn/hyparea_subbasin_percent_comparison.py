@@ -185,17 +185,17 @@ for year in years:
     # Puget Sound reference (timeseries)
     key_PS = gtagex + region + 'PugetSound' + year
     hyp_area_PS = hyp_area[key_PS]   # timeseries
-    hyp_area_PS_tot = np.sum(hyp_area_PS)
+    hyp_area_PS_tot = np.nansum(hyp_area_PS)
 
     hyp_area_percents = []
     for subbasin in subbasins:
         key = gtagex + region + subbasin + year
-        hyp_area_tot = np.sum(hyp_area[key]) # total hypoxic area for subbasin and year
+        hyp_area_tot = np.nansum(hyp_area[key]) # total hypoxic area for subbasin and year
         
         hyp_area_percent = (hyp_area_tot / hyp_area_PS_tot) * 100
         hyp_area_percents.append(hyp_area_percent)
 
-    bars = ax1.bar(subbasins, hyp_area_percent, color=[subbasin_colors[subbasin] for subbasin in subbasins])
+    bars = ax1.bar(subbasins, hyp_area_percents, color=[subbasin_colors[subbasin] for subbasin in subbasins])
     ax1.bar_label(bars, fmt="%.1f", padding=3, fontsize=10)
     
     # axis labels
