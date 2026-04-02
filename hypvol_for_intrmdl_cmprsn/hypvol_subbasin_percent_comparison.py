@@ -104,6 +104,9 @@ subbasin_masks = {
 
 # initialize dictionary for hypoxic volume [km^3]
 hyp_vol = {}
+water_volume = {}
+onemgL_vol = {}
+threemgL_vol = {}
 
 for year in years:
     for gtagex in gtagexes:
