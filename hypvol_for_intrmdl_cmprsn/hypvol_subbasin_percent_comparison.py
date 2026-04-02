@@ -102,8 +102,8 @@ subbasin_masks = {
     'WhidbeyBasin': mask_wb
 }
 
-# initialize dictionary for hypoxic area [km^2]
-hyp_area = {}
+# initialize dictionary for hypoxic volume [km^3]
+hyp_vol = {}
 
 for year in years:
     for gtagex in gtagexes:
