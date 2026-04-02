@@ -191,7 +191,7 @@ for year in years:
     for subbasin in subbasins:
         key = gtagex + region + subbasin + year
         hyp_area_tot = np.nansum(hyp_area[key]) # total hypoxic area for subbasin and year
-        
+        print(f'{subbasin}: {hyp_area_tot}')
         # hyp_area_percent = (hyp_area_tot / hyp_area_PS_tot) * 100
         hyp_area_percent = (hyp_area_tot / PS_area) * 100
         hyp_area_percents.append(hyp_area_percent)
