@@ -233,5 +233,6 @@ for year in years:
     plt.tight_layout()
     # plt.show()
     plt.savefig(f'hypvol_subbasin_percent_{year}_fig.png')
-
+    plt.close(fig)
+    
 print('Done')
