@@ -108,9 +108,13 @@ hyp_vol = {}
 for year in years:
     for gtagex in gtagexes:
         
-        DO_bot = DO_bot_dict[gtagex + region + year] 
-        hypoxic_bot_filter = DO_bot <= 2 # boolean array where True means hypoxic bottom water
-
+        # get thicknesses (km)
+        hyp_thick = hyp_thick_dict[gtagex + region + year] / 1000
+        water_depth_km = water_depth_dict[gtagex + region + year] / 1000
+        one_mgL_thick = one_mgL_thick_dict[gtagex + region + year] / 1000
+        three_mgL_thick = three_mgL_thick_dict[gtagex + region + year] / 1000
+        
+        
         for subbasin, mask in subbasin_masks.items():
 
             # hypoxic volume
