@@ -156,35 +156,6 @@ xmax = -122.1
 ymin = 46.95
 ymax = 48.6
 
-# initialize figure
-fig, (ax0, ax1) = plt.subplots(1,2,figsize = (12,5),gridspec_kw={'width_ratios': [1, 3.5]})
-# fig, (ax0, ax1) = plt.subplots(1,2,figsize = (6,3),gridspec_kw={'width_ratios': [1, 2.8]})
-
-# format figure
-ax0.set_xlim([xmin,xmax])
-ax0.set_ylim([ymin,ymax])
-ax0.set_ylabel('Latitude', fontsize=12)
-ax0.set_xlabel('Longitude', fontsize=12)
-ax0.tick_params(axis='both', labelsize=12)
-# plot map of Puget Sound
-ax0.pcolormesh(plon, plat, np.where(mask_rho == 0, np.nan, mask_rho),
-                vmin=0, vmax=10, cmap='Blues')
-# Hood Canal
-ax0.pcolormesh(plon, plat, np.where(mask_hc == 0, np.nan, mask_hc),
-            vmin=0, vmax=2, cmap='RdPu' )
-# South Sound
-ax0.pcolormesh(plon, plat, np.where(mask_ss == 0, np.nan, mask_ss),
-              vmin=0, vmax=3, cmap='magma' )
-# Main Basin
-ax0.pcolormesh(plon, plat, np.where(mask_mb == 0, np.nan, mask_mb),
-              vmin=0, vmax=1.5, cmap='summer' )
-# # Whidbey Basin
-ax0.pcolormesh(plon, plat, np.where(mask_wb == 0, np.nan, mask_wb),
-              vmin=0, vmax=3, cmap='cool' )
-
-pfun.dar(ax0)
-ax0.set_title('(a)', fontsize = 14, loc='left', fontweight='bold')
-
 # Get nominal Puget Sound volume (non time-varying)
 PS_vol = np.nansum(basin_mask_ds['h'].values/1000 * DA * mask_ps) # [km^3]
 print('Puget Sound volume: {} km3'.format(round(PS_vol,1)))
@@ -203,6 +174,35 @@ gtagex = gtagexes[0]  # loading run only
 
 # plot hypoxic area subbasin percent of overall hypoxic area bar chart
 for year in years:
+    
+    # initialize figure
+    fig, (ax0, ax1) = plt.subplots(1,2,figsize = (12,5),gridspec_kw={'width_ratios': [1, 3.5]})
+    # fig, (ax0, ax1) = plt.subplots(1,2,figsize = (6,3),gridspec_kw={'width_ratios': [1, 2.8]})
+
+    # format figure
+    ax0.set_xlim([xmin,xmax])
+    ax0.set_ylim([ymin,ymax])
+    ax0.set_ylabel('Latitude', fontsize=12)
+    ax0.set_xlabel('Longitude', fontsize=12)
+    ax0.tick_params(axis='both', labelsize=12)
+    # plot map of Puget Sound
+    ax0.pcolormesh(plon, plat, np.where(mask_rho == 0, np.nan, mask_rho),
+                    vmin=0, vmax=10, cmap='Blues')
+    # Hood Canal
+    ax0.pcolormesh(plon, plat, np.where(mask_hc == 0, np.nan, mask_hc),
+                vmin=0, vmax=2, cmap='RdPu' )
+    # South Sound
+    ax0.pcolormesh(plon, plat, np.where(mask_ss == 0, np.nan, mask_ss),
+                vmin=0, vmax=3, cmap='magma' )
+    # Main Basin
+    ax0.pcolormesh(plon, plat, np.where(mask_mb == 0, np.nan, mask_mb),
+                vmin=0, vmax=1.5, cmap='summer' )
+    # # Whidbey Basin
+    ax0.pcolormesh(plon, plat, np.where(mask_wb == 0, np.nan, mask_wb),
+                vmin=0, vmax=3, cmap='cool' )
+
+    pfun.dar(ax0)
+    ax0.set_title('(a)', fontsize = 14, loc='left', fontweight='bold')
     
     # Puget Sound reference (timeseries)
     key_PS = gtagex + region + 'PugetSound' + year

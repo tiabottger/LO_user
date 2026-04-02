@@ -153,7 +153,7 @@ gtagex = gtagexes[0]  # loading run only
 # plot hypoxic area subbasin percent of overall hypoxic area bar chart
 for year in years:
     
-        # initialize figure
+    # initialize figure
     fig, (ax0, ax1) = plt.subplots(1,2,figsize = (12,5),gridspec_kw={'width_ratios': [1, 3.5]})
     # fig, (ax0, ax1) = plt.subplots(1,2,figsize = (6,3),gridspec_kw={'width_ratios': [1, 2.8]})
 
