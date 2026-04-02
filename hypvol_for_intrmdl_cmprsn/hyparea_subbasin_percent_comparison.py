@@ -191,17 +191,15 @@ for year in years:
     for subbasin in subbasins:
         key = gtagex + region + subbasin + year
         hyp_area_tot = np.nansum(hyp_area[key]) # total hypoxic area for subbasin and year
-        print(f'{subbasin}: {hyp_area_tot}')
-        # hyp_area_percent = (hyp_area_tot / hyp_area_PS_tot) * 100
-        hyp_area_percent = (hyp_area_tot / PS_area) * 100
+
+        hyp_area_percent = (hyp_area_tot / hyp_area_PS_tot) * 100
         hyp_area_percents.append(hyp_area_percent)
 
     bars = ax1.bar(subbasins, hyp_area_percents, color=[subbasin_colors[subbasin] for subbasin in subbasins])
     ax1.bar_label(bars, fmt="%.1f", padding=3, fontsize=10)
     
     # axis labels
-    #ax1.set_ylabel('Percent Hypoxic Area (%)', fontsize=12)
-    ax1.set_ylabel('Hypoxic Area as Percent of Puget Sound Area (%)', fontsize=12)
+    ax1.set_ylabel('Percent Hypoxic Area (%)', fontsize=12)
 
     # bar chart formatting
     ax1.grid(True, axis='y', color='silver', linestyle='--')
@@ -212,8 +210,7 @@ for year in years:
 
     plt.tight_layout()
     # plt.show()
-    #plt.savefig(f'hyparea_subbasin_percent_{year}_fig.png')
-    plt.savefig(f'hyparea_subbasin_percent_tot_{year}_fig.png')
+    plt.savefig(f'hyparea_subbasin_percent_{year}_fig.png')
     plt.close(fig)
     
 print('Done')

@@ -113,10 +113,25 @@ for year in years:
 
         for subbasin, mask in subbasin_masks.items():
 
-            # hypoxic area
-            hyp_area_masked = hypoxic_bot_filter * mask
-            hyp_area_timeseries = np.nansum(hyp_area_masked * DA, axis=(1, 2))  # km^2
-            hyp_area[gtagex + region + subbasin + year] = hyp_area_timeseries
+            # hypoxic volume
+            hyp_thick_masked = hyp_thick * mask
+            hyp_vol_timeseries = np.nansum(hyp_thick_masked * DA, axis=(1, 2))  # km^3
+            hyp_vol[gtagex + region + subbasin + year] = hyp_vol_timeseries
+            
+            # total water volume
+            water_depth_masked = water_depth_km * mask
+            water_vol_timeseries = np.nansum(water_depth_masked * DA, axis=(1, 2))  # km^3
+            water_volume[gtagex + region + subbasin + year] = water_vol_timeseries
+            
+            # 1 mg/L volume 
+            one_mgL_masked = one_mgL_thick * mask
+            onemgL_vol_timeseries = np.nansum(one_mgL_masked * DA, axis=(1, 2))  # km^3
+            onemgL_vol[gtagex + region + subbasin + year] = onemgL_vol_timeseries
+
+            # 3 mg/L volume
+            three_mgL_masked = three_mgL_thick * mask
+            threemgL_vol_timeseries = np.nansum(three_mgL_masked * DA, axis=(1, 2))  # km^3
+            threemgL_vol[gtagex + region + subbasin + year] = threemgL_vol_timeseries
 
 
 # get lon and lat for making pcolormesh plot
@@ -125,7 +140,7 @@ lat = basin_mask_ds.lat_rho.values
 plon, plat = pfun.get_plon_plat(lon,lat)
 
 ##############################################################
-##              PLOT HYPOXIC AREA TIME SERIES             ##
+##              PLOT HYPOXIC VOLUME TIME SERIES             ##
 ##############################################################
 
 # Puget Sound bounds
@@ -163,9 +178,9 @@ ax0.pcolormesh(plon, plat, np.where(mask_wb == 0, np.nan, mask_wb),
 pfun.dar(ax0)
 ax0.set_title('(a)', fontsize = 14, loc='left', fontweight='bold')
 
-# Get nominal Puget Sound area (non time-varying)
-PS_area = np.nansum( DA * mask_ps) # [km^2]
-print('Puget Sound area: {} km2'.format(round(PS_area,1)))
+# Get nominal Puget Sound volume (non time-varying)
+PS_vol = np.nansum(basin_mask_ds['h'].values/1000 * DA * mask_ps) # [km^3]
+print('Puget Sound volume: {} km3'.format(round(PS_vol,1)))
 
 subbasin_colors = {
     'PugetSound': cm.Blues(0.9),
@@ -184,22 +199,22 @@ for year in years:
     
     # Puget Sound reference (timeseries)
     key_PS = gtagex + region + 'PugetSound' + year
-    hyp_area_PS = hyp_area[key_PS]   # timeseries
-    hyp_area_PS_tot = np.sum(hyp_area_PS)
+    hyp_vol_PS = hyp_vol[key_PS]   # timeseries
+    hyp_vol_PS_tot = np.sum(hyp_vol_PS)
 
-    hyp_area_percents = []
+    hyp_vol_percents = []
     for subbasin in subbasins:
         key = gtagex + region + subbasin + year
-        hyp_area_tot = np.sum(hyp_area[key]) # total hypoxic area for subbasin and year
+        hyp_vol_tot = np.sum(hyp_vol[key]) # total hypoxic volume for subbasin and year
         
-        hyp_area_percent = (hyp_area_tot / hyp_area_PS_tot) * 100
-        hyp_area_percents.append(hyp_area_percent)
+        hyp_vol_percent = (hyp_vol_tot / hyp_vol_PS_tot) * 100
+        hyp_vol_percents.append(hyp_vol_percent)
 
-    bars = ax1.bar(subbasins, hyp_area_percents, color=[subbasin_colors[subbasin] for subbasin in subbasins], label=year)
+    bars = ax1.bar(subbasins, hyp_vol_percents, color=[subbasin_colors[subbasin] for subbasin in subbasins], label=year)
     ax1.bar_label(bars, fmt="%.1f", padding=3, fontsize=10)
     
     # axis labels
-    ax1.set_ylabel('Percent Hypoxic Area (%)', fontsize=12)
+    ax1.set_ylabel('Percent Hypoxic Volume (%)', fontsize=12)
 
     # bar chart formatting
     ax1.grid(True, axis='y', color='silver', linestyle='--')
@@ -210,6 +225,6 @@ for year in years:
 
     plt.tight_layout()
     # plt.show()
-    plt.savefig(f'hyparea_subbasin_percent_{year}_fig.png')
+    plt.savefig(f'hypvol_subbasin_percent_{year}_fig.png')
 
 print('Done')
