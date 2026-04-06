@@ -63,16 +63,19 @@ V['zeta'] = np.zeros((NT, NR, NC))
 V['ubar'] = np.zeros((NT, NR, NC-1))
 V['vbar'] = np.zeros((NT, NR-1, NC))
 
-# Make estuary half full of fresh water (in latitude) only at t=0 on Jan 1st
+# Make initial salinity gradient
 V['salt'] = 30 * np.ones((NT, NZ, NR, NC))
 if dt0 == jan1:
-    fresh_lat = 45.12 # DEFINE LATITUDE ABOVE WHICH WATER IS FRESH AT T=0 ON THE FIRST RUN DAY
-    # difference from lats to desired lat
-    lats = G['lat_rho'][:,0]
-    lats_diff = abs(lats - fresh_lat*np.ones(np.shape(lats)))
-    # lat_index
-    lat_index = int(np.where(lats_diff == np.min(lats_diff))[0])
-    V['salt'][0,:,lat_index::,:] = 0 * V['salt'][0,:,lat_index::,:]
+
+    x, y = zfun.ll2xy(lon, lat, 0, 45)
+    
+    for i in range(NC):
+        if x[i] <= 1500000.0:
+            V['salt'][0, :, :, i] = 30.0
+        elif x[i] <= 2000000.0:
+            V['salt'][0, :, :, i] = (80000.0 - x[i]) / 50000.0 * 30.0
+        else:
+            V['salt'][0, :, :, i] = 0.0
     
 V['temp'] = 10 * np.ones((NT, NZ, NR, NC))
 V['u'] = np.zeros((NT, NZ, NR, NC-1))
