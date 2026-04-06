@@ -47,11 +47,13 @@ G = zrfun.get_basic_info(Ldir['grid'] / 'grid.nc', only_G=True)
 S_info_dict = Lfun.csv_to_dict(Ldir['grid'] / 'S_COORDINATE_INFO.csv')
 S = zrfun.get_S(S_info_dict)
 NZ = S['N']; NR = G['M']; NC = G['L']
+# NZ number of vertical levels, NR number of y/eta points, NC number of x/xi points
 
 # Make the time vector.  Here I just have two time points, at the start
 # and end of the day, but you could have more, e.g. hourly.  You would still
 # want the total time to just be one day.
 dt0 = datetime.strptime(Ldir['date_string'], Lfun.ds_fmt)
+jan1 = datetime.strptime('2020.01.01', Lfun.ds_fmt)
 dt1 = dt0 + timedelta(days=1)
 ot_vec = np.array([Lfun.datetime_to_modtime(dt0), Lfun.datetime_to_modtime(dt1)])
 NT = len(ot_vec)
@@ -67,6 +69,8 @@ V['vbar'] = np.zeros((NT, NR-1, NC))
 V['salt'] = 30 * np.ones((NT, NZ, NR, NC))
 if dt0 == jan1:
 
+    lon = G['lon_rho'][0, :] # lon_rho shape (NR,NC) so returns shape (NC,)
+    lat = G['lat_rho'][0, :]
     x, y = zfun.ll2xy(lon, lat, 0, 45)
     
     for i in range(NC):
