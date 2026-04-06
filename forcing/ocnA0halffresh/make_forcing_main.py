@@ -52,6 +52,7 @@ NZ = S['N']; NR = G['M']; NC = G['L']
 # and end of the day, but you could have more, e.g. hourly.  You would still
 # want the total time to just be one day.
 dt0 = datetime.strptime(Ldir['date_string'], Lfun.ds_fmt)
+jan1 = datetime.strptime('2020.01.01', Lfun.ds_fmt)
 dt1 = dt0 + timedelta(days=1)
 ot_vec = np.array([Lfun.datetime_to_modtime(dt0), Lfun.datetime_to_modtime(dt1)])
 NT = len(ot_vec)
