@@ -71,9 +71,9 @@ lon = G['lon_rho'][0, :] # lon_rho shape (NR,NC) so returns shape (NC,)
 
 for i in range(NC):
     if lon[i] <= 1.5:
-        V['salt'][:, :, :, i] = 30.0
+        V['salt'][:, :, :, i] = 20.0
     elif lon[i] <= 2.0:
-        V['salt'][:, :, :, i] = (2.0 - lon[i]) / 0.5 * 30.0
+        V['salt'][:, :, :, i] = (2.0 - lon[i]) / 0.5 * 20.0
     else:
         V['salt'][:, :, :, i] = 0.0
     
