@@ -68,14 +68,14 @@ V['vbar'] = np.zeros((NT, NR-1, NC))
 V['salt'] = 20 * np.ones((NT, NZ, NR, NC))
 
 lon = G['lon_rho'][0, :] # lon_rho shape (NR,NC) so returns shape (NC,)
-
-for i in range(NC):
-    if lon[i] <= 1.5:
-        V['salt'][:, :, :, i] = 20.0
-    elif lon[i] <= 2.0:
-        V['salt'][:, :, :, i] = (2.0 - lon[i]) / 0.5 * 20.0
-    else:
-        V['salt'][:, :, :, i] = 0.0
+if Ldir['start_type'] == 'new':
+    for i in range(NC):
+        if lon[i] <= 1.5:
+            V['salt'][:, :, :, i] = 20.0
+        elif lon[i] <= 2.0:
+            V['salt'][:, :, :, i] = (2.0 - lon[i]) / 0.5 * 20.0
+        else:
+            V['salt'][:, :, :, i] = 0.0
     
 V['temp'] = 10 * np.ones((NT, NZ, NR, NC))
 V['u'] = np.zeros((NT, NZ, NR, NC-1))
