@@ -73,11 +73,11 @@ if dt0 == jan1:
     
     for i in range(NC):
         if lon[i] <= 1.5:
-            V['salt'][0, :, :, i] = 30.0
+            V['salt'][:, :, :, i] = 30.0
         elif lon[i] <= 2.0:
-            V['salt'][0, :, :, i] = (2.0 - lon[i]) / 0.5 * 30.0
+            V['salt'][:, :, :, i] = (2.0 - lon[i]) / 0.5 * 30.0
         else:
-            V['salt'][0, :, :, i] = 0.0
+            V['salt'][:, :, :, i] = 0.0
     
 V['temp'] = 10 * np.ones((NT, NZ, NR, NC))
 V['u'] = np.zeros((NT, NZ, NR, NC-1))
