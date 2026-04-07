@@ -65,7 +65,7 @@ V['ubar'] = np.zeros((NT, NR, NC-1))
 V['vbar'] = np.zeros((NT, NR-1, NC))
 
 # Make initial salinity gradient
-V['salt'] = 30 * np.ones((NT, NZ, NR, NC))
+V['salt'] = 20 * np.ones((NT, NZ, NR, NC))
 
 lon = G['lon_rho'][0, :] # lon_rho shape (NR,NC) so returns shape (NC,)
 
