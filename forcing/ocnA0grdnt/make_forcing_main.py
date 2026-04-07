@@ -53,7 +53,6 @@ NZ = S['N']; NR = G['M']; NC = G['L']
 # and end of the day, but you could have more, e.g. hourly.  You would still
 # want the total time to just be one day.
 dt0 = datetime.strptime(Ldir['date_string'], Lfun.ds_fmt)
-jan1 = datetime.strptime('2020.01.01', Lfun.ds_fmt)
 dt1 = dt0 + timedelta(days=1)
 ot_vec = np.array([Lfun.datetime_to_modtime(dt0), Lfun.datetime_to_modtime(dt1)])
 NT = len(ot_vec)
@@ -67,8 +66,7 @@ V['vbar'] = np.zeros((NT, NR-1, NC))
 
 # Make initial salinity gradient
 V['salt'] = 30 * np.ones((NT, NZ, NR, NC))
-if dt0 == jan1:
-
+if Ldir['start_type'] == 'new':
     lon = G['lon_rho'][0, :] # lon_rho shape (NR,NC) so returns shape (NC,)
     
     for i in range(NC):
