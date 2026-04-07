@@ -70,14 +70,12 @@ V['salt'] = 30 * np.ones((NT, NZ, NR, NC))
 if dt0 == jan1:
 
     lon = G['lon_rho'][0, :] # lon_rho shape (NR,NC) so returns shape (NC,)
-    lat = G['lat_rho'][0, :]
-    x, y = zfun.ll2xy(lon, lat, 0, 45)
     
     for i in range(NC):
-        if x[i] <= 150000.0:
+        if lon[i] <= 1.5:
             V['salt'][0, :, :, i] = 30.0
-        elif x[i] <= 200000.0:
-            V['salt'][0, :, :, i] = (200000.0 - x[i]) / 50000.0 * 30.0
+        elif lon[i] <= 2.0:
+            V['salt'][0, :, :, i] = (2.0 - x[i]) / 0.5 * 30.0
         else:
             V['salt'][0, :, :, i] = 0.0
     
