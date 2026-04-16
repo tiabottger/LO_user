@@ -1523,7 +1523,7 @@ def P_sect_ae0(in_dict):
         plt.close()
     else:
         plt.show()
-        plt.savefig('ae0_sect_slope2.png')
+        #plt.savefig('ae0_sect_slope.png')
 
 def P_sect_ae0_tides(in_dict):
     """
@@ -1533,9 +1533,9 @@ def P_sect_ae0_tides(in_dict):
     setting the limits.
     
     3 panel figure:
+    - sea surface height with time marker
     - map with surface salinity and section line
     - vertical profile of salinity vs depth along the section line
-    - sea surface height 
     
     Tia edited:
     Hard-codes section track by hand instead of reading from section_lines (created in create_sect_lines.py)
@@ -1543,11 +1543,16 @@ def P_sect_ae0_tides(in_dict):
     """
     # START
     fs = 14
-    pfun.start_plot(fs=fs, figsize=(20,9))
+    pfun.start_plot(fs=fs, figsize=(20,12))
     fig = plt.figure()
     ds = xr.open_dataset(in_dict['fn'])
-    # hard-coded version to play around with in script (not command line)
-    # ds = xr.open_dataset('~/LO_roms/ae0_t0_xa0/f2020.01.01/ocean_his_0001.nc')
+    
+    # get forcing fields for tides panel
+    gtagex = str(in_dict['fn']).split('/')[-3]
+    #location of boundary extraction with tide data
+    ffn= Ldir['LOo']/'extract'/gtagex/'moor/ae0/boundary_2020.01.01_2020.01.15.nc' 
+    fds = xr.open_dataset(ffn)
+    
     # PLOT CODE
     vn = 'salt' # plots salinity
     # other options #temp #u #v #zeta
@@ -1577,7 +1582,7 @@ def P_sect_ae0_tides(in_dict):
     
     # PLOTTING
     # map with section line
-    ax = fig.add_subplot(1, 3, 1)
+    ax = fig.add_subplot(2, 2, 3)
     cs = pfun.add_map_field(ax, ds, vn, pinfo.vlims_dict,
             cmap=pinfo.cmap_dict[vn], fac=pinfo.fac_dict[vn], do_mask_edges=True)
     # fig.colorbar(cs, ax=ax) # It is identical to that of the section
@@ -1595,7 +1600,7 @@ def P_sect_ae0_tides(in_dict):
     # ax.set_yticks([47, 48, 49, 50])
 
     # section
-    ax = fig.add_subplot(1, 3, (2, 3))
+    ax = fig.add_subplot(2, 2, 4)
     
     ax.plot(dist_se[0,:], zw_se[0,:], '-k', linewidth=2)
     ax.plot(dist_se[-1,:], zw_se[-1,:], '-k', linewidth=1)
@@ -1610,13 +1615,35 @@ def P_sect_ae0_tides(in_dict):
     ax.set_xlabel('Distance (km)')
     ax.set_ylabel('Z (m)')
     ax.set_title('Section %s %s' % (pinfo.tstr_dict[vn],pinfo.units_dict[vn]))
+    
+    # tides
+    ax = fig.add_subplot(2, 2, (1, 2))
+
+    t = pd.to_datetime(fds.ocean_time.values)
+    zeta = fds.zeta.values
+    ax.plot(t, zeta)
+
+    TM = pd.to_datetime(ds.ocean_time.values[0])
+
+    # find nearest tide time to model time
+    ii_tide = np.argmin(np.abs(t - TM))
+
+    ax.plot(t[ii_tide], zeta[ii_tide],
+            marker='*', color='r', markersize=14)
+
+    ax.set_title('Sea Surface Height (zeta)')
+    ax.grid(True)
+    
     fig.tight_layout()
     # FINISH
-    ds.close()
     pfun.end_plot()
-    plt.show()
     
-    plt.savefig('ae0_sect_salinity.png')            
+    if len(str(in_dict['fn_out'])) > 0:
+        plt.savefig(in_dict['fn_out'])
+        plt.close()
+    else:
+        plt.show()
+        #plt.savefig('ae0_sect_slope.png')           
         
 def P_sect_CR(in_dict):
     """
