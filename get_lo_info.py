@@ -85,7 +85,6 @@ elif (str(HOME) == '/home/tbottger') & ('apogee' in HOSTNAME):
     roms_out1 = Path('/dat1/parker/LO_roms') # most things here (active)
     roms_out2 = Path('/dat2/tbottger/LO_roms') # my runs
     roms_out3 = Path('/dat1/dakotamm/LO_roms') # whidbey model
-    roms_out4 = Path('/dat2/parker/LO_roms') # long hindcast
 
 elif (str(HOME) == '/mmfs1/home/tbottger'):
     lo_env = 'tb_klone'
