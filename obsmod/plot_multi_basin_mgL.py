@@ -6,6 +6,8 @@ choices for filtering the data based on source, season, and depth.
 
 Hence it is primarily a tool for model development: is one version
 different of better than another?
+
+Here I've added a function to highlight where different basins lay within the property-property plots using bounding boxes
 """
 import sys
 import pandas as pd
@@ -18,10 +20,28 @@ Ldir = Lfun.Lstart()
 
 testing = False
 
-year = '2017'
+year = '2016'
 in_dir = Ldir['parent'] / 'LO_output' / 'obsmod'
 
 plt.close('all')
+
+basin_bbox = {
+    'ps': (-123.6, -122.2, 47.0, 48.6),   # Puget Sound
+    'hc': (-123.2, -122.65, 47.35, 48.0),   # Hood Canal
+    'ss': (-123.15, -122.6, 47.0, 47.3),   # South Sound
+    'mb': (-122.65, -122.35, 47.25, 48.1),   # Main Basin
+    'wb': (-122.6, -122.25, 48.0, 48.35),   # Whidbey Basin
+}
+
+selected_basin = 'hc'  # 'hc','ss','mb','wb','all'
+
+basin_name = {
+    'hc': 'Hood Canal',
+    'ss': 'South Sound',
+    'mb': 'Main Basin',
+    'wb': 'Whidbey Basin',
+    'all': 'All Basins'
+}[selected_basin]
 
 # specify input (created by process_multi_bottle.py and process_multi_ctd.py)
 for otype in ['bottle']:#, 'ctd']:
@@ -61,7 +81,7 @@ for otype in ['bottle']:#, 'ctd']:
         else:
             source_list = ['dfo1', 'ecology']
             
-    if False:
+    if True:
         time_range_list = ['all']
     else:
         time_range_list = ['spring','summer']
@@ -80,7 +100,7 @@ for otype in ['bottle']:#, 'ctd']:
 
                 # ===== FILTERS ======================================================
                 f_str = otype + ' ' + year + '\n\n' # a string to put for info on the map
-                ff_str = otype + '_' + year # a string for the output .png file name
+                ff_str = otype + '_' + year + '_' + selected_basin + '_mgL' # a string for the output .png file name
 
                 # limit which sources to use
                 if source == 'all':
@@ -153,9 +173,24 @@ for otype in ['bottle']:#, 'ctd']:
                     vn_list = ['SA','CT','DO','Chl']
                     jj_list = [1,2,4,5] # indices for the data plots
 
-                lim_dict = {'SA':(14,36),'CT':(0,20),'DO':(0,600),
+                lim_dict = {'SA':(14,36),'CT':(0,20),'DO':(0,20),
                     'NO3':(0,50),'NH4':(0,10),'DIN':(0,50),
                     'DIC':(1500,2500),'TA':(1500,2500),'Chl':(0,20)}
+                
+                lon = df_dict['obs']['lon'].to_numpy()
+                lat = df_dict['obs']['lat'].to_numpy()
+                
+                if selected_basin == 'all':
+                    basin_mask = np.ones_like(lon, dtype=bool)
+                else:
+                    lon_min, lon_max, lat_min, lat_max = basin_bbox[selected_basin]
+
+                    basin_mask = (
+                        (lon >= lon_min) &
+                        (lon <= lon_max) &
+                        (lat >= lat_min) &
+                        (lat <= lat_max)
+                    )
 
                 for ii in range(len(vn_list)):
                     jj = jj_list[ii]
@@ -164,7 +199,7 @@ for otype in ['bottle']:#, 'ctd']:
                     elif otype == 'ctd':
                         ax = fig.add_subplot(2,3,jj)
                     vn = vn_list[ii]
-                    x = df_dict['obs'][vn].to_numpy()
+                    x_raw = df_dict['obs'][vn].to_numpy()
                     for gtx in gtx_list:
                         
                         # skip variable if missing in model
@@ -172,13 +207,35 @@ for otype in ['bottle']:#, 'ctd']:
                             print(f"Skipping {vn} for {gtx} (missing)")
                             continue
                         
-                        y = df_dict[gtx][vn].to_numpy()
+                        y_raw = df_dict[gtx][vn].to_numpy()
                         
-                        ax.plot(x,y,marker='.',ls='',color=c_dict[gtx], alpha=alpha)
+                        # Convert DO from µM to mg/L
+                        if vn == 'DO':
+                            x = x_raw * 0.032
+                            y = y_raw * 0.032
+                        else:
+                            x = x_raw
+                            y = y_raw
+                        
+                        # background (all obs)
+                        ax.plot(x, y, '.', color=c_dict[gtx], alpha=0.03)
+
+                        # highlighted basin
+                        ax.plot(x[basin_mask], y[basin_mask],
+                                '.', color=c_dict[gtx], alpha=0.95)
         
-                        if (not np.isnan(x).all()) and (not np.isnan(y).all()) and (len(x) > 0) and (len(y) > 0):
-                            bias = np.nanmean(y-x)
-                            rmse = np.sqrt(np.nanmean((y-x)**2))
+                        # calculate bias and rmse for only highlighted basin
+                        x_basin = x[basin_mask]
+                        y_basin = y[basin_mask]
+                        
+                        # remove NaN values
+                        valid = np.isfinite(x_basin) & np.isfinite(y_basin)
+                        
+                        if np.any(valid):
+                            diff = y_basin[valid] - x_basin[valid]
+                            bias = np.mean(diff)
+                            rmse = np.sqrt(np.mean(diff**2))
+                        
                             ax.text(.95,t_dict[gtx],'bias=%0.1f, rmse=%0.1f' % (bias,rmse),c=c_dict[gtx],
                                 transform=ax.transAxes, ha='right', fontweight='bold', bbox=pfun.bbox,
                                 fontsize=fs-1,style='italic')
@@ -202,7 +259,7 @@ for otype in ['bottle']:#, 'ctd']:
                                 fontweight='bold', ha='left')
                             yy += 1
             
-                    ax.text(.05,.9,vn,transform=ax.transAxes, fontweight='bold')
+                    ax.text(.05,.9,f"{vn} — {basin_name}",transform=ax.transAxes, fontweight='bold')
                     ax.axis([lim_dict[vn][0], lim_dict[vn][1], lim_dict[vn][0], lim_dict[vn][1]])
                     ax.plot([lim_dict[vn][0], lim_dict[vn][1]], [lim_dict[vn][0], lim_dict[vn][1]],'-g')
                     ax.grid(True)
@@ -212,9 +269,44 @@ for otype in ['bottle']:#, 'ctd']:
                     ax = fig.add_subplot(1,4,4)
                 elif otype == 'ctd':
                     ax = fig.add_subplot(1,3,3)
-                df_dict['obs'].plot(x='lon',y='lat',style='.g',legend=False, ax=ax)
+                    
                 pfun.add_coast(ax)
-                ax.axis([-130,-122,42,52])
+                
+                # all stations (faded)
+                ax.plot(
+                    lon,
+                    lat,
+                    '.',
+                    color='grey',
+                    alpha=0.95,
+                    markersize=7, zorder=2
+                )
+
+                # highlighted basin stations
+                ax.plot(
+                    lon[basin_mask],
+                    lat[basin_mask],
+                    '.',
+                    color='k',
+                    alpha=0.95,
+                    markersize=7, zorder=3
+                )
+                
+                if selected_basin != 'all':
+
+                    lon_min, lon_max, lat_min, lat_max = basin_bbox[selected_basin]
+
+                    # rectangle outline
+                    ax.plot(
+                        [lon_min, lon_max, lon_max, lon_min, lon_min],
+                        [lat_min, lat_min, lat_max, lat_max, lat_min],
+                        '-k',
+                        linewidth=2
+                    )
+
+                #ax.axis([-130,-122,42,52])
+                ax.axis([-123.2, -122.25, 47.0, 48.35])
+                
                 pfun.dar(ax)
                 ax.set_xlabel('')
                 ax.set_ylabel('')

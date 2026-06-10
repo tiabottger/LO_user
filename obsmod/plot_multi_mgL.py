@@ -18,7 +18,7 @@ Ldir = Lfun.Lstart()
 
 testing = False
 
-year = '2017'
+year = '2016'
 in_dir = Ldir['parent'] / 'LO_output' / 'obsmod'
 
 plt.close('all')
@@ -61,12 +61,12 @@ for otype in ['bottle']:#, 'ctd']:
         else:
             source_list = ['dfo1', 'ecology']
             
-    if False:
+    if True:
         time_range_list = ['all']
     else:
         time_range_list = ['spring','summer']
         
-    if True:
+    if False:
         depth_range_list = ['all']
     else:
         depth_range_list = ['shallow','deep']
@@ -80,7 +80,7 @@ for otype in ['bottle']:#, 'ctd']:
 
                 # ===== FILTERS ======================================================
                 f_str = otype + ' ' + year + '\n\n' # a string to put for info on the map
-                ff_str = otype + '_' + year # a string for the output .png file name
+                ff_str = otype + '_' + year + '_mgL' # a string for the output .png file name
 
                 # limit which sources to use
                 if source == 'all':
@@ -153,9 +153,12 @@ for otype in ['bottle']:#, 'ctd']:
                     vn_list = ['SA','CT','DO','Chl']
                     jj_list = [1,2,4,5] # indices for the data plots
 
-                lim_dict = {'SA':(14,36),'CT':(0,20),'DO':(0,600),
+                lim_dict = {'SA':(14,36),'CT':(0,20),'DO':(0,20),
                     'NO3':(0,50),'NH4':(0,10),'DIN':(0,50),
                     'DIC':(1500,2500),'TA':(1500,2500),'Chl':(0,20)}
+
+                # convert ssc diatoms + flagellates to chlorophyll 
+                df_dict['ssc']['Chl'] = (df_dict['ssc']['DIAT'] + df_dict['ssc']['FLAG']) * 2
 
                 for ii in range(len(vn_list)):
                     jj = jj_list[ii]
@@ -164,7 +167,7 @@ for otype in ['bottle']:#, 'ctd']:
                     elif otype == 'ctd':
                         ax = fig.add_subplot(2,3,jj)
                     vn = vn_list[ii]
-                    x = df_dict['obs'][vn].to_numpy()
+                    x_raw = df_dict['obs'][vn].to_numpy()
                     for gtx in gtx_list:
                         
                         # skip variable if missing in model
@@ -172,7 +175,15 @@ for otype in ['bottle']:#, 'ctd']:
                             print(f"Skipping {vn} for {gtx} (missing)")
                             continue
                         
-                        y = df_dict[gtx][vn].to_numpy()
+                        y_raw = df_dict[gtx][vn].to_numpy()
+                        
+                        # Convert DO from µM to mg/L
+                        if vn == 'DO':
+                            x = x_raw * 0.032
+                            y = y_raw * 0.032
+                        else:
+                            x = x_raw
+                            y = y_raw
                         
                         ax.plot(x,y,marker='.',ls='',color=c_dict[gtx], alpha=alpha)
         
