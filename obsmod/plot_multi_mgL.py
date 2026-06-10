@@ -18,14 +18,14 @@ Ldir = Lfun.Lstart()
 
 testing = False
 
-year = '2016'
+year = '2014'
 in_dir = Ldir['parent'] / 'LO_output' / 'obsmod'
 
 plt.close('all')
 
 # specify input (created by process_multi_bottle.py and process_multi_ctd.py)
 for otype in ['bottle']:#, 'ctd']:
-    in_fn = in_dir / ('combined_' + otype + '_' + year + '_cas7_t1_x11ab_ssc.pkl')
+    in_fn = in_dir / ('combined_' + otype + '_' + year + '_cas7_t1_x11ab_ssc_ssm.pkl')
     df0_dict = pickle.load(open(in_fn, 'rb'))
     
     # remove non-DataFrame entries (like meta)
@@ -66,7 +66,7 @@ for otype in ['bottle']:#, 'ctd']:
     else:
         time_range_list = ['spring','summer']
         
-    if False:
+    if True:
         depth_range_list = ['all']
     else:
         depth_range_list = ['shallow','deep']
@@ -138,7 +138,7 @@ for otype in ['bottle']:#, 'ctd']:
                 fs = 12
                 pfun.start_plot(figsize=(20,12), fs=fs)
 
-                gtx_list = ['cas7_t1_x11ab', 'ssc']
+                gtx_list = ['cas7_t1_x11ab', 'ssc', 'ssm']
                 c_dict = dict(zip(gtx_list,['r','b','g']))
                 t_dict = dict(zip(gtx_list,[.05,.15,0.25])) # vertical position of stats text
 
@@ -239,7 +239,7 @@ for otype in ['bottle']:#, 'ctd']:
                 if testing:
                     plt.show()
                 else:
-                    plt.savefig(out_dir / (ff_str + '.png'))
+                    plt.savefig(out_dir / (ff_str + '_withssm.png'))
                     plt.close('all')
 
     
