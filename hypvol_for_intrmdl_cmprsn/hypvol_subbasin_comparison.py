@@ -173,7 +173,7 @@ ax0.pcolormesh(plon, plat, np.where(mask_hc == 0, np.nan, mask_hc),
             vmin=0, vmax=2.5, cmap='RdPu' )
 # South Sound
 ax0.pcolormesh(plon, plat, np.where(mask_ss == 0, np.nan, mask_ss),
-              vmin=0, vmax=2, cmap='magma' )
+              vmin=0, vmax=2, cmap='Purples' )
 # Main Basin
 ax0.pcolormesh(plon, plat, np.where(mask_mb == 0, np.nan, mask_mb),
               vmin=0, vmax=1.5, cmap='summer' )
