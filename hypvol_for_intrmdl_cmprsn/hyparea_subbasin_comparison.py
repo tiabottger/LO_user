@@ -32,7 +32,7 @@ Ldir = Lfun.Lstart()
 
 vn = 'oxygen'
 
-years =  ['2014','2015','2016','2017','2018']
+years =  ['2013','2014','2015','2016','2017','2018', '2019', '2020']
 
 # which  model run to look at?
 gtagexes = ['cas7_t1_x11ab','cas7_t1noDIN_x11ab']
@@ -149,10 +149,10 @@ ax0.pcolormesh(plon, plat, np.where(mask_rho == 0, np.nan, mask_rho),
                 vmin=0, vmax=10, cmap='Blues')
 # Hood Canal
 ax0.pcolormesh(plon, plat, np.where(mask_hc == 0, np.nan, mask_hc),
-            vmin=0, vmax=2, cmap='RdPu' )
+            vmin=0, vmax=2.5, cmap='RdPu' )
 # South Sound
 ax0.pcolormesh(plon, plat, np.where(mask_ss == 0, np.nan, mask_ss),
-              vmin=0, vmax=3, cmap='magma' )
+              vmin=0, vmax=2, cmap='magma' )
 # Main Basin
 ax0.pcolormesh(plon, plat, np.where(mask_mb == 0, np.nan, mask_mb),
               vmin=0, vmax=1.5, cmap='summer' )
@@ -169,8 +169,8 @@ print('Puget Sound area: {} km2'.format(round(PS_area,1)))
 
 subbasin_colors = {
     'PugetSound': cm.Blues(0.9),
-    'HoodCanal': cm.RdPu(0.6),
-    'SouthSound': cm.magma(0.3),
+    'HoodCanal': 'hotpink',
+    'SouthSound': 'mediumpurple',
     'MainBasin': cm.summer(0.5),
     'WhidbeyBasin': cm.cool(0.3),
 }
