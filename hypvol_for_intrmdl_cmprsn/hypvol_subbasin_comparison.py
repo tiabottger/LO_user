@@ -35,7 +35,7 @@ vn = 'oxygen'
 years =  ['2013', '2014', '2015', '2016', '2017','2018', '2019', '2020']
 
 # which  model run to look at?
-gtagexes = ['cas7_t1_x11ab','cas7_t1noDIN_x11ab']
+gtagexes = ['cas7_t1_x11ab']
 # gtagex cas7_t1noDIN_x11ab is no-loading, cas7_t1_x11ab is loading
 
 # # where to put output figures
