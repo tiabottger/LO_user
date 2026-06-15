@@ -196,6 +196,10 @@ for source in source_list:
             lim_dict = {'SA':(14,36),'CT':(0,20),'DO':(0,600),
                 'NO3':(0,50),'NH4':(0,10),'DIN':(0,50),
                 'DIC':(1500,2500),'TA':(1500,2500),'Chl':(0,20)}
+            
+             # convert ssc diatoms + flagellates to chlorophyll 
+            df_dict['ssc']['Chl'] = (df_dict['ssc']['DIAT'] + df_dict['ssc']['FLAG']) * 2
+
 
             for ii in range(len(vn_list)):
                 jj = jj_list[ii]
