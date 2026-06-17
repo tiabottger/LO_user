@@ -33,7 +33,7 @@ basin_bbox = {
     'wb': (-122.6, -122.25, 48.0, 48.35),   # Whidbey Basin
 }
 
-selected_basin = 'wb'  # 'hc','ss','mb','wb','all'
+selected_basin = 'ss'  # 'hc','ss','mb','wb','all'
 
 basin_name = {
     'hc': 'Hood Canal',
@@ -100,7 +100,7 @@ for otype in ['bottle']:#, 'ctd']:
 
                 # ===== FILTERS ======================================================
                 f_str = otype + ' ' + year + '\n\n' # a string to put for info on the map
-                ff_str = otype + '_' + year + '_' + selected_basin # a string for the output .png file name
+                ff_str = otype + '_' + year + '_' + selected_basin + '_ssc_vs_lo' # a string for the output .png file name
 
                 # limit which sources to use
                 if source == 'all':
@@ -173,7 +173,7 @@ for otype in ['bottle']:#, 'ctd']:
                     vn_list = ['SA','CT','DO','Chl']
                     jj_list = [1,2,4,5] # indices for the data plots
 
-                lim_dict = {'SA':(14,36),'CT':(0,20),'DO':(0,600),
+                lim_dict = {'SA':(14,36),'CT':(0,20),'DO':(0,20),
                     'NO3':(0,50),'NH4':(0,10),'DIN':(0,50),
                     'DIC':(1500,2500),'TA':(1500,2500),'Chl':(0,20)}
                 
@@ -202,49 +202,52 @@ for otype in ['bottle']:#, 'ctd']:
                     elif otype == 'ctd':
                         ax = fig.add_subplot(2,3,jj)
                     vn = vn_list[ii]
-                    x = df_dict['obs'][vn].to_numpy()
-                    for gtx in gtx_list:
+                    x_raw = df_dict['cas7_t1_x11ab'][vn].to_numpy()
                         
-                        # skip variable if missing in model
-                        if vn not in df_dict[gtx].columns:
-                            print(f"Skipping {vn} for {gtx} (missing)")
-                            continue
-                        
-                        y = df_dict[gtx][vn].to_numpy()
-                        
-                        # background (all obs)
-                        ax.plot(x, y, '.', color=c_dict[gtx], alpha=0.03)
+                    # skip variable if missing in model
+                    if vn not in df_dict[gtx].columns:
+                        print(f"Skipping {vn} for {gtx} (missing)")
+                        continue
+                    
+                    y_raw = df_dict['ssc'][vn].to_numpy()
+                    
+                    # Convert DO from µM to mg/L
+                    if vn == 'DO':
+                        x = x_raw * 0.032
+                        y = y_raw * 0.032
+                    else:
+                        x = x_raw
+                        y = y_raw
+                    
+                    # background (all obs)
+                    ax.plot(x, y, '.', color='k', alpha=0.03)
 
-                        # highlighted basin
-                        ax.plot(x[basin_mask], y[basin_mask],
-                                '.', color=c_dict[gtx], alpha=0.95)
-        
-                        # calculate bias and rmse for only highlighted basin
-                        x_basin = x[basin_mask]
-                        y_basin = y[basin_mask]
-                        
-                        # remove NaN values
-                        valid = np.isfinite(x_basin) & np.isfinite(y_basin)
-                        
-                        if np.any(valid):
-                            diff = y_basin[valid] - x_basin[valid]
-                            bias = np.mean(diff)
-                            rmse = np.sqrt(np.mean(diff**2))
-                        
-                            ax.text(.95,t_dict[gtx],'bias=%0.1f, rmse=%0.1f' % (bias,rmse),c=c_dict[gtx],
-                                transform=ax.transAxes, ha='right', fontweight='bold', bbox=pfun.bbox,
-                                fontsize=fs-1,style='italic')
+                    # highlighted basin
+                    ax.plot(x[basin_mask], y[basin_mask],
+                            '.', color='k', alpha=0.95)
+    
+                    # calculate bias and rmse for only highlighted basin
+                    x_basin = x[basin_mask]
+                    y_basin = y[basin_mask]
+                    
+                    # remove NaN values
+                    valid = np.isfinite(x_basin) & np.isfinite(y_basin)
+                    
+                    if np.any(valid):
+                        diff = y_basin[valid] - x_basin[valid]
+                        bias = np.mean(diff)
+                        rmse = np.sqrt(np.mean(diff**2))
+                    
+                        ax.text(.95,t_dict[gtx],'bias=%0.1f, rmse=%0.1f' % (bias,rmse),c='k',
+                            transform=ax.transAxes, ha='right', fontweight='bold', bbox=pfun.bbox,
+                            fontsize=fs-1,style='italic')
 
                     if otype == 'bottle':
                         if jj in [9,10,11]:
-                            ax.set_xlabel('Observed')
+                            ax.set_xlabel('LiveOcean model')
                         if jj in [1,5,9]:
-                            ax.set_ylabel('Modeled')
-                    elif otype == 'ctd':
-                        if jj in [4,5]:
-                            ax.set_xlabel('Observed')
-                        if jj in [1,4]:
-                            ax.set_ylabel('Modeled')
+                            ax.set_ylabel('SalishSeaCast model')
+
         
                     # add labels to identify the model runs with the colors
                     if jj == 1:
