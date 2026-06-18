@@ -17,6 +17,8 @@ import matplotlib.pyplot as plt
 from lo_tools import plotting_functions as pfun
 from lo_tools import Lfun, zfun, zrfun
 Ldir = Lfun.Lstart()
+import xarray as xr
+from scipy.spatial import cKDTree
 
 testing = False
 
@@ -25,12 +27,23 @@ in_dir = Ldir['parent'] / 'LO_output' / 'obsmod'
 
 plt.close('all')
 
-basin_bbox = {
-    'ps': (-123.6, -122.2, 47.0, 48.6),   # Puget Sound
-    'hc': (-123.2, -122.65, 47.35, 48.0),   # Hood Canal
-    'ss': (-123.15, -122.6, 47.0, 47.3),   # South Sound
-    'mb': (-122.65, -122.35, 47.25, 48.1),   # Main Basin
-    'wb': (-122.6, -122.25, 48.0, 48.35),   # Whidbey Basin
+# load the basin masks
+mask_ds = xr.open_dataset('basin_masks_from_pugetsoundDObox.nc')
+
+# grid coordinates
+lon_rho = mask_ds['lon_rho'].values
+lat_rho = mask_ds['lat_rho'].values
+
+# build nearest neighbor search tree
+xy_grid = np.column_stack((lon_rho.ravel(), lat_rho.ravel()))
+tree = cKDTree(xy_grid)
+
+basin_var = {
+    'hc': 'mask_hoodcanal',
+    'ss': 'mask_southsound',
+    'mb': 'mask_mainbasin',
+    'wb': 'mask_whidbeybasin',
+    'ps': 'mask_pugetsound'
 }
 
 selected_basin = 'hc'  # 'hc','ss','mb','wb','all'
@@ -183,14 +196,17 @@ for otype in ['bottle']:#, 'ctd']:
                 if selected_basin == 'all':
                     basin_mask = np.ones_like(lon, dtype=bool)
                 else:
-                    lon_min, lon_max, lat_min, lat_max = basin_bbox[selected_basin]
+                    # find nearest model grid point for each observation
+                    obs_xy = np.column_stack((lon, lat))
+                    _, idx = tree.query(obs_xy)
 
-                    basin_mask = (
-                        (lon >= lon_min) &
-                        (lon <= lon_max) &
-                        (lat >= lat_min) &
-                        (lat <= lat_max)
-                    )
+                    jj, ii = np.unravel_index(idx, lon_rho.shape)
+
+                    # extract basin mask at those grid points
+                    basin_grid = mask_ds[basin_var[selected_basin]].values
+
+                    # True where observation falls inside basin
+                    basin_mask = basin_grid[jj, ii] == 1
 
                 for ii in range(len(vn_list)):
                     jj = jj_list[ii]
