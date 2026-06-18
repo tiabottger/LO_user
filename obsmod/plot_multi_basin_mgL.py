@@ -307,18 +307,6 @@ for otype in ['bottle']:#, 'ctd']:
                     alpha=0.95,
                     markersize=7, zorder=3
                 )
-                
-                if selected_basin != 'all':
-
-                    lon_min, lon_max, lat_min, lat_max = basin_bbox[selected_basin]
-
-                    # rectangle outline
-                    ax.plot(
-                        [lon_min, lon_max, lon_max, lon_min, lon_min],
-                        [lat_min, lat_min, lat_max, lat_max, lat_min],
-                        '-k',
-                        linewidth=2
-                    )
 
                 #ax.axis([-130,-122,42,52])
                 ax.axis([-123.2, -122.25, 47.0, 48.35])
