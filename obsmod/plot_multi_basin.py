@@ -17,6 +17,8 @@ import matplotlib.pyplot as plt
 from lo_tools import plotting_functions as pfun
 from lo_tools import Lfun, zfun, zrfun
 Ldir = Lfun.Lstart()
+import xarray as xr
+from scipy.spatial import cKDTree
 
 testing = False
 
@@ -25,15 +27,26 @@ in_dir = Ldir['parent'] / 'LO_output' / 'obsmod'
 
 plt.close('all')
 
-basin_bbox = {
-    'ps': (-123.6, -122.2, 47.0, 48.6),   # Puget Sound
-    'hc': (-123.2, -122.65, 47.35, 48.0),   # Hood Canal
-    'ss': (-123.15, -122.6, 47.0, 47.3),   # South Sound
-    'mb': (-122.65, -122.35, 47.25, 48.1),   # Main Basin
-    'wb': (-122.6, -122.25, 48.0, 48.35),   # Whidbey Basin
+# load the basin masks
+mask_ds = xr.open_dataset('basin_masks_from_pugetsoundDObox.nc')
+
+# grid coordinates
+lon_rho = mask_ds['lon_rho'].values
+lat_rho = mask_ds['lat_rho'].values
+
+# build nearest neighbor search tree
+xy_grid = np.column_stack((lon_rho.ravel(), lat_rho.ravel()))
+tree = cKDTree(xy_grid)
+
+basin_var = {
+    'hc': 'mask_hoodcanal',
+    'ss': 'mask_southsound',
+    'mb': 'mask_mainbasin',
+    'wb': 'mask_whidbeybasin',
+    'ps': 'mask_pugetsound'
 }
 
-selected_basin = 'wb'  # 'hc','ss','mb','wb','all'
+selected_basin = 'hc'  # 'hc','ss','mb','wb','all'
 
 basin_name = {
     'hc': 'Hood Canal',
@@ -100,7 +113,7 @@ for otype in ['bottle']:#, 'ctd']:
 
                 # ===== FILTERS ======================================================
                 f_str = otype + ' ' + year + '\n\n' # a string to put for info on the map
-                ff_str = otype + '_' + year + '_' + selected_basin # a string for the output .png file name
+                ff_str = otype + '_' + year + '_' + selected_basin  # a string for the output .png file name
 
                 # limit which sources to use
                 if source == 'all':
@@ -173,7 +186,7 @@ for otype in ['bottle']:#, 'ctd']:
                     vn_list = ['SA','CT','DO','Chl']
                     jj_list = [1,2,4,5] # indices for the data plots
 
-                lim_dict = {'SA':(14,36),'CT':(0,20),'DO':(0,600),
+                lim_dict = {'SA':(14,36),'CT':(0,20),'DO':(0,20),
                     'NO3':(0,50),'NH4':(0,10),'DIN':(0,50),
                     'DIC':(1500,2500),'TA':(1500,2500),'Chl':(0,20)}
                 
@@ -186,14 +199,17 @@ for otype in ['bottle']:#, 'ctd']:
                 if selected_basin == 'all':
                     basin_mask = np.ones_like(lon, dtype=bool)
                 else:
-                    lon_min, lon_max, lat_min, lat_max = basin_bbox[selected_basin]
+                    # find nearest model grid point for each observation
+                    obs_xy = np.column_stack((lon, lat))
+                    _, idx = tree.query(obs_xy)
 
-                    basin_mask = (
-                        (lon >= lon_min) &
-                        (lon <= lon_max) &
-                        (lat >= lat_min) &
-                        (lat <= lat_max)
-                    )
+                    jj, ii = np.unravel_index(idx, lon_rho.shape)
+
+                    # extract basin mask at those grid points
+                    basin_grid = mask_ds[basin_var[selected_basin]].values
+
+                    # True where observation falls inside basin
+                    basin_mask = basin_grid[jj, ii] == 1
 
                 for ii in range(len(vn_list)):
                     jj = jj_list[ii]
@@ -202,7 +218,7 @@ for otype in ['bottle']:#, 'ctd']:
                     elif otype == 'ctd':
                         ax = fig.add_subplot(2,3,jj)
                     vn = vn_list[ii]
-                    x = df_dict['obs'][vn].to_numpy()
+                    x_raw = df_dict['obs'][vn].to_numpy()
                     for gtx in gtx_list:
                         
                         # skip variable if missing in model
@@ -210,7 +226,15 @@ for otype in ['bottle']:#, 'ctd']:
                             print(f"Skipping {vn} for {gtx} (missing)")
                             continue
                         
-                        y = df_dict[gtx][vn].to_numpy()
+                        y_raw = df_dict[gtx][vn].to_numpy()
+                        
+                        # Convert DO from µM to mg/L
+                        if vn == 'DO':
+                            x = x_raw * 0.032
+                            y = y_raw * 0.032
+                        else:
+                            x = x_raw
+                            y = y_raw
                         
                         # background (all obs)
                         ax.plot(x, y, '.', color=c_dict[gtx], alpha=0.03)
@@ -286,18 +310,6 @@ for otype in ['bottle']:#, 'ctd']:
                     alpha=0.95,
                     markersize=7, zorder=3
                 )
-                
-                if selected_basin != 'all':
-
-                    lon_min, lon_max, lat_min, lat_max = basin_bbox[selected_basin]
-
-                    # rectangle outline
-                    ax.plot(
-                        [lon_min, lon_max, lon_max, lon_min, lon_min],
-                        [lat_min, lat_min, lat_max, lat_max, lat_min],
-                        '-k',
-                        linewidth=2
-                    )
 
                 #ax.axis([-130,-122,42,52])
                 ax.axis([-123.2, -122.25, 47.0, 48.35])

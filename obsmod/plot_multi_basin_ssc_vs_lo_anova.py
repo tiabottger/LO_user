@@ -14,10 +14,12 @@ import pandas as pd
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
+import xarray as xr
+from scipy.spatial import cKDTree
+from scipy.stats import f_oneway
 from lo_tools import plotting_functions as pfun
 from lo_tools import Lfun, zfun, zrfun
 Ldir = Lfun.Lstart()
-from scipy.stats import f_oneway
 
 testing = False
 
@@ -26,15 +28,25 @@ in_dir = Ldir['parent'] / 'LO_output' / 'obsmod'
 
 plt.close('all')
 
-basin_bbox = {
-    'ps': (-123.6, -122.2, 47.0, 48.6),   # Puget Sound
-    'hc': (-123.2, -122.65, 47.35, 48.0),   # Hood Canal
-    'ss': (-123.15, -122.6, 47.0, 47.3),   # South Sound
-    'mb': (-122.65, -122.35, 47.25, 48.1),   # Main Basin
-    'wb': (-122.6, -122.25, 48.0, 48.35),   # Whidbey Basin
+# load the basin masks
+mask_ds = xr.open_dataset('basin_masks_from_pugetsoundDObox.nc')
+
+# grid coordinates
+lon_rho = mask_ds['lon_rho'].values
+lat_rho = mask_ds['lat_rho'].values
+
+# build nearest neighbor search tree
+xy_grid = np.column_stack((lon_rho.ravel(), lat_rho.ravel()))
+tree = cKDTree(xy_grid)
+
+basin_var = {
+    'hc': 'mask_hoodcanal',
+    'ss': 'mask_southsound',
+    'mb': 'mask_mainbasin',
+    'wb': 'mask_whidbeybasin',
 }
 
-selected_basin = 'ss'  # 'hc','ss','mb','wb','all'
+selected_basin = 'wb'  # 'hc','ss','mb','wb','all'
 
 basin_name = {
     'hc': 'Hood Canal',
@@ -187,14 +199,17 @@ for otype in ['bottle']:#, 'ctd']:
                 if selected_basin == 'all':
                     basin_mask = np.ones_like(lon, dtype=bool)
                 else:
-                    lon_min, lon_max, lat_min, lat_max = basin_bbox[selected_basin]
+                    # find nearest model grid point for each observation
+                    obs_xy = np.column_stack((lon, lat))
+                    _, idx = tree.query(obs_xy)
 
-                    basin_mask = (
-                        (lon >= lon_min) &
-                        (lon <= lon_max) &
-                        (lat >= lat_min) &
-                        (lat <= lat_max)
-                    )
+                    jj, ii = np.unravel_index(idx, lon_rho.shape)
+
+                    # extract basin mask at those grid points
+                    basin_grid = mask_ds[basin_var[selected_basin]].values
+
+                    # True where observation falls inside basin
+                    basin_mask = basin_grid[jj, ii] == 1
 
                 for ii in range(len(vn_list)):
                     jj = jj_list[ii]
@@ -238,11 +253,13 @@ for otype in ['bottle']:#, 'ctd']:
                         diff = y_basin[valid] - x_basin[valid]
                         bias = np.mean(diff)
                         rmse = np.sqrt(np.mean(diff**2))
-                        
-                    # ANOVA across ALL basins (not just selected basin)
-                    # -------------------------------------------------------
+                    
+                    
+                    # ==========================================================
+                    # ANOVA across basin masks (all basins, not selected_basin)
+                    # ==========================================================
 
-                    # Build dataframe for this variable
+                    # build dataframe using ALL valid points
                     df_anova = pd.DataFrame({
                         'lon': lon,
                         'lat': lat,
@@ -256,49 +273,74 @@ for otype in ['bottle']:#, 'ctd']:
                         np.isfinite(df_anova['SSC'])
                     ].copy()
 
-                    # model difference
+                    # error between models
                     df_anova['error'] = df_anova['SSC'] - df_anova['LO']
 
-                    # assign basin labels
+                    # nearest model cell for all valid obs
+                    obs_xy_valid = np.column_stack((
+                        df_anova['lon'].to_numpy(),
+                        df_anova['lat'].to_numpy()
+                    ))
+
+                    _, idx_valid = tree.query(obs_xy_valid)
+                    jj_valid, ii_valid = np.unravel_index(idx_valid, lon_rho.shape)
+
+                    # assign basin labels from masks
                     df_anova['basin'] = 'other'
 
-                    for b, (lon_min, lon_max, lat_min, lat_max) in basin_bbox.items():
-                        mask = (
-                            (df_anova['lon'] >= lon_min) &
-                            (df_anova['lon'] <= lon_max) &
-                            (df_anova['lat'] >= lat_min) &
-                            (df_anova['lat'] <= lat_max)
-                        )
-                        df_anova.loc[mask, 'basin'] = b
+                    for basin, varname in basin_var.items():
 
-                    # gather groups
+                        basin_grid = mask_ds[varname].values
+                        inside = basin_grid[jj_valid, ii_valid] == 1
+
+                        df_anova.loc[inside, 'basin'] = basin
+
+                    # collect groups
                     groups = []
-                    for b in basin_bbox.keys():
-                        group = df_anova.loc[df_anova['basin'] == b, 'error'].dropna()
+                    valid_basins = []
+
+                    for basin in basin_var.keys():
+
+                        group = df_anova.loc[
+                            df_anova['basin'] == basin,
+                            'error'
+                        ].dropna()
+
                         if len(group) > 1:
                             groups.append(group)
+                            valid_basins.append(basin)
 
                     # run ANOVA
                     if len(groups) > 1:
+
                         F, p = f_oneway(*groups)
 
-                        # variance decomposition (effect size)
                         overall_mean = df_anova['error'].mean()
 
                         ss_between = 0
                         ss_within = 0
 
-                        for b in basin_bbox.keys():
-                            group = df_anova.loc[df_anova['basin'] == b, 'error'].dropna()
-                            if len(group) > 0:
-                                n = len(group)
-                                mean_b = group.mean()
-                                ss_between += n * (mean_b - overall_mean)**2
-                                ss_within += ((group - mean_b)**2).sum()
+                        for basin in valid_basins:
+
+                            group = df_anova.loc[
+                                df_anova['basin'] == basin,
+                                'error'
+                            ].dropna()
+
+                            n = len(group)
+                            mean_b = group.mean()
+
+                            ss_between += n * (mean_b - overall_mean)**2
+                            ss_within += ((group - mean_b)**2).sum()
 
                         eta2 = ss_between / (ss_between + ss_within)
 
-                        print(f'{vn}: ANOVA F={F:.2f}, p={p:.3e}, eta²={eta2:.3f}')
+                        print(
+                            f'{vn}: '
+                            f'ANOVA F={F:.2f}, '
+                            f'p={p:.3e}, '
+                            f'eta²={eta2:.3f}'
+                        )
                     
                         ax.text(.95,t_dict[gtx],'bias=%0.1f, rmse=%0.1f' % (bias,rmse),c='k',
                             transform=ax.transAxes, ha='right', fontweight='bold', bbox=pfun.bbox,
@@ -351,18 +393,6 @@ for otype in ['bottle']:#, 'ctd']:
                     alpha=0.95,
                     markersize=7, zorder=3
                 )
-                
-                if selected_basin != 'all':
-
-                    lon_min, lon_max, lat_min, lat_max = basin_bbox[selected_basin]
-
-                    # rectangle outline
-                    ax.plot(
-                        [lon_min, lon_max, lon_max, lon_min, lon_min],
-                        [lat_min, lat_min, lat_max, lat_max, lat_min],
-                        '-k',
-                        linewidth=2
-                    )
 
                 #ax.axis([-130,-122,42,52])
                 ax.axis([-123.2, -122.25, 47.0, 48.35])

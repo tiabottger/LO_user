@@ -318,7 +318,7 @@ while dt <= dt1:
                     else:
                         force_choice = force_dict[force]
                         cmd_list = ['scp','-r',
-                            tbottger@apogee.ocean.washington.edu:/dat1/parker/LO_output/forcing/' + Ldir['gridname'] + '/' + f_string + '/' + force_choice,
+                            'tbottger@apogee.ocean.washington.edu:/dat1/parker/LO_output/forcing/' + Ldir['gridname'] + '/' + f_string + '/' + force_choice,
                             str(force_dir)]
                         proc = Po(cmd_list, stdout=Pi, stderr=Pi)
                         stdout, stderr = proc.communicate()

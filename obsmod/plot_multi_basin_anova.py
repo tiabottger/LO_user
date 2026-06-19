@@ -22,7 +22,7 @@ from scipy.spatial import cKDTree
 
 testing = False
 
-year = '2016'
+year = '2014'
 in_dir = Ldir['parent'] / 'LO_output' / 'obsmod'
 
 plt.close('all')
@@ -113,7 +113,7 @@ for otype in ['bottle']:#, 'ctd']:
 
                 # ===== FILTERS ======================================================
                 f_str = otype + ' ' + year + '\n\n' # a string to put for info on the map
-                ff_str = otype + '_' + year + '_' + selected_basin + '_mgL' # a string for the output .png file name
+                ff_str = otype + '_' + year + '_' + selected_basin  # a string for the output .png file name
 
                 # limit which sources to use
                 if source == 'all':
@@ -189,6 +189,9 @@ for otype in ['bottle']:#, 'ctd']:
                 lim_dict = {'SA':(14,36),'CT':(0,20),'DO':(0,20),
                     'NO3':(0,50),'NH4':(0,10),'DIN':(0,50),
                     'DIC':(1500,2500),'TA':(1500,2500),'Chl':(0,20)}
+                
+                # convert ssc diatoms + flagellates to chlorophyll 
+                df_dict['ssc']['Chl'] = (df_dict['ssc']['DIAT'] + df_dict['ssc']['FLAG']) * 2
                 
                 lon = df_dict['obs']['lon'].to_numpy()
                 lat = df_dict['obs']['lat'].to_numpy()
