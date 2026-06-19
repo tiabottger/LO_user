@@ -50,7 +50,7 @@ from math import ceil
 # Add the path to lo_tools by hand so that it we can import Lfun on klone
 # without loenv. In general we write code to run on klone using only the
 # default python3 installation.
-pth = Path(__file__).absolute().parent.parent / 'lo_tools' / 'lo_tools'
+pth = Path(__file__).absolute().parent.parent.parent / 'LO' / 'lo_tools' / 'lo_tools' # look in LO sibling directory since running out of LO_user
 if str(pth) not in sys.path:
     sys.path.append(str(pth))
 import Lfun
