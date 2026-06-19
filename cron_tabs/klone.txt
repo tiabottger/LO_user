@@ -1,0 +1,13 @@
+LANG=en-US.UTF-8
+LOd="/gscratch/macc/tbottger/LO_user/driver"
+
+# 00 06 * * * source ~/.bashrc; tail -30 $LOd/LO_2013v2.log | mail -s '2013' tbottger@uw.edu
+00 09 * * * source ~/.bashrc; tail -30 $LOd/LO_2013v2.log | mail -s '2013' tbottger@uw.edu
+# 00 11 * * * source ~/.bashrc; tail -30 $LOd/LO_2013v2.log | mail -s '2013' tbottger@uw.edu
+# 00 14 * * * source ~/.bashrc; tail -30 $LOd/LO_2013v2.log | mail -s '2013' tbottger@uw.edu
+00 16 * * * source ~/.bashrc; tail -30 $LOd/LO_2013v2.log | mail -s '2013' tbottger@uw.edu
+# 00 19 * * * source ~/.bashrc; tail -30 $LOd/LO_2013v2.log | mail -s '2013' tbottger@uw.edu
+# 00 22 * * * source ~/.bashrc; tail -30 $LOd/LO_2013v2.log | mail -s '2013' tbottger@uw.edu
+
+
+
