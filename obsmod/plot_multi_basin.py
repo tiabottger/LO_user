@@ -14,11 +14,12 @@ import pandas as pd
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
+import xarray as xr
+from scipy.spatial import cKDTree
 from lo_tools import plotting_functions as pfun
 from lo_tools import Lfun, zfun, zrfun
 Ldir = Lfun.Lstart()
-import xarray as xr
-from scipy.spatial import cKDTree
+
 
 testing = False
 
@@ -43,7 +44,6 @@ basin_var = {
     'ss': 'mask_southsound',
     'mb': 'mask_mainbasin',
     'wb': 'mask_whidbeybasin',
-    'ps': 'mask_pugetsound'
 }
 
 selected_basin = 'hc'  # 'hc','ss','mb','wb','all'

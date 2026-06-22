@@ -43,7 +43,6 @@ basin_var = {
     'ss': 'mask_southsound',
     'mb': 'mask_mainbasin',
     'wb': 'mask_whidbeybasin',
-    'ps': 'mask_pugetsound'
 }
 
 selected_basin = 'ss'  # 'hc','ss','mb','wb','all'

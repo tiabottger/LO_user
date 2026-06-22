@@ -46,7 +46,7 @@ basin_var = {
     'wb': 'mask_whidbeybasin',
 }
 
-selected_basin = 'wb'  # 'hc','ss','mb','wb','all'
+selected_basin = 'ss'  # 'hc','ss','mb','wb','all'
 
 basin_name = {
     'hc': 'Hood Canal',

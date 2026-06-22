@@ -14,11 +14,13 @@ import pandas as pd
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
+import xarray as xr
+from scipy.spatial import cKDTree
+from scipy.stats import f_oneway
 from lo_tools import plotting_functions as pfun
 from lo_tools import Lfun, zfun, zrfun
 Ldir = Lfun.Lstart()
-import xarray as xr
-from scipy.spatial import cKDTree
+
 
 testing = False
 
@@ -43,7 +45,6 @@ basin_var = {
     'ss': 'mask_southsound',
     'mb': 'mask_mainbasin',
     'wb': 'mask_whidbeybasin',
-    'ps': 'mask_pugetsound'
 }
 
 selected_basin = 'hc'  # 'hc','ss','mb','wb','all'
@@ -254,6 +255,89 @@ for otype in ['bottle']:#, 'ctd']:
                             diff = y_basin[valid] - x_basin[valid]
                             bias = np.mean(diff)
                             rmse = np.sqrt(np.mean(diff**2))
+                            
+                        # ==========================================================
+                        # ANOVA: Obs vs current model across all basin masks
+                        # ==========================================================
+
+                        # full-domain dataframe (not selected basin only)
+                        df_anova = pd.DataFrame({
+                            'lon': lon,
+                            'lat': lat,
+                            'obs': x,
+                            'model': y
+                        })
+
+                        # remove NaNs
+                        df_anova = df_anova[
+                            np.isfinite(df_anova['obs']) &
+                            np.isfinite(df_anova['model'])
+                        ].copy()
+
+                        # model error
+                        df_anova['error'] = df_anova['model'] - df_anova['obs']
+
+                        # map valid obs points to model grid
+                        obs_xy_valid = np.column_stack((
+                            df_anova['lon'].to_numpy(),
+                            df_anova['lat'].to_numpy()
+                        ))
+
+                        _, idx_valid = tree.query(obs_xy_valid)
+                        jj_valid, ii_valid = np.unravel_index(idx_valid, lon_rho.shape)
+
+                        # assign basin labels
+                        df_anova['basin'] = 'other'
+
+                        for basin, varname in basin_var.items():
+                            basin_grid = mask_ds[varname].values
+                            inside = basin_grid[jj_valid, ii_valid] == 1
+                            df_anova.loc[inside, 'basin'] = basin
+
+                        # collect basin groups
+                        groups = []
+                        valid_basins = []
+
+                        for basin in basin_var.keys():
+                            group = df_anova.loc[
+                                df_anova['basin'] == basin,
+                                'error'
+                            ].dropna()
+
+                            if len(group) > 1:
+                                groups.append(group)
+                                valid_basins.append(basin)
+
+                        # run ANOVA
+                        if len(groups) > 1:
+
+                            F, p = f_oneway(*groups)
+
+                            overall_mean = df_anova['error'].mean()
+
+                            ss_between = 0
+                            ss_within = 0
+
+                            for basin in valid_basins:
+                                group = df_anova.loc[
+                                    df_anova['basin'] == basin,
+                                    'error'
+                                ].dropna()
+
+                                n = len(group)
+                                mean_b = group.mean()
+
+                                ss_between += n * (mean_b - overall_mean)**2
+                                ss_within += ((group - mean_b)**2).sum()
+
+                            eta2 = ss_between / (ss_between + ss_within)
+
+                            print(
+                                f'{gtx} | {vn}: '
+                                f'F={F:.2f}, '
+                                f'p={p:.3e}, '
+                                f'eta²={eta2:.3f}'
+                            )
                         
                             ax.text(.95,t_dict[gtx],'bias=%0.1f, rmse=%0.1f' % (bias,rmse),c=c_dict[gtx],
                                 transform=ax.transAxes, ha='right', fontweight='bold', bbox=pfun.bbox,
