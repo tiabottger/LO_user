@@ -358,7 +358,7 @@ while dt <= dt1:
             messages(stdout, stderr, 'Make dot in', args.verbose)
             
             # Create batch script
-            f  = open(Ldir['LO'] / 'driver' / 'batch' / 'klone00_batch_BLANK.sh','r')
+            f  = open(Ldir['LOu'] / 'driver' / 'batch' / 'klone00_batch_BLANK.sh','r')
             f2 = open(roms_out_dir / 'klone_batch.sh','w')
             # generate a random jobname
             jobname = ''.join(random.choices(string.ascii_lowercase, k=5))
