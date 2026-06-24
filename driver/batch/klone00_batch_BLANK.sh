@@ -33,7 +33,7 @@ module load ssmc/netcdf/IntelOA26/4.9.2-IO
 # module load intel/oneAPI
 # NFDIR=/gscratch/macc/local/netcdf-ifort
 # NCDIR=/gscratch/macc/local/netcdf-icc
-export LD_LIBRARY_PATH=${NFDIR}/lib:${NCDIR}/lib:${LD_LIBRARY_PATH}
+# export LD_LIBRARY_PATH=${NFDIR}/lib:${NCDIR}/lib:${LD_LIBRARY_PATH}
 
 echo -e "Pre: $(date)\n" # Timestamp to .out file before anything else
 mpirun -np $np_num$ $roms_ex_dir$/$roms_ex_name$ $roms_out_dir$/liveocean.in > $roms_out_dir$/log.txt
