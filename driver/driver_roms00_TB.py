@@ -387,10 +387,6 @@ while dt <= dt1:
             else:
                 sbatch_exclusive_line = ''
                 sbatch_mem = '128G'
-            
-            slurm_out_dir = Ldir['LOo'] / 'logs'
-            Lfun.make_dir(slurm_out_dir)
-            slurm_out_file = str(slurm_out_dir / (Ldir['gtagex'] + '_' + f_string + '.txt'))
                 
             in_dict = {
                 'jobname':jobname,
@@ -402,7 +398,6 @@ while dt <= dt1:
                 'roms_ex_dir':roms_ex_dir,
                 'roms_ex_name':roms_ex_name,
                 'roms_out_dir':roms_out_dir,
-                'slurm_out_file' : slurm_out_file
             }
             if args.verbose:
                 print('Info for sbatch script:')
