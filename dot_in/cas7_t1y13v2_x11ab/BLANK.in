@@ -955,9 +955,9 @@ PIO_I2C_Preq = 65                 ! Maximum pending I2C requests
 
 ! If OUT_LIB=1, NetCDF-4/HDF5 compression parameters for output files.
 
-  NC_SHUFFLE =  1                 ! if non-zero, turn on shuffle filter
-  NC_DEFLATE =  1                 ! if non-zero, turn on deflate filter
-   NC_DLEVEL =  1                 ! deflate level [0-9]
+  NC_SHUFFLE =  0                 ! if non-zero, turn on shuffle filter
+  NC_DEFLATE =  0                 ! if non-zero, turn on deflate filter
+   NC_DLEVEL =  0                 ! deflate level [0-9]
 
 ! Input NetCDF file names, [1:Ngrids].
 
