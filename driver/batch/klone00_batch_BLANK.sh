@@ -30,11 +30,6 @@ module purge
 module load intel/oneAPI/2026
 module load ssmc/netcdf/IntelOA26/4.9.2-IO
 
-export I_MPI_F90=ifx
-export I_MPI_FC=ifx
-export FC=ifx
-export F90=ifx
-
 # module load intel/oneAPI
 # NFDIR=/gscratch/macc/local/netcdf-ifort
 # NCDIR=/gscratch/macc/local/netcdf-icc

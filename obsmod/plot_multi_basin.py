@@ -7,7 +7,7 @@ choices for filtering the data based on source, season, and depth.
 Hence it is primarily a tool for model development: is one version
 different of better than another?
 
-Here I've added a function to highlight where different basins lay within the property-property plots using bounding boxes
+Here I've added a function to highlight where different basins lay within the property-property plots using basin masks
 """
 import sys
 import pandas as pd
@@ -46,7 +46,7 @@ basin_var = {
     'wb': 'mask_whidbeybasin',
 }
 
-selected_basin = 'hc'  # 'hc','ss','mb','wb','all'
+selected_basin = 'wb'  # 'hc','ss','mb','wb','all'
 
 basin_name = {
     'hc': 'Hood Canal',
@@ -236,6 +236,10 @@ for otype in ['bottle']:#, 'ctd']:
                             x = x_raw
                             y = y_raw
                         
+                        valid_all = np.isfinite(x)
+                        # standard deviation of observations
+                        obs_std = np.std(x[valid_all])
+                        
                         # background (all obs)
                         ax.plot(x, y, '.', color=c_dict[gtx], alpha=0.03)
 
@@ -254,8 +258,11 @@ for otype in ['bottle']:#, 'ctd']:
                             diff = y_basin[valid] - x_basin[valid]
                             bias = np.mean(diff)
                             rmse = np.sqrt(np.mean(diff**2))
+                            
+                            # normalized RMSE
+                            nrmse = rmse / obs_std
                         
-                            ax.text(.95,t_dict[gtx],'bias=%0.1f, rmse=%0.1f' % (bias,rmse),c=c_dict[gtx],
+                            ax.text(.95,t_dict[gtx],'bias=%0.1f, rmse=%0.1f, nrmse=%0.1f' % (bias,rmse,nrmse),c=c_dict[gtx],
                                 transform=ax.transAxes, ha='right', fontweight='bold', bbox=pfun.bbox,
                                 fontsize=fs-1,style='italic')
 
