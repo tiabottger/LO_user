@@ -17,11 +17,11 @@ from lo_tools import plotting_functions as pfun
 from lo_tools import Lfun, zfun, zrfun
 Ldir = Lfun.Lstart()
 
-year = '2015'
+year = '2014'
 in_dir = Ldir['parent'] / 'LO_output' / 'obsmod'
 
 # choices
-sta_name = 'HCB007'
+sta_name = 'HCB003'
 vn = 'DO'
 # vn = 'SA'
 # vn = 'CT'
@@ -68,8 +68,8 @@ lim_dict = {'SA':(15,36),'CT':(0,20),'DO':(0,500),
 
 c_dict = {
     'obs': 'k',
-    'cas7_t1_x11ab': 'royalblue',
-    'ssc': 'darkorange'
+    'cas7_t1_x11ab': 'darkorange',
+    'ssc': 'royalblue'
 }
       
 # plotting
