@@ -43,7 +43,7 @@ year = '2014'
 in_dir = Ldir['parent'] / 'LO_output' / 'obsmod'
 
 # choices
-sta_name = 'HCB003'
+sta_name = 'SKG003'
 vn = 'DO'
 # vn = 'SA'
 # vn = 'CT'
@@ -84,6 +84,10 @@ in_fn = in_dir / ('combined_' + otype + '_' + year + '_cas7_t1_x11ab_ssc.pkl')
 df_dict = pickle.load(open(in_fn, 'rb'))
 
 obs = df_dict['obs'].copy()
+
+obs = obs.loc[obs["name"] == sta_name, :].copy()
+
+obs["time"] = pd.to_datetime(obs["time"])
 
 def nearest_model_profile(ds, target_time, varname, model_type):
     """
