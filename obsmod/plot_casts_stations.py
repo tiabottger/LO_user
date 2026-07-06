@@ -43,7 +43,7 @@ year = '2014'
 in_dir = Ldir['parent'] / 'LO_output' / 'obsmod'
 
 # choices
-sta_name = 'SKG003'
+sta_name = 'PSB003'
 vn = 'DO'
 # vn = 'SA'
 # vn = 'CT'
