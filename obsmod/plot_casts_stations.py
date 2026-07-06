@@ -2,6 +2,8 @@
 Code to plot obs and mod casts at a given station, typically from ecology because
 those are monthly time series at a named location.
 
+Plots the first profile of each month. Finds nearest model profile to match observation cid.
+
 Modified to plot multiple models to compare with observational casts data.
 
 Modified to read in full station data.
@@ -43,11 +45,11 @@ year = '2014'
 in_dir = Ldir['parent'] / 'LO_output' / 'obsmod'
 
 # choices
-sta_name = 'PSB003'
-vn = 'DO'
-# vn = 'SA'
+sta_name = 'SKG003'
+# vn = 'DO'
+vn = 'SA'
 # vn = 'CT'
-# vn = 'Chl (mg m-3)'
+# vn = 'Chl'
 
 # where to put output figures
 out_dir = Ldir['LOo'] / 'obsmod_plots'
@@ -73,7 +75,7 @@ var_dict = {
     "Chl": {
         "obs": "Chl",
         "lo": "phytoplankton",
-        "ssc": "chlorophyll",
+        "ssc": None,
     },
 }
 
@@ -103,7 +105,11 @@ def nearest_model_profile(ds, target_time, varname, model_type):
     elif model_type == "ssc":
         ds_t = ds.sel(time_counter=target_time, method="nearest")
         
-        x = ds_t[varname].values
+        if vn == "Chl":
+            x = (ds_t["diatoms"].values + ds_t["flagellates"].values) *2
+        else:
+            x = ds_t[varname].values
+        
         z = -ds_t["deptht"].values
 
     # Convert DO to mg/L
@@ -123,8 +129,19 @@ def nearest_model_profile(ds, target_time, varname, model_type):
 # plotting
 plt.close('all')
 
-# sort cids by time
-cid_list = obs.groupby("cid")["time"].first().sort_values().index.to_numpy()
+# --------------------
+# One cast per month
+# --------------------
+obs["time"] = pd.to_datetime(obs["time"])
+obs["month"] = obs["time"].dt.month
+
+# Keep the first cast in each month
+cid_list = (
+    obs.sort_values("time")
+       .groupby("month")["cid"]
+       .first()
+       .to_numpy()
+)
 
 
 ################################################################ 
@@ -142,14 +159,6 @@ c_dict = {
     "lo": "red",
     "ssc": "royalblue",
 }
-
-labels = [
-    "(a) January", "(b) February", "(c) March", "(d) April",
-    "(e) May", "(f) June",
-    "(g) July", "(h) August",
-    "(i) September", "(j) October",
-    "(k) November", "(l) December"
-]
 
 lim_dict = {
     "SA": (15, 36),
@@ -169,7 +178,7 @@ zbot = 0
 ds_lo = data_lo[sta_name]
 ds_ssc = data_ssc[sta_name]
 
-for i, cid in enumerate(cid_list[:12]):
+for i, cid in enumerate(cid_list):
 
     ax = fig.add_subplot(2, 6, i + 1)
 
@@ -232,8 +241,14 @@ for i, cid in enumerate(cid_list[:12]):
 
     zbot = min(zbot, np.nanmin(z_obs), np.nanmin(z_lo), np.nanmin(z_ssc))
 
+    letters = "abcdefghijkl"
+
+    label = f"({letters[i]}) {target_time.strftime('%B')}"
+
     ax.text(
-        0.1, 0.05, labels[i],
+        0.05,
+        0.05,
+        label,
         transform=ax.transAxes,
         bbox=dict(facecolor="white", edgecolor="none", alpha=0.8),
     )
