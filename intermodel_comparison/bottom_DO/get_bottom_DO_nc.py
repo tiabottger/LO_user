@@ -11,7 +11,7 @@ region "pugetsoundDO"
 It also crops out data from the Straits, so as to not bias the results
 in Puget Sound. (optional using flag remove_straits)
 
-.nc files are saved in LO_user/intermodel_comparison/bottom_DO
+.nc files are saved in LO_output/intermodel_comparison/bottom_DO
 """
 
 # import things
@@ -43,7 +43,7 @@ years = ['2014'] #['2015','2016','2017','2018','2019','2020']
 gtagexes = ['cas7_t1_x11ab']  
 
 # where to put output files
-out_dir = Ldir['LOu'] / 'intermodel_comparison' / 'bottom_DO'
+out_dir = Ldir['LOo'] / 'intermodel_comparison' / 'bottom_DO'
 Lfun.make_dir(out_dir)
 
 ##############################################################
@@ -213,6 +213,6 @@ for gtagex in gtagexes:
                                         dims=['ocean_time','eta_rho', 'xi_rho'])
 
             print('    Saving dataset')
-            ds.to_netcdf(out_dir / (gtagex + '_' + region + '_' + year + '_DO_info.nc'))
+            ds.to_netcdf(out_dir / (gtagex + '_' + region + '_' + year + '_bottom_DO_info.nc'))
 
 print('Done')
