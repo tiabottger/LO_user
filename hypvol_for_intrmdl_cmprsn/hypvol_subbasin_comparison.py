@@ -1,6 +1,5 @@
 """
 Compare average bottom DO between multiple years
-(Set up to run for 6 years)
 
 """
 
