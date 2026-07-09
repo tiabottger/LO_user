@@ -18,7 +18,6 @@ in Puget Sound. (optional using flag remove_straits)
 import numpy as np
 import xarray as xr
 import csv
-import pinfo
 from lo_tools import Lfun, zrfun
 
 import sys
