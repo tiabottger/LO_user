@@ -62,7 +62,7 @@ for year in years:
 
         print(f'Processing {gtagex}, {region}, {year}')
 
-        fp = in_dir / (gtagex + '_' + region + '_' + year + '_DO_info.nc')
+        fp = in_dir / (gtagex + '_' + region + '_' + year + '_bottom_DO_info.nc')
         ds = xr.open_dataset(fp)
 
         DO_bot = ds['DO_bot'].values
