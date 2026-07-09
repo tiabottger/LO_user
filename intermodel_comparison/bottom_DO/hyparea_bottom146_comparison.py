@@ -26,7 +26,7 @@ region = 'pugetsoundDO'
 
 # input/output directories
 in_dir = Ldir['LOu'] / 'intermodel_comparison' / 'bottom_DO'
-out_dir = Ldir['LOu'] / 'intermodel_comparison' / 'bottom_DO'
+out_dir = Ldir['LOo'] / 'intermodel_comparison' / 'bottom_DO'
 Lfun.make_dir(out_dir)
 
 ##############################################################
