@@ -25,7 +25,7 @@ gtagexes = ['cas7_t1_x11ab']
 region = 'pugetsoundDO'
 
 # input/output directories
-in_dir = Ldir['LOu'] / 'intermodel_comparison' / 'bottom_DO'
+in_dir = Ldir['LOo'] / 'intermodel_comparison' / 'bottom_DO'
 out_dir = Ldir['LOo'] / 'intermodel_comparison' / 'bottom_DO'
 Lfun.make_dir(out_dir)
 
