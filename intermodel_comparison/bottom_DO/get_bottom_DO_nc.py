@@ -125,7 +125,7 @@ for gtagex in gtagexes:
             
             print('    Calculating bottom 14.6% DO concentration')
             # get bottom 14.6% of water column layer DO concentration
-            oxy_mgL = pinfo.fac_dict['oxygen'] * ds_raw['oxygen'].values
+            oxy_mgL = 0.032 * ds_raw['oxygen'].values
             # shape: (ocean_time, s_rho, eta_rho, xi_rho)
             
             h = ds_raw['h'].values # height of water column
@@ -180,7 +180,7 @@ for gtagex in gtagexes:
 
             print('    Calculating bottom DO concentration')
             # get bottom DO concentration
-            DO_bot = pinfo.fac_dict['oxygen'] * ds_raw['oxygen'][:,0,:,:].values
+            DO_bot = 0.032 * ds_raw['oxygen'][:,0,:,:].values
 
             # add data to ds
             print('    Adding data to dataset')
