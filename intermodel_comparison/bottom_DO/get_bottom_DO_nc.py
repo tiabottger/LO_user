@@ -186,7 +186,7 @@ for gtagex in gtagexes:
             ds['depth_bot'] = xr.DataArray(h, 
                                         coords={'eta_rho': ds_raw['eta_rho'].values, # h is 2D
                                                 'xi_rho': ds_raw['xi_rho'].values},
-                                        dims=['ocean_time','eta_rho', 'xi_rho'])
+                                        dims=['eta_rho', 'xi_rho'])
             # DO concentration at bottom
             ds['DO_bot'] = xr.DataArray(DO_bot,
                                         coords={'ocean_time': ds_raw['ocean_time'].values,
