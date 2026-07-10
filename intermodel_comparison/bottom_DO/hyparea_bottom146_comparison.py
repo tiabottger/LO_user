@@ -142,6 +142,12 @@ diff_all = []
 
 gtagex = gtagexes[0]
 
+# longitude and latitude for plotting
+lon = box_ds.lon_rho.values
+lat = box_ds.lat_rho.values
+
+plon, plat = pfun.get_plon_plat(lon, lat)
+
 for year in years:
 
     key = gtagex + '_' + region + '_' + year
@@ -158,6 +164,9 @@ diff_all = np.concatenate(diff_all, axis=0)
 
 # average over time
 mean_diff = np.nanmean(diff_all, axis=0)
+
+# remove land
+mean_diff = np.where(mask_rho == 1, mean_diff, np.nan)
 
 # make figure
 fig, ax = plt.subplots(figsize=(6,8))
