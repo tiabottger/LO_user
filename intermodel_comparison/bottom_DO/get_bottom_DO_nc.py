@@ -15,6 +15,7 @@ in Puget Sound. (optional using flag remove_straits)
 """
 
 # import things
+from LO.plotting import pinfo
 import numpy as np
 import xarray as xr
 import csv
@@ -70,7 +71,13 @@ def start_ds(ocean_time,eta_rho,xi_rho):
         # thickness of bottom layer
         thick_bot   = (['ocean_time','eta_rho','xi_rho'], np.zeros((Ndays,Neta,Nxi))),
         # thickness of bottom 14.6% layer
-        thick_bot146   = (['ocean_time','eta_rho','xi_rho'], np.zeros((Ndays,Neta,Nxi))),),
+        thick_bot146   = (['ocean_time','eta_rho','xi_rho'], np.zeros((Ndays,Neta,Nxi))),
+        # thickness of hypoxic layer
+        hyp_thick   = (['ocean_time','eta_rho','xi_rho'], np.zeros((Ndays,Neta,Nxi))),
+        # thickness of 1mg/L layer
+        one_mgL_thick   = (['ocean_time','eta_rho','xi_rho'], np.zeros((Ndays,Neta,Nxi))),
+        # thickness of 3mg/L layer
+        three_mgL_thick   = (['ocean_time','eta_rho','xi_rho'], np.zeros((Ndays,Neta,Nxi))),),
     coords=dict(ocean_time=ocean_time, eta_rho=eta_rho, xi_rho=xi_rho,),)
 
     
@@ -96,6 +103,14 @@ def add_metadata(ds):
     ds['thick_bot146'].attrs['long_name'] = 'thickness of bottom 14.6% layer'
     ds['thick_bot146'].attrs['units'] = 'm'
 
+    ds['hyp_thick'].attrs['long_name'] = 'thickness of hypoxic layer'
+    ds['hyp_thick'].attrs['units'] = 'm'
+
+    ds['one_mgL_thick'].attrs['long_name'] = 'thickness of 1 mg/L layer (or lower concentration)'
+    ds['one_mgL_thick'].attrs['units'] = 'm'
+
+    ds['three_mgL_thick'].attrs['long_name'] = 'thickness of 3 mg/L layer (or lower concentration)'
+    ds['three_mgL_thick'].attrs['units'] = 'm'
 
     return ds
 
@@ -122,32 +137,54 @@ for gtagex in gtagexes:
             # add metadata
             ds = add_metadata(ds)
             
-            print('    Calculating bottom 14.6% DO concentration')
-            # get bottom 14.6% of water column layer DO concentration
-            oxy_mgL = 0.032 * ds_raw['oxygen'].values
-            # shape: (ocean_time, s_rho, eta_rho, xi_rho)
-            
-            h = ds_raw['h'].values # height of water column
-            zeta = ds_raw['zeta'].values # sea surface height
-            Nt = zeta.shape[0] # number of time steps
-            Nz = ds_raw.sizes['s_rho'] # number of vertical layers
-            
-            # Get S-coordinate info
+            print('    Calculating hypoxic thickness')
+            # get thickness of hypoxic layer in watercolumn at ever lat/lon cell (ocean_time: 365, eta_rho: 441, xi_rho: 177)
+            # units are in m (thickness of hypoxic layer)
+            # get S for the whole grid
             Sfp = Ldir['data'] / 'grids' / 'cas7' / 'S_COORDINATE_INFO.csv'
             reader = csv.DictReader(open(Sfp))
             S_dict = {}
             for row in reader:
                 S_dict[row['ITEMS']] = row['VALUES']
             S = zrfun.get_S(S_dict)
-            
+            # get cell thickness
+            h = ds_raw['h'].values # height of water column
+
+            zeta = ds_raw['zeta'].values # sea surface height
+            Nt = zeta.shape[0]
+            Nz = S['N']
+            dzr_all = np.empty((Nt, Nz, *h.shape))
             z_w_all = np.empty((Nt, Nz + 1, *h.shape)) # create empty array to store z_w values for all time steps, vertical layer, and horizontal grid cell
                                                        # h.shape unpacks (eta_rho, xi_rho)
                                                        # Nz+1 because there is one more vertical interface than layers
-
-            # loop over time to get z_rho, z_w:
+            
+            # loop over time to get z_rho and z_w:
             for t in range(Nt):
-                z_rho, z_w = zrfun.get_z(h, zeta[t, :, :], S) # convert from coordinates to physical depths.
-                z_w_all[t, :, :, :] = z_w
+                # make sure to use zeta as an input to account for SSH variability!!!
+                z_rho, z_w = zrfun.get_z(h, zeta[t, :, :], S) # convert from coordinates to physical depths
+                dzr_all[t, :, :, :] = np.diff(z_w, axis=0) # sigma layer thickness at one time
+                z_w_all[t, :, :, :] = z_w # sigma layer boundaries at one time
+            # z_rho, z_w = zrfun.get_z(h, ds_raw.zeta.to_numpy(), S) # make sure to use zeta as an input to account for SSH variability!!!
+            # dzr = np.diff(z_w, axis=0) # vertical thickness of all cells [m]  
+
+            # Now get oxygen values at every grid cell and convert to mg/L
+            oxy_mgL = pinfo.fac_dict['oxygen'] * ds_raw['oxygen'].values
+            # shape: (ocean_time, s_rho, eta_rho, xi_rho)
+            
+            # remove all non-hypoxic values (greater than 2 mg/L)
+            hypoxic = np.where(oxy_mgL <= 2, 1, np.nan) # array of nans and ones. one means hypoxic, nan means nonhypoxic
+            one_mgL = np.where(oxy_mgL <= 1, 1, np.nan) # array of nans and ones. one means hypoxic, nan means nonhypoxic
+            three_mgL = np.where(oxy_mgL <= 3, 1, np.nan) # array of nans and ones. one means hypoxic, nan means nonhypoxic
+            # Multiple cell height array by hypoxic array boolean array
+            hyp_cell_thick = dzr_all * hypoxic
+            one_mgL_cell_thick = dzr_all * one_mgL
+            three_mgL_cell_thick = dzr_all * three_mgL
+            # Sum along z to get thickness of hypoxic layer
+            hyp_thick = np.nansum(hyp_cell_thick,axis=1)
+            one_mgL_thick = np.nansum(one_mgL_cell_thick,axis=1)
+            three_mgL_thick = np.nansum(three_mgL_cell_thick,axis=1)
+            
+            print('    Calculating bottom 14.6% DO concentration')
                 
             # bottom LiveOcean cell thickness
             thick_bot = z_w_all[:, 1, :, :] - z_w_all[:, 0, :, :]
@@ -175,11 +212,11 @@ for gtagex in gtagexes:
             
             # avoid divide-by-zero issues on land/masked cells
             DO_bot146 = np.where(overlap_sum > 0, DO_bot146, np.nan)
-    
-
+            
+            
             print('    Calculating bottom DO concentration')
             # get bottom DO concentration
-            DO_bot = 0.032 * ds_raw['oxygen'][:,0,:,:].values
+            DO_bot = pinfo.fac_dict['oxygen'] * ds_raw['oxygen'][:,0,:,:].values
 
             # add data to ds
             print('    Adding data to dataset')
@@ -207,6 +244,26 @@ for gtagex in gtagexes:
                                         dims=['ocean_time','eta_rho', 'xi_rho'])
             # bottom 14.6% layer thickness
             ds['thick_bot146'] = xr.DataArray(thick_bot146,
+                                        coords={'ocean_time': ds_raw['ocean_time'].values,
+                                                'eta_rho': ds_raw['eta_rho'].values,
+                                                'xi_rho': ds_raw['xi_rho'].values},
+                                        dims=['ocean_time','eta_rho', 'xi_rho'])
+            # hypoxic layer thickness
+            ds['hyp_thick'] = xr.DataArray(hyp_thick,
+                                        coords={'ocean_time': ds_raw['ocean_time'].values,
+                                                'eta_rho': ds_raw['eta_rho'].values,
+                                                'xi_rho': ds_raw['xi_rho'].values},
+                                        dims=['ocean_time','eta_rho', 'xi_rho'])
+            
+            # < 1 mg/L layer thickness
+            ds['one_mgL_thick'] = xr.DataArray(one_mgL_thick,
+                                        coords={'ocean_time': ds_raw['ocean_time'].values,
+                                                'eta_rho': ds_raw['eta_rho'].values,
+                                                'xi_rho': ds_raw['xi_rho'].values},
+                                        dims=['ocean_time','eta_rho', 'xi_rho'])
+            
+            # < 1 mg/L layer thickness
+            ds['three_mgL_thick'] = xr.DataArray(three_mgL_thick,
                                         coords={'ocean_time': ds_raw['ocean_time'].values,
                                                 'eta_rho': ds_raw['eta_rho'].values,
                                                 'xi_rho': ds_raw['xi_rho'].values},
