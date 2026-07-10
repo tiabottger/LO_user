@@ -36,6 +36,9 @@ Lfun.make_dir(out_dir)
 plt.close('all')
 print('Running....')
 
+basin_mask_ds = xr.open_dataset(...)
+mask_ps = basin_mask_ds.mask_pugetsound.values
+
 # get grid cell area from one of the original box files
 fp_grid = Ldir['LOo'] / 'extract' / gtagexes[0] / 'box' / (region + '_2014.01.01_2014.12.31.nc')
 box_ds = xr.open_dataset(fp_grid)
@@ -51,6 +54,7 @@ else:
     mask_rho = np.ones_like(DA)
 
 DA = DA * mask_rho
+DA_ps = DA * mask_ps  # mask out non-Puget Sound areas
 
 # dictionaries
 hyp_area_bot = {}
@@ -77,8 +81,8 @@ for year in years:
         hyp_bot146 = DO_bot146 <= 2
 
         # hypoxic area through time [km2]
-        area_bot = np.nansum(hyp_bot * DA[None, :, :], axis=(1, 2))
-        area_bot146 = np.nansum(hyp_bot146 * DA[None, :, :], axis=(1, 2))
+        area_bot = np.nansum(hyp_bot * DA_ps[None, :, :], axis=(1, 2))
+        area_bot146 = np.nansum(hyp_bot146 * DA_ps[None, :, :], axis=(1, 2))
 
         key = gtagex + '_' + region + '_' + year
 
