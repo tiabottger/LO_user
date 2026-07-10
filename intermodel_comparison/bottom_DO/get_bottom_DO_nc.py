@@ -15,7 +15,6 @@ in Puget Sound. (optional using flag remove_straits)
 """
 
 # import things
-from LO.plotting import pinfo
 import numpy as np
 import xarray as xr
 import csv
@@ -168,7 +167,7 @@ for gtagex in gtagexes:
             # dzr = np.diff(z_w, axis=0) # vertical thickness of all cells [m]  
 
             # Now get oxygen values at every grid cell and convert to mg/L
-            oxy_mgL = pinfo.fac_dict['oxygen'] * ds_raw['oxygen'].values
+            oxy_mgL = 0.032 * ds_raw['oxygen'].values
             # shape: (ocean_time, s_rho, eta_rho, xi_rho)
             
             # remove all non-hypoxic values (greater than 2 mg/L)
@@ -216,7 +215,7 @@ for gtagex in gtagexes:
             
             print('    Calculating bottom DO concentration')
             # get bottom DO concentration
-            DO_bot = pinfo.fac_dict['oxygen'] * ds_raw['oxygen'][:,0,:,:].values
+            DO_bot = 0.032 * ds_raw['oxygen'][:,0,:,:].values
 
             # add data to ds
             print('    Adding data to dataset')
