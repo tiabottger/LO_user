@@ -56,6 +56,8 @@ DA = DA * mask_rho
 hyp_area_bot = {}
 hyp_area_bot146 = {}
 time_dict = {}
+thick_bot_dict = {}
+thick_bot146_dict = {}
 
 for year in years:
     for gtagex in gtagexes:
@@ -67,6 +69,8 @@ for year in years:
 
         DO_bot = ds['DO_bot'].values
         DO_bot146 = ds['DO_bot146'].values
+        thick_bot = ds['thick_bot'].values
+        thick_bot146 = ds['thick_bot146'].values
 
         # True where hypoxic
         hyp_bot = DO_bot <= 2
@@ -81,11 +85,12 @@ for year in years:
         hyp_area_bot[key] = area_bot
         hyp_area_bot146[key] = area_bot146
         time_dict[key] = pd.to_datetime(ds['ocean_time'].values)
-        
+        thick_bot_dict[key] = thick_bot
+        thick_bot146_dict[key] = thick_bot146
 ##############################################################
 ##              PLOT HYPOXIC AREA TIME SERIES               ##
 ##############################################################
-
+print('Plotting hypoxic area time series')
 fig, ax = plt.subplots(figsize=(11, 4.5))
 
 gtagex = gtagexes[0]
@@ -126,6 +131,71 @@ plt.tight_layout()
 
 out_fn = out_dir / 'hypoxic_area_bottom_vs_bottom146.png'
 plt.savefig(out_fn, dpi=300)
+
+##############################################################
+##          PLOT MEAN THICKNESS DIFFERENCE MAP             ##
+##############################################################
+print('Plotting thickness difference map...')
+
+# collect all years together
+diff_all = []
+
+gtagex = gtagexes[0]
+
+for year in years:
+
+    key = gtagex + '_' + region + '_' + year
+
+    diff = (
+        thick_bot146_dict[key]
+        - thick_bot_dict[key]
+    )
+
+    diff_all.append(diff)
+
+# concatenate all years in time
+diff_all = np.concatenate(diff_all, axis=0)
+
+# average over time
+mean_diff = np.nanmean(diff_all, axis=0)
+
+# make figure
+fig, ax = plt.subplots(figsize=(6,8))
+
+pcm = ax.pcolormesh(
+    plon,
+    plat,
+    mean_diff,
+    cmap='RdBu_r',
+    vmin=-5,
+    vmax=5
+)
+
+plt.colorbar(
+    pcm,
+    ax=ax,
+    label='Thickness difference (m)'
+)
+
+pfun.dar(ax)
+
+ax.set_xlim([-123.29,-122.1])
+ax.set_ylim([46.95,48.6])
+
+ax.set_xlabel('Longitude')
+ax.set_ylabel('Latitude')
+
+ax.set_title(
+    'Mean Bottom Layer Thickness Difference\n'
+    '(Bottom 14.6% − Bottom Cell)'
+)
+
+plt.tight_layout()
+
+plt.savefig(
+    out_dir / 'bottom_layer_thickness_difference.png',
+    dpi=300
+)
 
 print(f'Saved to {out_fn}')
 print('Done')
