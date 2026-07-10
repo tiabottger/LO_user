@@ -171,13 +171,16 @@ mean_diff = np.where(mask_rho == 1, mean_diff, np.nan)
 # make figure
 fig, ax = plt.subplots(figsize=(6,8))
 
+vmin = np.nanmin(mean_diff)
+vmax = np.nanmax(mean_diff)
+
 pcm = ax.pcolormesh(
     plon,
     plat,
     mean_diff,
-    cmap='RdBu_r',
-    vmin=-5,
-    vmax=5
+    cmap='viridis',
+    vmin=vmin,
+    vmax=vmax
 )
 
 plt.colorbar(
