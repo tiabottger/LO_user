@@ -36,7 +36,7 @@ Lfun.make_dir(out_dir)
 plt.close('all')
 print('Running....')
 
-basin_mask_ds = xr.open_dataset(Ldir['LOo'] / 'extract' / gtagexes[0] / 'box' / (region + '_basin_mask.nc'))
+basin_mask_ds = xr.open_dataset(Ldir['LOo'] / 'hypvol_for_intrmdl_cmprsn' / 'basin_masks_from_pugetsoundDObox.nc')
 mask_ps = basin_mask_ds.mask_pugetsound.values
 
 # get grid cell area from one of the original box files
