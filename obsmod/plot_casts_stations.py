@@ -6,7 +6,9 @@ Plots the first profile of each month. Finds nearest model profile to match obse
 
 Modified to plot multiple models to compare with observational casts data.
 
-Modified to read in full station data.
+Tia modified to read in full station data. Reads station extractions from LiveOcean and SalishSeaCast
+located in ../intermodel_comparison/stations/. 
+Plots the first cast of each month for a given station.
 """
 
 import sys
