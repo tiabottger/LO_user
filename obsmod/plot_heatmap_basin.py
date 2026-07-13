@@ -1,3 +1,9 @@
+"""
+This calculates model skill metrics (bias, RMSE, NRMSE, NSE, Willmott's Index of Agreement) 
+for different variables and basins, and generates heatmaps to visualize these metrics for two models:
+LiveOcean and SalishSeaCast. The script processes observational and model data, assigns observations
+to specific basins, computes the metrics, and saves the results in a CSV file and as heatmap images.
+"""
 import sys
 import pandas as pd
 import numpy as np

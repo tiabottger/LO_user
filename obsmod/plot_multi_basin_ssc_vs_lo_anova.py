@@ -7,7 +7,11 @@ choices for filtering the data based on source, season, and depth.
 Hence it is primarily a tool for model development: is one version
 different of better than another?
 
-Here I've added a function to highlight where different basins lay within the property-property plots using bounding boxes
+Here Tia added a function to highlight where different basins lay within
+the property-property plots using bounding boxes.
+This version plots SalishSeaCast vs LiveOcean to highlight where there is 
+most model agreement. A one-way ANOVA is performed to examine whether differences 
+between models (error= SSC - LO) are explained by within vs between basin variance.
 """
 import sys
 import pandas as pd

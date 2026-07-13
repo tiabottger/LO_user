@@ -6,6 +6,10 @@ choices for filtering the data based on source, season, and depth.
 
 Hence it is primarily a tool for model development: is one version
 different of better than another?
+
+This version highlights a specific year within a range to assess whether it
+covers the same parameter space. It was created to compare 2014 to other years due
+to spin-up concerns for 2014.
 """
 import sys
 import pandas as pd

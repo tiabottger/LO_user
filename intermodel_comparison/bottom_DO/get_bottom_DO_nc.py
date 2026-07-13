@@ -8,9 +8,6 @@ This script has been modified from Aurora's get_bottom_DO.py script
 This script searches for yearly box extractions in LO_output, for the
 region "pugetsoundDO"
 
-It also crops out data from the Straits, so as to not bias the results
-in Puget Sound. (optional using flag remove_straits)
-
 .nc files are saved in LO_output/intermodel_comparison/bottom_DO
 """
 

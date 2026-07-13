@@ -7,7 +7,8 @@ choices for filtering the data based on source, season, and depth.
 Hence it is primarily a tool for model development: is one version
 different of better than another?
 
-Here I've added a function to highlight where different basins lay within the property-property plots using basin masks
+Here Tia added a function to highlight where different basins lay within
+the property-property plots using basin masks
 """
 import sys
 import pandas as pd

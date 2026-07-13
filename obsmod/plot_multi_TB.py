@@ -6,6 +6,11 @@ choices for filtering the data based on source, season, and depth.
 
 Hence it is primarily a tool for model development: is one version
 different of better than another?
+
+Tia edited this version for model intercomparison between SalishSeaCast, 
+Salish Sea Model, and LiveOcean
+- converting DO to mg/L 
+- adding lines of best fit 
 """
 import sys
 import pandas as pd
