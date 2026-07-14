@@ -134,6 +134,13 @@ def calc_metrics(obs, mod, obs_std_all):
         nrmse = rmse / obs_std_all
     else:
         nrmse = np.nan
+        
+    # Pearson correlation
+    # Correlation is undefined when either series has no variability.
+    if np.std(obs) > 0 and np.std(mod) > 0:
+        correlation = np.corrcoef(obs, mod)[0, 1]
+    else:
+        correlation = np.nan
 
     # Nash-Sutcliffe Efficiency
     denom_nse = np.sum((obs - np.mean(obs))**2)
@@ -152,7 +159,7 @@ def calc_metrics(obs, mod, obs_std_all):
     else:
         willmott_d = np.nan
 
-    return bias, rmse, nrmse, nse, willmott_d
+    return bias, rmse, nrmse, correlation, nse, willmott_d
 
 # -------------------------------------------------------
 # Calculate metrics
@@ -194,7 +201,7 @@ for vn in vn_list:
             obs_basin = obs_all[mask]
             mod_basin = mod_all[mask]
 
-            bias, rmse, nrmse, nse, willmott_d = calc_metrics(
+            bias, rmse, nrmse, correlation, nse, willmott_d = calc_metrics(
                 obs_basin,
                 mod_basin,
                 obs_std_all
@@ -209,6 +216,7 @@ for vn in vn_list:
                 'bias': bias,
                 'rmse': rmse,
                 'nrmse': nrmse,
+                'correlation': correlation,
                 'nse': nse,
                 'willmott_d': willmott_d,
                 'obs_std_all': obs_std_all,
@@ -243,9 +251,20 @@ def plot_metric_heatmaps(metrics_df, metric, metric_label, cmap='viridis'):
         vmin = np.nanmin(vals)
         vmax = np.nanmax(vals)
         norm = None
+        
+    elif metric == "correlation":
+        cmap = 'RdYlGn'
+        vmin = -1
+        vmax = 1
+        norm = TwoSlopeNorm(
+            vmin=vmin,
+            vcenter=0,
+            vmax=vmax
+        )
 
     elif metric == "nse":
         cmap = "RdYlGn"
+        # NSE has no lower bound but clipping at -1 prevents very poor values from dominating color scale
         vmin = -1
         vmax = 1
         norm = TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)
@@ -255,6 +274,23 @@ def plot_metric_heatmaps(metrics_df, metric, metric_label, cmap='viridis'):
         vmin = 0
         vmax = 1
         norm = None
+        
+    elif metric == "bias":
+        cmap = 'RdBu_r'
+        
+        max_abs = np.nanmax(np.abs(vals))
+
+        if max_abs == 0:
+            max_abs = 1
+
+        vmin = -max_abs
+        vmax = max_abs
+
+        norm = TwoSlopeNorm(
+            vmin=vmin,
+            vcenter=0,
+            vmax=vmax
+        )
 
     else:
         cmap = "viridis"
@@ -356,4 +392,10 @@ plot_metric_heatmaps(
     metrics_df,
     metric='willmott_d',
     metric_label="Willmott's Index of Agreement"
+)
+
+plot_metric_heatmaps(
+    metrics_df,
+    metric='correlation',
+    metric_label='Pearson Correlation, r'
 )

@@ -9,14 +9,17 @@ different of better than another?
 
 Tia edited this version for model intercomparison between SalishSeaCast, 
 Salish Sea Model, and LiveOcean
-- converting DO to mg/L 
-- adding lines of best fit 
+- filtered to include only data within Puget Sound mask, with ability to select sub-basins
+- converted DO to mg/L 
+- added lines of best fit 
 """
 import sys
 import pandas as pd
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
+import xarray as xr
+from scipy.spatial import cKDTree
 from lo_tools import plotting_functions as pfun
 from lo_tools import Lfun, zfun, zrfun
 Ldir = Lfun.Lstart()
@@ -26,11 +29,45 @@ testing = False
 year = '2014'
 in_dir = Ldir['parent'] / 'LO_output' / 'obsmod'
 
+# --- Puget Sound basin mask settings---
+mask_ds = xr.open_dataset('basin_masks_from_pugetsoundDObox.nc')
+
+# Model-grid coordinates used by the basin masks
+lon_rho = mask_ds['lon_rho'].values
+lat_rho = mask_ds['lat_rho'].values
+
+# Build nearest-neighbor search tree
+xy_grid = np.column_stack((
+    lon_rho.ravel(),
+    lat_rho.ravel()
+))
+tree = cKDTree(xy_grid)
+
+# Short basin names mapped to variables in the mask file
+basin_var = {
+    'ps': 'mask_pugetsound', # the Puget Sound domain
+    'hc': 'mask_hoodcanal',
+    'ss': 'mask_southsound',
+    'mb': 'mask_mainbasin',
+    'wb': 'mask_whidbeybasin',
+}
+
+selected_basin = 'ps'
+
+basin_name = {
+    'ps': 'Puget Sound',
+    'hc': 'Hood Canal',
+    'ss': 'South Sound',
+    'mb': 'Main Basin',
+    'wb': 'Whidbey Basin',
+    'all': 'All Locations',
+}[selected_basin]
+
 plt.close('all')
 
 # specify input (created by process_multi_bottle.py and process_multi_ctd.py)
 for otype in ['bottle']:#, 'ctd']:
-    in_fn = in_dir / ('combined_' + otype + '_' + year + '_cas7_t1_x11ab_ssc_ssm.pkl')
+    in_fn = in_dir / ('combined_' + otype + '_' + year + '_cas7_t1_x11ab_ssc.pkl')
     df0_dict = pickle.load(open(in_fn, 'rb'))
     
     # remove non-DataFrame entries (like meta)
@@ -85,8 +122,47 @@ for otype in ['bottle']:#, 'ctd']:
 
                 # ===== FILTERS ======================================================
                 f_str = otype + ' ' + year + '\n\n' # a string to put for info on the map
-                ff_str = otype + '_' + year + '_mgL' # a string for the output .png file name
+                ff_str = otype + '_' + year + '_' + selected_basin # a string for the output .png file name
 
+                # --- Basin filter ---
+                lon = df_dict['obs']['lon'].to_numpy()
+                lat = df_dict['obs']['lat'].to_numpy()
+
+                if selected_basin == 'all':
+                    basin_mask = np.ones(len(df_dict['obs']), dtype=bool)
+                else:
+                    obs_xy = np.column_stack((lon, lat))
+                    _, idx = tree.query(obs_xy)
+
+                    eta_idx, xi_idx = np.unravel_index(
+                        idx,
+                        lon_rho.shape
+                    )
+
+                    basin_grid = mask_ds[
+                        basin_var[selected_basin]
+                    ].values
+
+                    basin_mask = basin_grid[eta_idx, xi_idx] == 1
+
+                for gtx in df_dict.keys():
+
+                    if len(df_dict[gtx]) != len(basin_mask):
+                        raise ValueError(
+                            f'Length mismatch before basin filtering: '
+                            f'obs={len(basin_mask)}, '
+                            f'{gtx}={len(df_dict[gtx])}'
+                        )
+
+                    df_dict[gtx] = (
+                        df_dict[gtx]
+                        .iloc[basin_mask]
+                        .copy()
+                        .reset_index(drop=True)
+                    )
+
+
+                # --- Source filter ---            
                 # limit which sources to use
                 if source == 'all':
                     # use df_dict as-is
@@ -99,7 +175,8 @@ for otype in ['bottle']:#, 'ctd']:
                     for gtx in df_dict.keys():
                         df_dict[gtx] = df_dict[gtx].loc[df_dict[gtx].source==source,:]
 
-                # depth range
+                
+                # --- Depth range filter ---
                 if depth_range == 'all':
                     pass
                 elif depth_range == 'shallow':
@@ -117,7 +194,7 @@ for otype in ['bottle']:#, 'ctd']:
                     for gtx in df_dict.keys():
                         df_dict[gtx] = df_dict[gtx].loc[df_dict[gtx].z <= zz,:]
         
-                # time range
+                # --- Time range filter ---
                 if time_range == 'all':
                     pass
                 elif time_range == 'spring':
@@ -143,7 +220,8 @@ for otype in ['bottle']:#, 'ctd']:
                 fs = 12
                 pfun.start_plot(figsize=(20,12), fs=fs)
 
-                gtx_list = ['cas7_t1_x11ab', 'ssc', 'ssm']
+                #gtx_list = ['cas7_t1_x11ab', 'ssc', 'ssm']
+                gtx_list = ['cas7_t1_x11ab', 'ssc']
                 c_dict = dict(zip(gtx_list,['r','b','g']))
                 t_dict = dict(zip(gtx_list,[.05,.15,0.25])) # vertical position of stats text
 
@@ -187,15 +265,33 @@ for otype in ['bottle']:#, 'ctd']:
                             x = x_raw * 0.032
                             y = y_raw * 0.032
                         else:
-                            x = x_raw
-                            y = y_raw
+                            x = x_raw.copy()
+                            y = y_raw.copy()
+                            
+                        # Keep only paired finite observation-model values
+                        valid = np.isfinite(x) & np.isfinite(y)
+                        x_valid = x[valid]
+                        y_valid = y[valid]
                         
-                        ax.plot(x,y,marker='.',ls='',color=c_dict[gtx], alpha=alpha)
+                        ax.plot(x_valid,y_valid,marker='.',ls='',color=c_dict[gtx], alpha=alpha)
         
-                        if (not np.isnan(x).all()) and (not np.isnan(y).all()) and (len(x) > 0) and (len(y) > 0):
-                            bias = np.nanmean(y-x)
-                            rmse = np.sqrt(np.nanmean((y-x)**2))
-                            ax.text(.95,t_dict[gtx],'bias=%0.1f, rmse=%0.1f' % (bias,rmse),c=c_dict[gtx],
+                        # Calculate bias and RMSE
+                        bias = np.nanmean(y_valid-x_valid)
+                        rmse = np.sqrt(np.nanmean((y_valid-x_valid)**2))
+                        
+                        # Add a linear trend line
+                        if len(x_valid) >= 2 and np.unique(x_valid).size >= 2: 
+                            slope, intercept = np.polyfit( x_valid, y_valid, deg=1 )
+                        
+                            # Draw the trend line over the displayed variable range 
+                            x_trend = np.linspace( lim_dict[vn][0], lim_dict[vn][1], 200 ) 
+                            y_trend = slope * x_trend + intercept
+                            
+                            ax.plot(
+                                x_trend, y_trend, 
+                                color=c_dict[gtx], linewidth=1, linestyle='-')
+                        
+                        ax.text(.95,t_dict[gtx],'bias=%0.1f, rmse=%0.1f' % (bias,rmse),c=c_dict[gtx],
                                 transform=ax.transAxes, ha='right', fontweight='bold', bbox=pfun.bbox,
                                 fontsize=fs-1,style='italic')
 
@@ -230,7 +326,10 @@ for otype in ['bottle']:#, 'ctd']:
                     ax = fig.add_subplot(1,3,3)
                 df_dict['obs'].plot(x='lon',y='lat',style='.g',legend=False, ax=ax)
                 pfun.add_coast(ax)
-                ax.axis([-130,-122,42,52])
+    
+                # ax.axis([-130,-122,42,52]) # zoomed out
+                ax.axis([-123.2, -122.25, 47.0, 48.35]) # Puget Sound
+                
                 pfun.dar(ax)
                 ax.set_xlabel('')
                 ax.set_ylabel('')
@@ -244,7 +343,7 @@ for otype in ['bottle']:#, 'ctd']:
                 if testing:
                     plt.show()
                 else:
-                    plt.savefig(out_dir / (ff_str + '_withssm.png'))
+                    plt.savefig(out_dir / (ff_str + '.png'))
                     plt.close('all')
 
     

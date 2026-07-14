@@ -319,8 +319,8 @@ for otype in ['bottle']:#, 'ctd']:
                     markersize=7, zorder=3
                 )
 
-                #ax.axis([-130,-122,42,52])
-                ax.axis([-123.2, -122.25, 47.0, 48.35])
+                # ax.axis([-130,-122,42,52]) # zoomed out
+                ax.axis([-123.2, -122.25, 47.0, 48.35]) # Puget Sound
                 
                 pfun.dar(ax)
                 ax.set_xlabel('')
