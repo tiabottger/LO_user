@@ -200,7 +200,7 @@ for year in years:
         DO_vert_dict[gtagex+year] = DO_vert_int
 
 # grid cell areas
-fp = Ldir['LOo'] / 'extract' / 'cas7_t1y13v2_x11ab' / 'box' / ('pugetsoundDO_2014.01.01_2014.12.31.nc')
+fp = Ldir['LOo'] / 'extract' / 'cas7_t1_x11ab' / 'box' / ('pugetsoundDO_2014.01.01_2014.12.31.nc')
 box_ds = xr.open_dataset(fp)
 DX = (box_ds.pm.values)**-1
 DY = (box_ds.pn.values)**-1
