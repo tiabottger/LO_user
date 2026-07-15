@@ -127,7 +127,7 @@ for gtagex in gtagexes:
             print('{}, {}, {}'.format(gtagex,region,year))
 
             # get data
-            fp = Ldir['LOo'] / 'extract' / gtagex / 'box' / (region+'_'+year+'.01.01_'+year+'.01.05.nc')
+            fp = Ldir['LOo'] / 'extract' / gtagex / 'box' / (region+'_'+year+'.01.01_'+year+'.12.31.nc')
             ds_raw = xr.open_dataset(fp)
 
             # original units --------------------------------
