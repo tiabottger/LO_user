@@ -332,7 +332,7 @@ for j,var_vol_norm in enumerate([NO3_vol_norm,DO_vol_norm]):
 #                     color=colors[k], alpha=0.8)
 
     # plot timeseries
-    gtagex = 'cas7_t1_x11ab'
+    gtagex = gtagexes[0]
 
     for k, region in enumerate(regions):
         all_dates_local = []
