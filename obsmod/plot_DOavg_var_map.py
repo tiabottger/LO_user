@@ -239,39 +239,46 @@ sample_df = sample_df.loc[
 ].copy()
 
 # ============================================================
-# CALCULATE STATION-AVERAGE CONCENTRATIONS
+# CALCULATE STATION MEAN AND VARIANCE 
 # ============================================================
 
-station_mean = (
+station_stats = (
     sample_df
     .groupby('name', as_index=False)
     .agg(
         lon=('lon', 'mean'),
         lat=('lat', 'mean'),
         n=('obs_do', 'size'),
+
         obs_mean=('obs_do', 'mean'),
         lo_mean=('lo_do', 'mean'),
         ssc_mean=('ssc_do', 'mean'),
+
+        obs_variance=('obs_do', 'var'),
+        lo_variance=('lo_do', 'var'),
+        ssc_variance=('ssc_do', 'var'),
     )
 )
 
-station_mean = station_mean.loc[
-    station_mean['n'] >= min_samples
+station_stats = station_stats.loc[
+    station_stats['n'] >= min_samples
 ].copy()
 
-station_mean = station_mean.sort_values(
-    'name'
-).reset_index(drop=True)
+station_stats = (
+    station_stats
+    .sort_values('name')
+    .reset_index(drop=True)
+)
 
-if station_mean.empty:
+if station_stats.empty:
     raise ValueError(
-        'No stations remain after applying the finite-value '
-        f'and minimum-sample filters (min_samples={min_samples}).'
+        'No stations remain after applying the finite-value, '
+        'Puget Sound mask, and minimum-sample filters.'
     )
 
-# print('\nStation-average dissolved oxygen concentrations:')
+# print('\nStation-average DO and variance:')
 # print(
-#     station_mean.to_string(
+#     station_stats.to_string(
 #         index=False,
 #         formatters={
 #             'lon': '{:.4f}'.format,
@@ -279,10 +286,12 @@ if station_mean.empty:
 #             'obs_mean': '{:.2f}'.format,
 #             'lo_mean': '{:.2f}'.format,
 #             'ssc_mean': '{:.2f}'.format,
+#             'obs_variance': '{:.2f}'.format,
+#             'lo_variance': '{:.2f}'.format,
+#             'ssc_variance': '{:.2f}'.format,
 #         },
 #     )
 # )
-
 
 # ============================================================
 # LOAD GRID FOR MAP BACKGROUND
@@ -303,9 +312,9 @@ h_plot = np.where(mask_rho == 1, h, np.nan)
 # ============================================================
 
 all_concentrations = np.concatenate([
-    station_mean['obs_mean'].to_numpy(),
-    station_mean['lo_mean'].to_numpy(),
-    station_mean['ssc_mean'].to_numpy(),
+    station_stats['obs_mean'].to_numpy(),
+    station_stats['lo_mean'].to_numpy(),
+    station_stats['ssc_mean'].to_numpy(),
 ])
 
 all_concentrations = all_concentrations[
@@ -322,7 +331,7 @@ if np.isclose(vmin, vmax):
 
 
 # ============================================================
-# CREATE THREE-PANEL MAP
+# CREATE THREE-PANEL DO AVG MAP
 # ============================================================
 
 plt.close('all')
@@ -360,9 +369,9 @@ for ax, (column, title) in zip(axes, panel_info):
     pfun.add_coast(ax)
 
     scatter = ax.scatter(
-        station_mean['lon'],
-        station_mean['lat'],
-        c=station_mean[column],
+        station_stats['lon'],
+        station_stats['lat'],
+        c=station_stats[column],
         cmap=cmap,
         vmin=vmin,
         vmax=vmax,
@@ -430,6 +439,159 @@ fig.savefig(
     bbox_inches='tight',
 )
 
-print(f'\nSaved figure to:\n{out_fn}')
+print(f'\nSaved DO mean figure to:\n{out_fn}')
+
+plt.show()
+
+# ============================================================
+# SHARED DO VARIANCE COLOR SCALE
+# ============================================================
+
+all_variances = np.concatenate([
+    station_stats['obs_variance'].to_numpy(),
+    station_stats['lo_variance'].to_numpy(),
+    station_stats['ssc_variance'].to_numpy(),
+])
+
+all_variances = all_variances[
+    np.isfinite(all_variances)
+]
+
+if len(all_variances) == 0:
+    raise ValueError(
+        'No finite station DO variances are available.'
+    )
+
+variance_vmin = 0
+variance_vmax = np.nanmax(all_variances)
+
+if np.isclose(variance_vmax, 0):
+    variance_vmax = 1
+
+
+# ============================================================
+# CREATE THREE-PANEL DO VARIANCE MAP
+# ============================================================
+
+fig_var, axes_var = plt.subplots(
+    nrows=1,
+    ncols=3,
+    figsize=(14, 6),
+    sharex=True,
+    sharey=True,
+    constrained_layout=True,
+)
+
+variance_panel_info = [
+    ('obs_variance', 'Observations'),
+    ('lo_variance', 'LiveOcean'),
+    ('ssc_variance', 'SalishSeaCast'),
+]
+
+variance_scatter = None
+
+for ax, (column, title) in zip(
+    axes_var,
+    variance_panel_info,
+):
+
+    # Bathymetry background
+    ax.pcolormesh(
+        lon_rho,
+        lat_rho,
+        h_plot,
+        cmap='Greys',
+        shading='auto',
+        alpha=0.25,
+        zorder=0,
+    )
+
+    pfun.add_coast(ax)
+
+    variance_scatter = ax.scatter(
+        station_stats['lon'],
+        station_stats['lat'],
+        c=station_stats[column],
+        cmap='viridis',
+        vmin=variance_vmin,
+        vmax=variance_vmax,
+        s=station_size,
+        edgecolor='black',
+        linewidth=station_edge_width,
+        zorder=5,
+    )
+
+    ax.set_xlim(
+        lon_low,
+        lon_high,
+    )
+
+    ax.set_ylim(
+        lat_low,
+        lat_high,
+    )
+
+    pfun.dar(ax)
+
+    ax.set_title(
+        title,
+        fontsize=12,
+    )
+
+    ax.set_xlabel(
+        'Longitude',
+        fontsize=10,
+    )
+
+    ax.tick_params(
+        axis='both',
+        which='major',
+        labelsize=8,
+    )
+
+axes_var[0].set_ylabel(
+    'Latitude',
+    fontsize=10,
+)
+
+variance_cbar = fig_var.colorbar(
+    variance_scatter,
+    ax=axes_var,
+    orientation='horizontal',
+    fraction=0.06,
+    pad=0.08,
+)
+
+variance_cbar.set_label(
+    r'Dissolved oxygen variance '
+    r'[(mg L$^{-1}$)$^2$]',
+    fontsize=10,
+)
+
+variance_cbar.ax.tick_params(
+    labelsize=8,
+)
+
+fig_var.suptitle(
+    f'Station dissolved oxygen variance\n'
+    f'{year} {otype} samples',
+    fontsize=14,
+)
+
+variance_out_fn = (
+    out_dir
+    / f'{otype}_{year}_{vn}_station_variance_map.png'
+)
+
+fig_var.savefig(
+    variance_out_fn,
+    dpi=300,
+    bbox_inches='tight',
+)
+
+print(
+    f'\nSaved DO variance figure to:\n'
+    f'{variance_out_fn}'
+)
 
 plt.show()

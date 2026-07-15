@@ -1,6 +1,11 @@
 """
 Plot station-mean model errors for LiveOcean and SalishSeaCast.
 
+Panels:
+1. LiveOcean RMSE
+2. SalishSeaCast RMSE
+3. Difference in model error: SSC RMSE - LO RMSE
+this third panel shows which model has the least error at each station
 """
 
 import sys
