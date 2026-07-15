@@ -371,7 +371,7 @@ for j,var_vol_norm in enumerate([NO3_vol_norm,DO_vol_norm]):
     ax1.set_ylabel(r'mmol/m3', fontsize=12)
     # create time vector
     startdate = years[0]+'.01.01'
-    enddate = years[-1]+'.12.31'
+    enddate = years[-1]+'.01.05' #change
     dates = pd.date_range(start= startdate, end= enddate, freq= '1d')
     dates_local = [pfun.get_dt_local(x) for x in dates]
     ax1.set_xlim([dates_local[0],dates_local[-1]])
