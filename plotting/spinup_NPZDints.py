@@ -46,7 +46,8 @@ Ldir = Lfun.Lstart()
 WWTP_loc = False
 
 # Hanning window length
-nwin = 20
+#nwin = 20
+nwin = 1
 
 # years =  ['2015']
 years =  ['2013'] #,'2014','2015','2016','2017','2018','2019','2020']
