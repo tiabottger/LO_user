@@ -8,7 +8,7 @@ region "pugetsoundDO"
 It also crops out data from the Straits, so as to not bias the results
 in Puget Sound. (optional using flag remove_straits)
 
-.nc files are saved in LO_output/chapter_2/data
+.nc files are saved in LO_output/intermodel_comparison
 """
 
 # import things
@@ -20,7 +20,7 @@ from lo_tools import Lfun, zrfun
 
 import sys
 from pathlib import Path
-pth = Path(__file__).absolute().parent.parent.parent.parent / 'LO' / 'pgrid'
+pth = Path(__file__).absolute().parent.parent.parent/ 'LO' / 'pgrid'
 if str(pth) not in sys.path:
     sys.path.append(str(pth))
 import gfun
