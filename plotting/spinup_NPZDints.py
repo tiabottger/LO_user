@@ -166,7 +166,7 @@ if WWTP_loc == True:
 ##############################################################
 
 # read in masks
-basin_mask_ds = xr.open_dataset('../../../LO_output/hypvol_for_intrmdl_cmprsn/basin_masks_from_pugetsoundDObox.nc')
+basin_mask_ds = xr.open_dataset('../../LO_output/hypvol_for_intrmdl_cmprsn/basin_masks_from_pugetsoundDObox.nc')
 mask_rho = basin_mask_ds.mask_rho.values
 mask_hc = basin_mask_ds.mask_hoodcanal.values
 mask_ss = basin_mask_ds.mask_southsound.values
