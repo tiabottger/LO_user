@@ -30,7 +30,7 @@ from lo_tools import plotting_functions as pfun
 
 import sys
 from pathlib import Path
-pth = Path(__file__).absolute().parent.parent.parent.parent / 'LO' / 'pgrid'
+pth = Path(__file__).absolute().parent.parent.parent / 'LO' / 'pgrid'
 if str(pth) not in sys.path:
     sys.path.append(str(pth))
 import gfun
@@ -49,14 +49,14 @@ WWTP_loc = False
 nwin = 20
 
 # years =  ['2015']
-years =  ['2013','2014','2015','2016','2017','2018','2019','2020']
+years =  ['2013'] #,'2014','2015','2016','2017','2018','2019','2020']
 # years =  ['2014','2015','2016','2017','2018','2019','2020']
 
 # which  model run to look at?
-gtagexes = ['cas7_t1_x11ab'] 
+gtagexes = ['cas7_t1y13v2_x11ab'] 
 
 # where to put output figures
-out_dir = Ldir['LOo'] / 'chapter_2' / 'figures'
+out_dir = Ldir['LOo'] / 'intermodel_comparison'
 Lfun.make_dir(out_dir)
 
 regions = ['Hood Canal', 'South Sound', 'Whidbey Basin', 'Main Basin', 'All Puget Sound']
@@ -166,7 +166,7 @@ if WWTP_loc == True:
 ##############################################################
 
 # read in masks
-basin_mask_ds = xr.open_dataset('../../../LO_output/chapter_2/data/basin_masks_from_pugetsoundDObox.nc')
+basin_mask_ds = xr.open_dataset('../../../LO_user/obsmod/basin_masks_from_pugetsoundDObox.nc')
 mask_rho = basin_mask_ds.mask_rho.values
 mask_hc = basin_mask_ds.mask_hoodcanal.values
 mask_ss = basin_mask_ds.mask_southsound.values
@@ -187,7 +187,7 @@ DO_vert_dict = {}
 
 for year in years:
     for gtagex in gtagexes:
-        ds = xr.open_dataset(Ldir['LOo'] / 'chapter_2' / 'data' / (gtagex + '_pugetsoundDO_' + year + '_NPZD_vert_ints.nc'))
+        ds = xr.open_dataset(Ldir['LOo'] / 'intermodel_comparison'/(gtagex + '_pugetsoundDO_' + year + '_NPZD_vert_ints.nc'))
         NO3_vert_int = ds['NO3_vert_int'].values
         phyto_vert_int = ds['phyto_vert_int'].values
         zoop_vert_int = ds['zoop_vert_int'].values
@@ -200,7 +200,7 @@ for year in years:
         DO_vert_dict[gtagex+year] = DO_vert_int
 
 # grid cell areas
-fp = Ldir['LOo'] / 'extract' / 'cas7_t1_x11ab' / 'box' / ('pugetsoundDO_2014.01.01_2014.12.31.nc')
+fp = Ldir['LOo'] / 'extract' / 'cas7_t1y13v2_x11ab' / 'box' / ('pugetsoundDO_2014.01.01_2014.12.31.nc')
 box_ds = xr.open_dataset(fp)
 DX = (box_ds.pm.values)**-1
 DY = (box_ds.pn.values)**-1
@@ -400,3 +400,5 @@ for j,var_vol_norm in enumerate([NO3_vol_norm,DO_vol_norm]):
 
     plt.tight_layout()
     plt.show()
+    
+    plt.savefig(out_dir/'2013_timeseries.png')
