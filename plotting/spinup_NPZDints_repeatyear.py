@@ -2,6 +2,8 @@
 Compare average bottom DO between multiple years
 (Set up to run for 6 years)
 
+Tia modified to compare model reruns of 2013 
+
 """
 
 # import things
@@ -53,7 +55,7 @@ years =  ['2013'] #,'2014','2015','2016','2017','2018','2019','2020']
 # years =  ['2014','2015','2016','2017','2018','2019','2020']
 
 # which  model run to look at?
-gtagexes = ['cas7_t1y13v2_x11ab', 'cas7_t1_x11ab'] 
+gtagexes = ['cas7_t1_x11ab','cas7_t1y13v2_x11ab'] 
 
 # where to put output figures
 out_dir = Ldir['LOo'] / 'intermodel_comparison'
@@ -306,99 +308,161 @@ for j,var_vol_norm in enumerate([NO3_vol_norm,DO_vol_norm]):
         plt.setp(legend.get_title(),fontsize=9)
 
 ##############################################################
-##    Sub-basins and multiple years and percent change      ##
+##    Consecutive repeated runs for each gtagex         ##
 ##############################################################
 
-# # plot timeseries
-#     for year in years:
-#         # create time vector
-#         startdate = year+'.01.01'
-#         enddate = year+'.12.31'
-#         dates = pd.date_range(start= startdate, end= enddate, freq= '1d')
-#         dates_local = [pfun.get_dt_local(x) for x in dates]
-#         # loop through model runs
-#         for k,region in enumerate(regions):
-#             # get data for the basin and gtagex and year
-#             gtagex = 'cas7_t1_x11ab'
-#             avg_concentration = var_vol_norm[gtagex+region+year]
-#             # pass through hanning window
-#             avg_concentration_filtered = zfun.lowpass(avg_concentration,n=nwin)
-#             # plot data
-#             if region == 'All Puget Sound':
-#                 ax1.plot(dates_local,avg_concentration_filtered,linewidth=2,
-#                         color=colors[k], alpha=1,linestyle='--')
-#             else:
-#                 ax1.plot(dates_local,avg_concentration_filtered,linewidth=3,
-#                     color=colors[k], alpha=0.8)
+plot_year = '2013'
 
-    # plot timeseries
-    gtagex = gtagexes[0]
+# Use artificial consecutive years only for positioning on the x-axis
+synthetic_start_year = 2013
 
-    for k, region in enumerate(regions):
-        all_dates_local = []
-        all_avg_concentration = []
+# Store the synthetic plotting dates for setting limits and separators
+run_date_ranges = []
 
-        # concatenate all years first
-        for year in years:
-            startdate = year + '.01.01'
-            enddate = year + '.12.31' 
-            dates = pd.date_range(start=startdate, end=enddate, freq='1D')
-            dates_local = [pfun.get_dt_local(x) for x in dates]
+for k, region in enumerate(regions):
 
-            avg_concentration = var_vol_norm[gtagex + region + year]
+    for g, gtagex in enumerate(gtagexes):
 
-            all_dates_local.extend(dates_local)
-            all_avg_concentration.extend(avg_concentration)
+        # Each gtagex gets its own artificial calendar year
+        synthetic_year = synthetic_start_year + g
 
-        # convert to array
-        all_avg_concentration = np.array(all_avg_concentration)
+        # Original model run being plotted
+        avg_concentration = np.asarray(
+            var_vol_norm[gtagex + region + plot_year]
+        )
 
-        # apply lowpass to the full concatenated series
-        all_avg_concentration_filtered = zfun.lowpass(all_avg_concentration, n=nwin)
+        # Construct dates matching the number of model time steps.
+        # This is safer than assuming exactly 365 values.
+        synthetic_dates = pd.date_range(
+            start=f'{synthetic_year}-01-01',
+            periods=len(avg_concentration),
+            freq='1D'
+        )
 
-        # plot the full filtered series
-        if region == 'All Puget Sound':
-            ax1.plot(all_dates_local, all_avg_concentration_filtered,
-                    linewidth=1, color=colors[k], alpha=1, linestyle='--')
+        # Apply filtering separately to each model run.
+        # This avoids smoothing across the Dec 31 / Jan 1 boundary
+        # between separate reruns.
+        avg_concentration_filtered = zfun.lowpass(
+            avg_concentration,
+            n=nwin
+        )
+
+        # Add a label only once per region so that repeated runs do
+        # not create duplicate legend entries.
+        if g == 0:
+            line_label = region
         else:
-            ax1.plot(all_dates_local, all_avg_concentration_filtered,
-                    linewidth=2, color=colors[k], alpha=0.8)
-                
-    # format figure
-    ax1.grid(visible=True, axis='both', color='silver', linestyle='--')
-    ax1.tick_params(axis='both', labelsize=12, rotation=30)
-    ax1.set_ylabel(r'mmol/m3', fontsize=12)
-    # create time vector
-    startdate = years[0]+'.01.01'
-    enddate = years[-1]+'.12.31' 
-    dates = pd.date_range(start= startdate, end= enddate, freq= '1d')
-    dates_local = [pfun.get_dt_local(x) for x in dates]
-    ax1.set_xlim([dates_local[0],dates_local[-1]])
-    ax1.hlines(y=0, xmin=dates_local[0], xmax=dates_local[-1],
-               color='silver', linestyle='--', linewidth=0.75)
-    ax1.xaxis.set_major_locator(mdates.YearLocator())
-    ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
-    ax1.set_title('(b) Avg. Conc. ({}-day Hanning Window)'.format(nwin), loc='left', fontsize=14, fontweight='bold')
-    
+            line_label = '_nolegend_'
 
-    # set y-lims
-    if vars[j] == 'NO3':
-        ymax_conc = 40
-    elif vars[j] == 'NH4':
-        ymax_conc = 1.75
-    elif vars[j] == 'Phytoplankton':
-        ymax_conc = 1.75
-    elif vars[j] == 'Zooplankton':
-        ymax_conc = 0.175
-    elif vars[j] == 'Large Detritus':
-        ymax_conc = 0.04
-    elif vars[j] == 'Small Detritus':
-        ymax_conc = 1.2
-    elif vars[j] == 'Dissolved Oxygen':
-        ymax_conc = 300
-    ax1.set_ylim([0,ymax_conc])
+        if region == 'All Puget Sound':
+            ax1.plot(
+                synthetic_dates,
+                avg_concentration_filtered,
+                linewidth=1,
+                color=colors[k],
+                alpha=1,
+                linestyle='--',
+                label=line_label
+            )
+        else:
+            ax1.plot(
+                synthetic_dates,
+                avg_concentration_filtered,
+                linewidth=2,
+                color=colors[k],
+                alpha=0.8,
+                label=line_label
+            )
 
-    plt.tight_layout()
-    plt.show()
+        # Only save each gtagex date range once, rather than once
+        # for every basin.
+        if k == 0:
+            run_date_ranges.append(
+                (
+                    synthetic_dates[0],
+                    synthetic_dates[-1],
+                    gtagex
+                )
+            )
+
+
+##############################################################
+##                   Format timeseries                      ##
+##############################################################
+
+ax1.grid(
+    visible=True,
+    axis='both',
+    color='silver',
+    linestyle='--'
+)
+
+ax1.tick_params(
+    axis='both',
+    labelsize=12,
+    rotation=30
+)
+
+ax1.set_ylabel(r'mmol m$^{-3}$', fontsize=12)
+
+# Plot limits covering all repeated 2013 runs
+plot_start = run_date_ranges[0][0]
+plot_end = run_date_ranges[-1][1]
+
+ax1.set_xlim(plot_start, plot_end)
+
+ax1.axhline(
+    y=0,
+    color='silver',
+    linestyle='--',
+    linewidth=0.75
+)
+
+# Put one major tick at the middle of each repeated year
+year_tick_locations = []
+year_tick_labels = []
+
+for run_start, run_end, gtagex in run_date_ranges:
+    midpoint = run_start + (run_end - run_start) / 2
+    year_tick_locations.append(midpoint)
+    year_tick_labels.append('2013')
+
+ax1.set_xticks(year_tick_locations)
+ax1.set_xticklabels(year_tick_labels)
+
+# Draw vertical lines separating the individual gtagex runs
+for g in range(1, len(run_date_ranges)):
+    boundary = run_date_ranges[g][0]
+
+    ax1.axvline(
+        boundary,
+        color='0.4',
+        linestyle=':',
+        linewidth=1
+    )
+
+# Optionally label each gtagex above its corresponding repeated year
+for run_start, run_end, gtagex in run_date_ranges:
+    midpoint = run_start + (run_end - run_start) / 2
+
+    ax1.text(
+        midpoint,
+        1.02,
+        gtagex,
+        transform=ax1.get_xaxis_transform(),
+        ha='center',
+        va='bottom',
+        fontsize=9,
+        rotation=0
+    )
+
+ax1.set_xlabel('Repeated model year', fontsize=12)
+
+ax1.set_title(
+    f'(b) Avg. Conc. ({nwin}-day Hanning Window)',
+    loc='left',
+    fontsize=14,
+    fontweight='bold'
+)
     
-    plt.savefig(out_dir/'2013_timeseries.png')
+plt.savefig(out_dir/'2013_rerun_timeseries.png')
