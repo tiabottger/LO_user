@@ -342,7 +342,7 @@ for j,var_vol_norm in enumerate([NO3_vol_norm,DO_vol_norm]):
         # concatenate all years first
         for year in years:
             startdate = year + '.01.01'
-            enddate = year + '.12.31'
+            enddate = year + '.01.05' #change
             dates = pd.date_range(start=startdate, end=enddate, freq='1D')
             dates_local = [pfun.get_dt_local(x) for x in dates]
 
