@@ -249,6 +249,7 @@ diff_norm = TwoSlopeNorm(
     vmax=diff_max
 )
 
+
 # ============================================================
 # PLOT
 # ============================================================
@@ -274,7 +275,8 @@ sc1 = axes[0].scatter(
     c=station_rmse['lo_rmse'],
     cmap='viridis',
     vmin=0,
-    vmax=rmse_max,
+    #vmax=rmse_max,
+    vmax = 2,# set max to 2 since if we're off by 2 we're not capturing hypoxia
     s=90,
     edgecolor='k',
     linewidth=0.6,
@@ -291,7 +293,8 @@ sc2 = axes[1].scatter(
     c=station_rmse['ssc_rmse'],
     cmap='viridis',
     vmin=0,
-    vmax=rmse_max,
+    #vmax=rmse_max,
+    vmax = 2,# set max to 2 since if we're off by 2 we're not capturing hypoxia
     s=90,
     edgecolor='k',
     linewidth=0.6,
