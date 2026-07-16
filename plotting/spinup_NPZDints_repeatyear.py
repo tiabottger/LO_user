@@ -244,6 +244,43 @@ for year in years:
             DO_vol_timeseries = np.sum(DO_vert_int_masked * DA, axis=(1, 2)) # [mol]
             DO_vol_norm[gtagex+region+year] = DO_vol_timeseries / basin_vol *1000 # [mmol/m3]
 
+# Variables to plot
+plot_variables = [
+    {
+        'name': 'Nitrate',
+        'data': NO3_vol_norm,
+        'ylim': (0, 40),
+        'ylabel': r'NO$_3$ (mmol m$^{-3}$)'
+    },
+    {
+        'name': 'Dissolved Oxygen',
+        'data': DO_vol_norm,
+        'ylim': (0, 300),
+        'ylabel': r'DO (mmol m$^{-3}$)'
+    }
+]
+##############################################################
+##                    Plotting config                       ##
+##############################################################
+plot_year = '2013'
+
+# Use artificial consecutive years only for positioning on the x-axis
+synthetic_start_year = 2013
+
+for variable_info in plot_variables:
+
+    var_name = variable_info['name']
+    var_vol_norm = variable_info['data']
+
+    # Initialize a new figure for each variable
+    fig, (ax0, ax1) = plt.subplots(
+        1,
+        2,
+        figsize=(11, 5),
+        gridspec_kw={'width_ratios': [1, 2]}
+    )
+
+    fig.suptitle(var_name, fontsize=16)
 ##############################################################
 ##                    Plot basin map                        ##
 ##############################################################
@@ -310,11 +347,6 @@ for j,var_vol_norm in enumerate([NO3_vol_norm,DO_vol_norm]):
 ##############################################################
 ##    Consecutive repeated runs for each gtagex         ##
 ##############################################################
-
-plot_year = '2013'
-
-# Use artificial consecutive years only for positioning on the x-axis
-synthetic_start_year = 2013
 
 # Store the synthetic plotting dates for setting limits and separators
 run_date_ranges = []
@@ -403,7 +435,8 @@ ax1.tick_params(
     rotation=30
 )
 
-ax1.set_ylabel(r'mmol m$^{-3}$', fontsize=12)
+ax1.set_ylabel(variable_info['ylabel'], fontsize=12)
+ax1.set_ylim(variable_info['ylim'])
 
 # Plot limits covering all repeated 2013 runs
 plot_start = run_date_ranges[0][0]
@@ -447,16 +480,20 @@ for run_start, run_end, gtagex in run_date_ranges:
 
     ax1.text(
         midpoint,
-        0.98, #inside axes
+        0.96, #inside axes
         gtagex,
         transform=ax1.get_xaxis_transform(),
         ha='center',
         va='bottom',
         fontsize=9,
-        rotation=0
-    )
+        bbox=dict(
+            facecolor='white',
+            alpha=0.7,
+            edgecolor='none',
+            pad=1
+    ))
 
-ax1.set_xlabel('Repeated model year', fontsize=12)
+ax1.set_xlabel('Repeated 2013 model runs', fontsize=12)
 
 ax1.set_title(
     f'(b) Avg. Conc. ({nwin}-day Hanning Window)',
