@@ -286,7 +286,7 @@ for variable_info in plot_variables:
     fig, (ax0, ax1) = plt.subplots(
         1,
         2,
-        figsize=(13, 5),
+        figsize=(15, 5),
         gridspec_kw={'width_ratios': [1, 2]}
     )
 
