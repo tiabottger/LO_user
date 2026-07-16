@@ -281,225 +281,220 @@ for variable_info in plot_variables:
     )
 
     fig.suptitle(var_name, fontsize=16)
-##############################################################
-##                    Plot basin map                        ##
-##############################################################
+    ##############################################################
+    ##                    Plot basin map                        ##
+    ##############################################################
 
-# Puget Sound bounds
-xmin = -123.29
-xmax = -122.1
-ymin = 46.95
-ymax = 48.50#48.93
+    # Puget Sound bounds
+    xmin = -123.29
+    xmax = -122.1
+    ymin = 46.95
+    ymax = 48.50#48.93
 
-# variables
-vars = ['NO3','Dissolved Oxygen']
-for j,var_vol_norm in enumerate([NO3_vol_norm,DO_vol_norm]):
+    # variables
+    vars = ['NO3','Dissolved Oxygen']
+    for j,var_vol_norm in enumerate([NO3_vol_norm,DO_vol_norm]):
 
-    # initialize figure
-    fig, (ax0, ax1) = plt.subplots(1,2,figsize = (11,5),gridspec_kw={'width_ratios': [1, 2]})
-    fig.suptitle(vars[j], fontsize = 16)
+        # initialize figure
+        fig, (ax0, ax1) = plt.subplots(1,2,figsize = (11,5),gridspec_kw={'width_ratios': [1, 2]})
+        fig.suptitle(vars[j], fontsize = 16)
 
-    # All Puget Sound
-    ax0.pcolormesh(plon, plat, np.where(mask_rho == 0, np.nan, mask_rho),
-                vmin=0, vmax=1.1, cmap='bone' )
-    # Hood Canal
-    ax0.pcolormesh(plon, plat, np.where(mask_hc == 0, np.nan, mask_hc),
-                vmin=0, vmax=2.5, cmap='RdPu' )
-    # South Sound
-    ax0.pcolormesh(plon, plat, np.where(mask_ss == 0, np.nan, mask_ss),
-                vmin=0, vmax=2, cmap='Purples' )
-    # Whidbey Basin
-    ax0.pcolormesh(plon, plat, np.where(mask_wb == 0, np.nan, mask_wb),
-                vmin=0, vmax=3, cmap='cool' )
-    # Main Basin
-    ax0.pcolormesh(plon, plat, np.where(mask_mb == 0, np.nan, mask_mb),
-                vmin=0, vmax=1.5, cmap='summer' )
+        # All Puget Sound
+        ax0.pcolormesh(plon, plat, np.where(mask_rho == 0, np.nan, mask_rho),
+                    vmin=0, vmax=1.1, cmap='bone' )
+        # Hood Canal
+        ax0.pcolormesh(plon, plat, np.where(mask_hc == 0, np.nan, mask_hc),
+                    vmin=0, vmax=2.5, cmap='RdPu' )
+        # South Sound
+        ax0.pcolormesh(plon, plat, np.where(mask_ss == 0, np.nan, mask_ss),
+                    vmin=0, vmax=2, cmap='Purples' )
+        # Whidbey Basin
+        ax0.pcolormesh(plon, plat, np.where(mask_wb == 0, np.nan, mask_wb),
+                    vmin=0, vmax=3, cmap='cool' )
+        # Main Basin
+        ax0.pcolormesh(plon, plat, np.where(mask_mb == 0, np.nan, mask_mb),
+                    vmin=0, vmax=1.5, cmap='summer' )
 
 
-    # format figure
-    ax0.set_xlim([xmin,xmax])
-    ax0.set_ylim([ymin,ymax])
-    ax0.set_ylabel('Latitude', fontsize=12)
-    ax0.set_xlabel('Longitude', fontsize=12)
-    ax0.tick_params(axis='both', labelsize=12)
-    ax0.set_title('(a) Basins', loc='left', fontsize=14, fontweight='bold')
-    pfun.dar(ax0)
+        # format figure
+        ax0.set_xlim([xmin,xmax])
+        ax0.set_ylim([ymin,ymax])
+        ax0.set_ylabel('Latitude', fontsize=12)
+        ax0.set_xlabel('Longitude', fontsize=12)
+        ax0.tick_params(axis='both', labelsize=12)
+        ax0.set_title('(a) Basins', loc='left', fontsize=14, fontweight='bold')
+        pfun.dar(ax0)
 
-    # add wwtp locations
-    if WWTP_loc == True:
-        edgecolor = 'black'
-        facecolor = 'none'
-        alpha = 1
-        ax0.scatter(moh20_lon_wwtps,moh20_lat_wwtps,color=facecolor, edgecolors=edgecolor, alpha=alpha,
-                     linewidth=1, s=moh20_sizes_wwtps, label='WWTPs')
-        ax0.scatter(was24_lon_wwtps,was24_lat_wwtps,color=facecolor, edgecolors=edgecolor, alpha=alpha,
-                     linewidth=1, s=was24_sizes_wwtps)
-        leg_szs = [100, 1000, 10000]
-        szs = [0.05*(leg_sz) for leg_sz in leg_szs]
-        l0 = plt.scatter([],[], s=szs[0], color=facecolor, alpha=alpha, edgecolors=edgecolor, linewidth=1)
-        l1 = plt.scatter([],[], s=szs[1], color=facecolor, alpha=alpha, edgecolors=edgecolor, linewidth=1)
-        l2 = plt.scatter([],[], s=szs[2], color=facecolor, alpha=alpha, edgecolors=edgecolor, linewidth=1)
-        labels = ['< 100', '1,000', '10,000']
-        legend = ax0.legend([l0, l1, l2], labels, fontsize = 10, markerfirst=False,
-            title='WWTP loading \n'+r' (kg N d$^{-1}$)',loc='upper left', labelspacing=1, borderpad=0.8)
-        plt.setp(legend.get_title(),fontsize=9)
+    ##############################################################
+    ##    Consecutive repeated runs for each gtagex         ##
+    ##############################################################
 
-##############################################################
-##    Consecutive repeated runs for each gtagex         ##
-##############################################################
+    # Store the synthetic plotting dates for setting limits and separators
+    run_date_ranges = []
 
-# Store the synthetic plotting dates for setting limits and separators
-run_date_ranges = []
+    for k, region in enumerate(regions):
 
-for k, region in enumerate(regions):
+        for g, gtagex in enumerate(gtagexes):
 
-    for g, gtagex in enumerate(gtagexes):
+            # Each gtagex gets its own artificial calendar year
+            synthetic_year = synthetic_start_year + g
 
-        # Each gtagex gets its own artificial calendar year
-        synthetic_year = synthetic_start_year + g
-
-        # Original model run being plotted
-        avg_concentration = np.asarray(
-            var_vol_norm[gtagex + region + plot_year]
-        )
-
-        # Construct dates matching the number of model time steps.
-        # This is safer than assuming exactly 365 values.
-        synthetic_dates = pd.date_range(
-            start=f'{synthetic_year}-01-01',
-            periods=len(avg_concentration),
-            freq='1D'
-        )
-
-        # Apply filtering separately to each model run.
-        # This avoids smoothing across the Dec 31 / Jan 1 boundary
-        # between separate reruns.
-        avg_concentration_filtered = zfun.lowpass(
-            avg_concentration,
-            n=nwin
-        )
-
-        # Add a label only once per region so that repeated runs do
-        # not create duplicate legend entries.
-        if g == 0:
-            line_label = region
-        else:
-            line_label = '_nolegend_'
-
-        if region == 'All Puget Sound':
-            ax1.plot(
-                synthetic_dates,
-                avg_concentration_filtered,
-                linewidth=1,
-                color=colors[k],
-                alpha=1,
-                linestyle='--',
-                label=line_label
-            )
-        else:
-            ax1.plot(
-                synthetic_dates,
-                avg_concentration_filtered,
-                linewidth=2,
-                color=colors[k],
-                alpha=0.8,
-                label=line_label
+            # Original model run being plotted
+            avg_concentration = np.asarray(
+                var_vol_norm[gtagex + region + plot_year]
             )
 
-        # Only save each gtagex date range once, rather than once
-        # for every basin.
-        if k == 0:
-            run_date_ranges.append(
-                (
-                    synthetic_dates[0],
-                    synthetic_dates[-1],
-                    gtagex
+            # Construct dates matching the number of model time steps.
+            # This is safer than assuming exactly 365 values.
+            synthetic_dates = pd.date_range(
+                start=f'{synthetic_year}-01-01',
+                periods=len(avg_concentration),
+                freq='1D'
+            )
+
+            # Apply filtering separately to each model run.
+            # This avoids smoothing across the Dec 31 / Jan 1 boundary
+            # between separate reruns.
+            avg_concentration_filtered = zfun.lowpass(
+                avg_concentration,
+                n=nwin
+            )
+
+            # Add a label only once per region so that repeated runs do
+            # not create duplicate legend entries.
+            if g == 0:
+                line_label = region
+            else:
+                line_label = '_nolegend_'
+
+            if region == 'All Puget Sound':
+                ax1.plot(
+                    synthetic_dates,
+                    avg_concentration_filtered,
+                    linewidth=1,
+                    color=colors[k],
+                    alpha=1,
+                    linestyle='--',
+                    label=line_label
                 )
-            )
+            else:
+                ax1.plot(
+                    synthetic_dates,
+                    avg_concentration_filtered,
+                    linewidth=2,
+                    color=colors[k],
+                    alpha=0.8,
+                    label=line_label
+                )
+
+            # Only save each gtagex date range once, rather than once
+            # for every basin.
+            if k == 0:
+                run_date_ranges.append(
+                    (
+                        synthetic_dates[0],
+                        synthetic_dates[-1],
+                        gtagex
+                    )
+                )
 
 
-##############################################################
-##                   Format timeseries                      ##
-##############################################################
+    ##############################################################
+    ##                   Format timeseries                      ##
+    ##############################################################
 
-ax1.grid(
-    visible=True,
-    axis='both',
-    color='silver',
-    linestyle='--'
-)
-
-ax1.tick_params(
-    axis='both',
-    labelsize=12,
-    rotation=30
-)
-
-ax1.set_ylabel(variable_info['ylabel'], fontsize=12)
-ax1.set_ylim(variable_info['ylim'])
-
-# Plot limits covering all repeated 2013 runs
-plot_start = run_date_ranges[0][0]
-plot_end = run_date_ranges[-1][1]
-
-ax1.set_xlim(plot_start, plot_end)
-
-ax1.axhline(
-    y=0,
-    color='silver',
-    linestyle='--',
-    linewidth=0.75
-)
-
-# Put one major tick at the middle of each repeated year
-year_tick_locations = []
-year_tick_labels = []
-
-for run_start, run_end, gtagex in run_date_ranges:
-    midpoint = run_start + (run_end - run_start) / 2
-    year_tick_locations.append(midpoint)
-    year_tick_labels.append('2013')
-
-ax1.set_xticks(year_tick_locations)
-ax1.set_xticklabels(year_tick_labels)
-
-# Draw vertical lines separating the individual gtagex runs
-for g in range(1, len(run_date_ranges)):
-    boundary = run_date_ranges[g][0]
-
-    ax1.axvline(
-        boundary,
-        color='0.4',
-        linestyle=':',
-        linewidth=1
+    ax1.grid(
+        visible=True,
+        axis='both',
+        color='silver',
+        linestyle='--'
     )
 
-# Optionally label each gtagex above its corresponding repeated year
-for run_start, run_end, gtagex in run_date_ranges:
-    midpoint = run_start + (run_end - run_start) / 2
+    ax1.tick_params(
+        axis='both',
+        labelsize=12,
+        rotation=30
+    )
 
-    ax1.text(
-        midpoint,
-        0.96, #inside axes
-        gtagex,
-        transform=ax1.get_xaxis_transform(),
-        ha='center',
-        va='bottom',
-        fontsize=9,
-        bbox=dict(
-            facecolor='white',
-            alpha=0.7,
-            edgecolor='none',
-            pad=1
-    ))
+    ax1.set_ylabel(variable_info['ylabel'], fontsize=12)
+    ax1.set_ylim(variable_info['ylim'])
 
-ax1.set_xlabel('Repeated 2013 model runs', fontsize=12)
+    # Plot limits covering all repeated 2013 runs
+    plot_start = run_date_ranges[0][0]
+    plot_end = run_date_ranges[-1][1]
 
-ax1.set_title(
-    f'(b) Avg. Conc. ({nwin}-day Hanning Window)',
-    loc='left',
-    fontsize=14,
-    fontweight='bold'
-)
+    ax1.set_xlim(plot_start, plot_end)
+
+    ax1.axhline(
+        y=0,
+        color='silver',
+        linestyle='--',
+        linewidth=0.75
+    )
+
+    # Put one major tick at the middle of each repeated year
+    year_tick_locations = []
+    year_tick_labels = []
+
+    for run_start, run_end, gtagex in run_date_ranges:
+        midpoint = run_start + (run_end - run_start) / 2
+        year_tick_locations.append(midpoint)
+        year_tick_labels.append('2013')
+
+    ax1.set_xticks(year_tick_locations)
+    ax1.set_xticklabels(year_tick_labels)
+
+    # Draw vertical lines separating the individual gtagex runs
+    for g in range(1, len(run_date_ranges)):
+        boundary = run_date_ranges[g][0]
+
+        ax1.axvline(
+            boundary,
+            color='0.4',
+            linestyle=':',
+            linewidth=1
+        )
+
+    # Optionally label each gtagex above its corresponding repeated year
+    for run_start, run_end, gtagex in run_date_ranges:
+        midpoint = run_start + (run_end - run_start) / 2
+
+        ax1.text(
+            midpoint,
+            0.96, #inside axes
+            gtagex,
+            transform=ax1.get_xaxis_transform(),
+            ha='center',
+            va='bottom',
+            fontsize=9,
+            bbox=dict(
+                facecolor='white',
+                alpha=0.7,
+                edgecolor='none',
+                pad=1
+        ))
+
+    ax1.set_xlabel('Repeated 2013 model runs', fontsize=12)
+
+    ax1.set_title(
+        f'(b) Avg. Conc. ({nwin}-day Hanning Window)',
+        loc='left',
+        fontsize=14,
+        fontweight='bold'
+    )
     
-plt.savefig(out_dir/'2013_rerun_timeseries.png')
+    # Leave room for the overall figure title
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+
+    output_filename = (
+        f'2013_rerun_{var_name}_timeseries.png'
+    )
+
+    fig.savefig(
+        out_dir / output_filename,
+        dpi=300,
+        bbox_inches='tight'
+    )
+
+    plt.show()
+    plt.close(fig)
