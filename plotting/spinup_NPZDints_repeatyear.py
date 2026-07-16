@@ -447,7 +447,7 @@ for run_start, run_end, gtagex in run_date_ranges:
 
     ax1.text(
         midpoint,
-        1.02,
+        0.98, #inside axes
         gtagex,
         transform=ax1.get_xaxis_transform(),
         ha='center',
