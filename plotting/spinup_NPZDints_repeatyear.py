@@ -248,12 +248,14 @@ for year in years:
 plot_variables = [
     {
         'name': 'Nitrate',
+        'short_name': 'NO3',
         'data': NO3_vol_norm,
         'ylim': (0, 40),
         'ylabel': r'NO$_3$ (mmol m$^{-3}$)'
     },
     {
         'name': 'Dissolved Oxygen',
+        'short_name': 'DO',
         'data': DO_vol_norm,
         'ylim': (0, 300),
         'ylabel': r'DO (mmol m$^{-3}$)'
@@ -262,17 +264,25 @@ plot_variables = [
 ##############################################################
 ##                    Plotting config                       ##
 ##############################################################
-plot_year = '2013'
 
-# Use artificial consecutive years only for positioning on the x-axis
+plot_year = '2013'
 synthetic_start_year = 2013
+
+# Puget Sound bounds
+xmin = -123.29
+xmax = -122.10
+ymin = 46.95
+ymax = 48.50
 
 for variable_info in plot_variables:
 
     var_name = variable_info['name']
+    var_short_name = variable_info['short_name']
     var_vol_norm = variable_info['data']
 
-    # Initialize a new figure for each variable
+    print(f'Plotting {var_name}')
+
+    # Create exactly one figure for this variable
     fig, (ax0, ax1) = plt.subplots(
         1,
         2,
@@ -281,91 +291,108 @@ for variable_info in plot_variables:
     )
 
     fig.suptitle(var_name, fontsize=16)
-    ##############################################################
-    ##                    Plot basin map                        ##
-    ##############################################################
 
-    # Puget Sound bounds
-    xmin = -123.29
-    xmax = -122.1
-    ymin = 46.95
-    ymax = 48.50#48.93
+    ##########################################################
+    ##                    Plot basin map                     ##
+    ##########################################################
 
-    # variables
-    vars = ['NO3','Dissolved Oxygen']
-    for j,var_vol_norm in enumerate([NO3_vol_norm,DO_vol_norm]):
+    ax0.pcolormesh(
+        plon,
+        plat,
+        np.where(mask_rho == 0, np.nan, mask_rho),
+        vmin=0,
+        vmax=1.1,
+        cmap='bone'
+    )
 
-        # initialize figure
-        fig, (ax0, ax1) = plt.subplots(1,2,figsize = (11,5),gridspec_kw={'width_ratios': [1, 2]})
-        fig.suptitle(vars[j], fontsize = 16)
+    ax0.pcolormesh(
+        plon,
+        plat,
+        np.where(mask_hc == 0, np.nan, mask_hc),
+        vmin=0,
+        vmax=2.5,
+        cmap='RdPu'
+    )
 
-        # All Puget Sound
-        ax0.pcolormesh(plon, plat, np.where(mask_rho == 0, np.nan, mask_rho),
-                    vmin=0, vmax=1.1, cmap='bone' )
-        # Hood Canal
-        ax0.pcolormesh(plon, plat, np.where(mask_hc == 0, np.nan, mask_hc),
-                    vmin=0, vmax=2.5, cmap='RdPu' )
-        # South Sound
-        ax0.pcolormesh(plon, plat, np.where(mask_ss == 0, np.nan, mask_ss),
-                    vmin=0, vmax=2, cmap='Purples' )
-        # Whidbey Basin
-        ax0.pcolormesh(plon, plat, np.where(mask_wb == 0, np.nan, mask_wb),
-                    vmin=0, vmax=3, cmap='cool' )
-        # Main Basin
-        ax0.pcolormesh(plon, plat, np.where(mask_mb == 0, np.nan, mask_mb),
-                    vmin=0, vmax=1.5, cmap='summer' )
+    ax0.pcolormesh(
+        plon,
+        plat,
+        np.where(mask_ss == 0, np.nan, mask_ss),
+        vmin=0,
+        vmax=2,
+        cmap='Purples'
+    )
 
+    ax0.pcolormesh(
+        plon,
+        plat,
+        np.where(mask_wb == 0, np.nan, mask_wb),
+        vmin=0,
+        vmax=3,
+        cmap='cool'
+    )
 
-        # format figure
-        ax0.set_xlim([xmin,xmax])
-        ax0.set_ylim([ymin,ymax])
-        ax0.set_ylabel('Latitude', fontsize=12)
-        ax0.set_xlabel('Longitude', fontsize=12)
-        ax0.tick_params(axis='both', labelsize=12)
-        ax0.set_title('(a) Basins', loc='left', fontsize=14, fontweight='bold')
-        pfun.dar(ax0)
+    ax0.pcolormesh(
+        plon,
+        plat,
+        np.where(mask_mb == 0, np.nan, mask_mb),
+        vmin=0,
+        vmax=1.5,
+        cmap='summer'
+    )
 
-    ##############################################################
-    ##    Consecutive repeated runs for each gtagex         ##
-    ##############################################################
+    ax0.set_xlim(xmin, xmax)
+    ax0.set_ylim(ymin, ymax)
+    ax0.set_ylabel('Latitude', fontsize=12)
+    ax0.set_xlabel('Longitude', fontsize=12)
+    ax0.tick_params(axis='both', labelsize=12)
 
-    # Store the synthetic plotting dates for setting limits and separators
+    ax0.set_title(
+        '(a) Basins',
+        loc='left',
+        fontsize=14,
+        fontweight='bold'
+    )
+
+    pfun.dar(ax0)
+
+    ##########################################################
+    ##       Consecutive repeated runs for each gtagex       ##
+    ##########################################################
+
     run_date_ranges = []
 
     for k, region in enumerate(regions):
 
         for g, gtagex in enumerate(gtagexes):
 
-            # Each gtagex gets its own artificial calendar year
             synthetic_year = synthetic_start_year + g
 
-            # Original model run being plotted
+            data_key = gtagex + region + plot_year
+
+            if data_key not in var_vol_norm:
+                print(
+                    f'Missing {var_name} data for '
+                    f'gtagex={gtagex}, region={region}, year={plot_year}'
+                )
+                continue
+
             avg_concentration = np.asarray(
-                var_vol_norm[gtagex + region + plot_year]
+                var_vol_norm[data_key]
             )
 
-            # Construct dates matching the number of model time steps.
-            # This is safer than assuming exactly 365 values.
             synthetic_dates = pd.date_range(
                 start=f'{synthetic_year}-01-01',
                 periods=len(avg_concentration),
                 freq='1D'
             )
 
-            # Apply filtering separately to each model run.
-            # This avoids smoothing across the Dec 31 / Jan 1 boundary
-            # between separate reruns.
             avg_concentration_filtered = zfun.lowpass(
                 avg_concentration,
                 n=nwin
             )
 
-            # Add a label only once per region so that repeated runs do
-            # not create duplicate legend entries.
-            if g == 0:
-                line_label = region
-            else:
-                line_label = '_nolegend_'
+            line_label = region if g == 0 else '_nolegend_'
 
             if region == 'All Puget Sound':
                 ax1.plot(
@@ -387,8 +414,7 @@ for variable_info in plot_variables:
                     label=line_label
                 )
 
-            # Only save each gtagex date range once, rather than once
-            # for every basin.
+            # Save each gtagex range only once
             if k == 0:
                 run_date_ranges.append(
                     (
@@ -398,10 +424,14 @@ for variable_info in plot_variables:
                     )
                 )
 
+    ##########################################################
+    ##                  Format timeseries                    ##
+    ##########################################################
 
-    ##############################################################
-    ##                   Format timeseries                      ##
-    ##############################################################
+    if len(run_date_ranges) == 0:
+        print(f'No data were plotted for {var_name}')
+        plt.close(fig)
+        continue
 
     ax1.grid(
         visible=True,
@@ -419,7 +449,6 @@ for variable_info in plot_variables:
     ax1.set_ylabel(variable_info['ylabel'], fontsize=12)
     ax1.set_ylim(variable_info['ylim'])
 
-    # Plot limits covering all repeated 2013 runs
     plot_start = run_date_ranges[0][0]
     plot_end = run_date_ranges[-1][1]
 
@@ -432,47 +461,54 @@ for variable_info in plot_variables:
         linewidth=0.75
     )
 
-    # Put one major tick at the middle of each repeated year
+    ##########################################################
+    ##                Repeated year labels                   ##
+    ##########################################################
+
     year_tick_locations = []
-    year_tick_labels = []
 
     for run_start, run_end, gtagex in run_date_ranges:
         midpoint = run_start + (run_end - run_start) / 2
         year_tick_locations.append(midpoint)
-        year_tick_labels.append('2013')
 
     ax1.set_xticks(year_tick_locations)
-    ax1.set_xticklabels(year_tick_labels)
+    ax1.set_xticklabels(['2013'] * len(run_date_ranges))
 
-    # Draw vertical lines separating the individual gtagex runs
+    ##########################################################
+    ##             Separate the individual runs              ##
+    ##########################################################
+
     for g in range(1, len(run_date_ranges)):
-        boundary = run_date_ranges[g][0]
-
         ax1.axvline(
-            boundary,
+            run_date_ranges[g][0],
             color='0.4',
             linestyle=':',
             linewidth=1
         )
 
-    # Optionally label each gtagex above its corresponding repeated year
+    ##########################################################
+    ##                    gtagex labels                      ##
+    ##########################################################
+
     for run_start, run_end, gtagex in run_date_ranges:
+
         midpoint = run_start + (run_end - run_start) / 2
 
         ax1.text(
             midpoint,
-            0.96, #inside axes
+            0.94,
             gtagex,
             transform=ax1.get_xaxis_transform(),
             ha='center',
-            va='bottom',
+            va='top',
             fontsize=9,
             bbox=dict(
                 facecolor='white',
                 alpha=0.7,
                 edgecolor='none',
                 pad=1
-        ))
+            )
+        )
 
     ax1.set_xlabel('Repeated 2013 model runs', fontsize=12)
 
@@ -482,12 +518,20 @@ for variable_info in plot_variables:
         fontsize=14,
         fontweight='bold'
     )
-    
-    # Leave room for the overall figure title
+
+    ax1.legend(
+        loc='lower right',
+        fontsize=8
+    )
+
+    ##########################################################
+    ##                    Save figure                        ##
+    ##########################################################
+
     fig.tight_layout(rect=[0, 0, 1, 0.95])
 
     output_filename = (
-        f'2013_rerun_{var_name}_timeseries.png'
+        f'2013_rerun_{var_short_name}_timeseries.png'
     )
 
     fig.savefig(
