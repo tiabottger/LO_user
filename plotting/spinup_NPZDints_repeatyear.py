@@ -433,12 +433,14 @@ for variable_info in plot_variables:
         plt.close(fig)
         continue
 
-    ax1.grid(
-        visible=True,
-        axis='both',
-        color='silver',
-        linestyle='--'
-    )
+    # ax1.grid(
+    #     visible=True,
+    #     axis='both',
+    #     color='silver',
+    #     linestyle='--'
+    # )
+    
+    ax1.grid(False)
 
     ax1.tick_params(
         axis='both',
