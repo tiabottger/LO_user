@@ -461,18 +461,15 @@ for variable_info in plot_variables:
         linewidth=0.75
     )
 
-    ##########################################################
-    ##                Repeated year labels                   ##
-    ##########################################################
+    # Month labels
+    ax1.xaxis.set_major_locator(mdates.MonthLocator())
+    ax1.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
 
-    year_tick_locations = []
-
-    for run_start, run_end, gtagex in run_date_ranges:
-        midpoint = run_start + (run_end - run_start) / 2
-        year_tick_locations.append(midpoint)
-
-    ax1.set_xticks(year_tick_locations)
-    ax1.set_xticklabels(['2013'] * len(run_date_ranges))
+    ax1.tick_params(
+        axis='x',
+        rotation=0,
+        labelsize=9
+    )
 
     ##########################################################
     ##             Separate the individual runs              ##
