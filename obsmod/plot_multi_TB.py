@@ -67,7 +67,7 @@ plt.close('all')
 
 # specify input (created by process_multi_bottle.py and process_multi_ctd.py)
 for otype in ['bottle']:#, 'ctd']:
-    in_fn = in_dir / ('combined_' + otype + '_' + year + '_cas7_t1_x11ab_ssc.pkl')
+    in_fn = in_dir / ('combined_' + otype + '_' + year + '_cas7_t1_x11ab_ssc_ssm.pkl')
     df0_dict = pickle.load(open(in_fn, 'rb'))
     
     # remove non-DataFrame entries (like meta)
@@ -220,8 +220,8 @@ for otype in ['bottle']:#, 'ctd']:
                 fs = 12
                 pfun.start_plot(figsize=(20,12), fs=fs)
 
-                #gtx_list = ['cas7_t1_x11ab', 'ssc', 'ssm']
-                gtx_list = ['cas7_t1_x11ab', 'ssc']
+                gtx_list = ['cas7_t1_x11ab', 'ssc', 'ssm']
+                #gtx_list = ['cas7_t1_x11ab', 'ssc']
                 c_dict = dict(zip(gtx_list,['r','b','g']))
                 t_dict = dict(zip(gtx_list,[.05,.15,0.25])) # vertical position of stats text
 
@@ -293,31 +293,39 @@ for otype in ['bottle']:#, 'ctd']:
                         
                         ax.text(.95,t_dict[gtx],'bias=%0.1f, rmse=%0.1f' % (bias,rmse),c=c_dict[gtx],
                                 transform=ax.transAxes, ha='right', fontweight='bold', bbox=pfun.bbox,
-                                fontsize=fs-1,style='italic')
+                                fontsize=15,style='italic')
 
                     if otype == 'bottle':
                         if jj in [9,10,11]:
-                            ax.set_xlabel('Observed')
+                            ax.set_xlabel('Observed', fontsize=16)
                         if jj in [1,5,9]:
-                            ax.set_ylabel('Modeled')
+                            ax.set_ylabel('Modeled', fontsize=16)
                     elif otype == 'ctd':
                         if jj in [4,5]:
                             ax.set_xlabel('Observed')
                         if jj in [1,4]:
                             ax.set_ylabel('Modeled')
-        
+                            
+                
+                           
                     # add labels to identify the model runs with the colors
-                    if jj == 1:
-                        yy = 0
-                        for gtx in c_dict.keys():
-                            ax.text(.05, .7 + 0.1*yy, gtx, c=c_dict[gtx], transform=ax.transAxes,
-                                fontweight='bold', ha='left')
-                            yy += 1
+                    # if jj == 1:
+                    #     yy = 0
+                    #     for gtx in c_dict.keys():
+                    #         ax.text(.05, .7 + 0.1*yy, gtx, c=c_dict[gtx], transform=ax.transAxes,
+                    #             fontweight='bold', ha='left')
+                    #         yy += 1
             
-                    ax.text(.05,.9,vn,transform=ax.transAxes, fontweight='bold')
+                    vn_label=['Salinity','Temperature','DO','NO3','NH4','DIN',
+                        'DIC', 'TA', 'Chl']
+                    vn_lab = vn_label[ii]
+                    
+                    # ax.text(.05,.9,vn,transform=ax.transAxes, fontweight='bold')
+                    ax.text(.05,.9,vn_lab,transform=ax.transAxes, fontweight='bold', fontsize=16)
                     ax.axis([lim_dict[vn][0], lim_dict[vn][1], lim_dict[vn][0], lim_dict[vn][1]])
-                    ax.plot([lim_dict[vn][0], lim_dict[vn][1]], [lim_dict[vn][0], lim_dict[vn][1]],'-g')
+                    ax.plot([lim_dict[vn][0], lim_dict[vn][1]], [lim_dict[vn][0], lim_dict[vn][1]],'-k')
                     ax.grid(True)
+                    ax.tick_params(axis='both', labelsize=14)
     
                 # station map
                 if otype == 'bottle':
@@ -343,7 +351,8 @@ for otype in ['bottle']:#, 'ctd']:
                 if testing:
                     plt.show()
                 else:
-                    plt.savefig(out_dir / (ff_str + '.png'))
+                    #plt.savefig(out_dir / (ff_str + '.png'))
+                    plt.savefig(out_dir / (ff_str + '_withssm_poster.png'))
                     plt.close('all')
 
     
