@@ -304,7 +304,22 @@ for region in regions:
         )
 
         # Choose a colormap for the reruns
-        colors = plt.cm.Blues([0.4, 0.7, 1.0])
+        region_cmaps = {
+            'Hood Canal': plt.cm.PuRd,
+            'South Sound': plt.cm.Purples,
+            'Whidbey Basin': plt.cm.cool,
+            'Main Basin': plt.cm.summer,
+            'All Puget Sound': plt.cm.Greys
+        }
+
+        # choose darker shades to avoid very light colors
+        region_colors = {}
+
+        for region in regions:
+            cmap = region_cmaps[region]
+            region_colors[region] = cmap([0.45, 0.7, 0.95])
+            
+        colors = region_colors[region]
 
         for g, gtagex in enumerate(gtagexes):
 
