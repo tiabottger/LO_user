@@ -274,6 +274,20 @@ xmax = -122.10
 ymin = 46.95
 ymax = 48.50
 
+# Choose a colormap for the reruns
+region_cmaps = {
+    'Hood Canal': plt.cm.PuRd,
+    'South Sound': plt.cm.Purples,
+    'Whidbey Basin': plt.cm.cool,
+    'Main Basin': plt.cm.summer,
+    'All Puget Sound': plt.cm.Greys
+}
+region_colors = {}
+
+for region in regions:
+    cmap = region_cmaps[region]
+    region_colors[region] = cmap([0.45, 0.7, 0.95])
+
 for region in regions: 
     for variable_info in plot_variables:
 
@@ -302,22 +316,6 @@ for region in regions:
             periods=n_days,
             freq='D'
         )
-
-        # Choose a colormap for the reruns
-        region_cmaps = {
-            'Hood Canal': plt.cm.PuRd,
-            'South Sound': plt.cm.Purples,
-            'Whidbey Basin': plt.cm.cool,
-            'Main Basin': plt.cm.summer,
-            'All Puget Sound': plt.cm.Greys
-        }
-
-        # choose darker shades to avoid very light colors
-        region_colors = {}
-
-        for region in regions:
-            cmap = region_cmaps[region]
-            region_colors[region] = cmap([0.45, 0.7, 0.95])
             
         colors = region_colors[region]
 
