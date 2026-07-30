@@ -304,7 +304,7 @@ for region in regions:
         )
 
         # Choose a colormap for the reruns
-        colors = plt.cm.Reds(np.linspace(0, 1, len(gtagexes)))
+        colors = plt.cm.Blues([0.4, 0.7, 1.0])
 
         for g, gtagex in enumerate(gtagexes):
 
