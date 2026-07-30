@@ -286,7 +286,6 @@ for region in regions:
         # Create exactly one figure for this variable
         fig, ax1 = plt.subplots(
             figsize=(10, 5),
-            gridspec_kw={'width_ratios': [1, 2]}
         )
 
         fig.suptitle(var_name, fontsize=16)
