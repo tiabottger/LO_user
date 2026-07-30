@@ -304,7 +304,7 @@ for region in regions:
         )
 
         # Choose a colormap for the reruns
-        colors = plt.cm.Blues(np.linspace(0, 1, len(gtagexes)))
+        colors = plt.cm.Set2(np.linspace(0, 1, len(gtagexes)))
 
         for g, gtagex in enumerate(gtagexes):
 
@@ -333,7 +333,7 @@ for region in regions:
         ##                  Format timeseries                    ##
         ##########################################################
 
-        ax1.grid(False)
+        ax1.grid(True)
 
         ax1.set_xlim(dates[0], dates[-1])
 
