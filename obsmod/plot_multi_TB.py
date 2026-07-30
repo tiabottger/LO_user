@@ -236,7 +236,7 @@ for otype in ['bottle']:#, 'ctd']:
                     vn_list = ['SA','CT','DO','Chl']
                     jj_list = [1,2,4,5] # indices for the data plots
 
-                lim_dict = {'SA':(14,36),'CT':(0,20),'DO':(0,20),
+                lim_dict = {'SA':(25,35),'CT':(5,15),'DO':(0,15),
                     'NO3':(0,50),'NH4':(0,10),'DIN':(0,50),
                     'DIC':(1500,2500),'TA':(1500,2500),'Chl':(0,20)}
 
@@ -325,6 +325,12 @@ for otype in ['bottle']:#, 'ctd']:
                     ax.axis([lim_dict[vn][0], lim_dict[vn][1], lim_dict[vn][0], lim_dict[vn][1]])
                     ax.plot([lim_dict[vn][0], lim_dict[vn][1]], [lim_dict[vn][0], lim_dict[vn][1]],'-k')
                     ax.grid(True)
+                    
+                    if vn == 'DO':
+                        ticks = np.arange(0, 16, 2)  # 0, 2, 4, ..., 14
+                        ax.set_xticks(ticks)
+                        ax.set_yticks(ticks)
+
                     ax.tick_params(axis='both', labelsize=14)
     
                 # station map
