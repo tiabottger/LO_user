@@ -278,8 +278,8 @@ ymax = 48.50
 region_cmaps = {
     'Hood Canal': plt.cm.PuRd,
     'South Sound': plt.cm.Purples,
-    'Whidbey Basin': plt.cm.cool,
-    'Main Basin': plt.cm.summer,
+    'Whidbey Basin': plt.cm.Blues,
+    'Main Basin': plt.cm.Greens,
     'All Puget Sound': plt.cm.Greys
 }
 region_colors = {}
