@@ -284,78 +284,14 @@ for region in regions:
         print(f'Plotting {var_name}')
 
         # Create exactly one figure for this variable
-        fig, (ax0, ax1) = plt.subplots(
+        fig, ax1 = plt.subplots(
             1,
             2,
-            figsize=(15, 5),
+            figsize=(10, 5),
             gridspec_kw={'width_ratios': [1, 2]}
         )
 
         fig.suptitle(var_name, fontsize=16)
-
-        ##########################################################
-        ##                    Plot basin map                     ##
-        ##########################################################
-
-        ax0.pcolormesh(
-            plon,
-            plat,
-            np.where(mask_rho == 0, np.nan, mask_rho),
-            vmin=0,
-            vmax=1.1,
-            cmap='bone'
-        )
-
-        ax0.pcolormesh(
-            plon,
-            plat,
-            np.where(mask_hc == 0, np.nan, mask_hc),
-            vmin=0,
-            vmax=2.5,
-            cmap='RdPu'
-        )
-
-        ax0.pcolormesh(
-            plon,
-            plat,
-            np.where(mask_ss == 0, np.nan, mask_ss),
-            vmin=0,
-            vmax=2,
-            cmap='Purples'
-        )
-
-        ax0.pcolormesh(
-            plon,
-            plat,
-            np.where(mask_wb == 0, np.nan, mask_wb),
-            vmin=0,
-            vmax=3,
-            cmap='cool'
-        )
-
-        ax0.pcolormesh(
-            plon,
-            plat,
-            np.where(mask_mb == 0, np.nan, mask_mb),
-            vmin=0,
-            vmax=1.5,
-            cmap='summer'
-        )
-
-        ax0.set_xlim(xmin, xmax)
-        ax0.set_ylim(ymin, ymax)
-        ax0.set_ylabel('Latitude', fontsize=12)
-        ax0.set_xlabel('Longitude', fontsize=12)
-        ax0.tick_params(axis='both', labelsize=12)
-
-        ax0.set_title(
-            '(a) Basins',
-            loc='left',
-            fontsize=14,
-            fontweight='bold'
-        )
-
-        pfun.dar(ax0)
 
     ##########################################################
     ##           Plot all reruns on same 2013 axis           ##
@@ -434,7 +370,7 @@ for region in regions:
         ax1.set_xlabel(plot_year, fontsize=12)
 
         ax1.set_title(
-            f'(b) {region} ({nwin}-day Hanning Window)',
+            f'{region} ({nwin}-day Hanning Window)',
             loc='left',
             fontsize=14,
             fontweight='bold'
