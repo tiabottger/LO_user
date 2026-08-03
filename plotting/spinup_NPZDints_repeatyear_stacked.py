@@ -2,7 +2,7 @@
 Compare average bottom DO between multiple years
 (Set up to run for 6 years)
 
-Tia modified to compare model reruns of 2013 
+Tia modified to compare model reruns of 2013 and both versions of 2014.
 
 """
 
@@ -50,12 +50,13 @@ WWTP_loc = False
 # Hanning window length
 nwin = 20
 
-# years =  ['2015']
-years =  ['2013'] #,'2014','2015','2016','2017','2018','2019','2020']
+# years =  ['2013'] 
+years = ['2014']
 # years =  ['2014','2015','2016','2017','2018','2019','2020']
 
 # which  model run to look at?
-gtagexes = ['cas7_t1_x11ab','cas7_t1y13v2_x11ab', 'cas7_t1y13v3_x11ab'] 
+#gtagexes = ['cas7_t1_x11ab','cas7_t1y13v2_x11ab', 'cas7_t1y13v3_x11ab'] 
+gtagexes = ['cas7_t1_x11ab','cas7_t1y14_x11ab'] 
 
 # where to put output figures
 out_dir = Ldir['LOo'] / 'intermodel_comparison'
@@ -265,8 +266,8 @@ plot_variables = [
 ##                    Plotting config                       ##
 ##############################################################
 
-plot_year = '2013'
-
+# plot_year = '2013'
+plot_year = '2014'
 
 # Puget Sound bounds
 xmin = -123.29
@@ -402,7 +403,7 @@ for region in regions:
         region_str=region.replace(' ','_')
         
         output_filename = (
-            f'2013_rerun_{region_str}_{var_short_name}_stacked_timeseries.png'
+            f'{years[0]}_rerun_{region_str}_{var_short_name}_stacked_timeseries.png'
         )
 
         fig.savefig(
