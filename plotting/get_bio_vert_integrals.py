@@ -38,8 +38,8 @@ regions = ['pugetsoundDO']
 years = ['2014']#['2015','2016','2017','2018','2019','2020']
 
 # which  model run to look at?
-# gtagex = 'cas7_t1noDIN_x11ab' # 
-gtagexes = ['cas7_t1y14_x11ab']
+# gtagexes = ['cas7_t1y14_x11ab']
+gtagexes = ['cas7_t1_x11ab']
 
 # where to put output files
 out_dir = Ldir['LOo'] / 'intermodel_comparison'
