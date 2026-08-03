@@ -67,7 +67,7 @@ plt.close('all')
 
 # specify input (created by process_multi_bottle.py and process_multi_ctd.py)
 for otype in ['bottle']:#, 'ctd']:
-    in_fn = in_dir / ('combined_' + otype + '_' + year + '_cas7_t1_x11ab_ssc_ssm.pkl')
+    in_fn = in_dir / ('combined_' + otype + '_' + year + '_cas7_t1_x11ab_ssc.pkl')
     df0_dict = pickle.load(open(in_fn, 'rb'))
     
     # remove non-DataFrame entries (like meta)
@@ -220,8 +220,8 @@ for otype in ['bottle']:#, 'ctd']:
                 fs = 12
                 pfun.start_plot(figsize=(20,12), fs=fs)
 
-                gtx_list = ['cas7_t1_x11ab', 'ssc', 'ssm']
-                #gtx_list = ['cas7_t1_x11ab', 'ssc']
+                # gtx_list = ['cas7_t1_x11ab', 'ssc', 'ssm']
+                gtx_list = ['cas7_t1_x11ab', 'ssc']
                 c_dict = dict(zip(gtx_list,['r','b','g']))
                 t_dict = dict(zip(gtx_list,[.05,.15,0.25])) # vertical position of stats text
 
@@ -358,7 +358,7 @@ for otype in ['bottle']:#, 'ctd']:
                     plt.show()
                 else:
                     #plt.savefig(out_dir / (ff_str + '.png'))
-                    plt.savefig(out_dir / (ff_str + '_withssm_poster.png'))
+                    plt.savefig(out_dir / (ff_str + '_poster.png'))
                     plt.close('all')
 
     
