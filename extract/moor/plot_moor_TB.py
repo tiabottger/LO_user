@@ -17,7 +17,8 @@ verbose = False
 in_dir0 = Ldir['LOo'] / 'extract'
 gtagex = Lfun.choose_item(in_dir0, tag='', exclude_tag='', itext='** Choose gtagex from list **')
 in_dir = in_dir0 / gtagex / 'moor'
-out_dir = Ldir['LOo'] / 'intermodel_comparison' / gtagex 
+out_dir = Ldir['LOo'] / 'intermodel_comparison' / gtagex
+out_dir.mkdir(parents=True, exist_ok=True) 
 # you can choose either a file or a directory
 moor_name = Lfun.choose_item(in_dir, itext='** Choose mooring extraction or folder from list **')
 moor_item = in_dir / moor_name
