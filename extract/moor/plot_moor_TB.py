@@ -78,7 +78,8 @@ plt.close('all')
 pfun.start_plot(figsize=(12,8))
 fig = plt.figure()
 df.plot(subplots=True, grid=True, fig=fig, title=moor_fn.name)
-
+fig.savefig(out_dir / (moor_fn.stem + '_timeseries.png'),
+            dpi=300, bbox_inches='tight')
 
 # also make a map - could be spiffier
 fig2 = plt.figure(figsize=(8,8))
@@ -102,6 +103,5 @@ ax2.axis([mx-pad, mx+pad, my-pad, my+pad])
 pfun.dar(ax2)
 ax2.plot(mx,my,'*y')
 
-plt.show()
 plt.savefig(out_dir / (moor_fn.stem + '_map.png'))
 pfun.end_plot()
