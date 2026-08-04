@@ -128,9 +128,12 @@ y = gds.lat_rho.values
 h = gds.h.values
 m = gds.mask_rho.values
 px, py = pfun.get_plon_plat(x,y)
-m[m==0] = np.nan
-ax2.pcolormesh(px,py,h,cmap='Blues', vmin=0, vmax=1)
-pfun.add_coast(ax2)
+zm = np.full_like(h, np.nan)
+zm[m==1] = 0  # ocean
+# plot ocean
+ax2.pcolormesh(px,py,zm,cmap=plt.cm.Blues_r, vmin=-5, vmax=0)
+pfun.add_coast(ax2, color='gray')
+# mooring location 
 mx = float(ds1.lon_rho.values)
 my = float(ds1.lat_rho.values)
 ax2.plot(mx,my,
