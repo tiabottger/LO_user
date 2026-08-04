@@ -67,6 +67,8 @@ if 'salt' in VN_list:
     vn3_list += ['salt', 'temp']
 if 'oxygen' in VN_list:
     vn3_list += ['oxygen']
+if 'NO3' in VN_list:
+    vn3_list += ['NO3']
 
 vn2_list = [vn for vn in vn2_list if vn in VN_list]
 vn3_list = [vn for vn in vn3_list if vn in VN_list]
