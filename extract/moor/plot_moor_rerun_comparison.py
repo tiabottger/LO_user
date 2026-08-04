@@ -118,7 +118,7 @@ fig.savefig(
     bbox_inches="tight"
 )
 
-# also make a map - could be spiffier
+# also make a map with station location
 fig2 = plt.figure(figsize=(8,8))
 ax2 = fig2.add_subplot()
 gfn = Ldir['data'] / 'grids' / 'cas7' / 'grid.nc'
@@ -127,18 +127,17 @@ x = gds.lon_rho.values
 y = gds.lat_rho.values
 h = gds.h.values
 m = gds.mask_rho.values
-h[m==0] = np.nan
 px, py = pfun.get_plon_plat(x,y)
+m[m==0] = np.nan
+ax2.pcolormesh(px,py,h,cmap='Blues', vmin=0, vmax=1)
+pfun.add_coast(ax2)
 mx = float(ds1.lon_rho.values)
 my = float(ds1.lat_rho.values)
-cs = ax2.pcolormesh(px,py,h,cmap='jet')
-fig2.colorbar(cs,ax=ax2)
-ax2.contour(x,y,h,40,colors='w')
-pfun.add_coast(ax2)
+ax2.plot(mx,my,
+         marker='*', color='r', markersize=22, markeredgecolor='k', markeredgewidth=1.5)
 pad = .5
 ax2.axis([mx-pad, mx+pad, my-pad, my+pad])
 pfun.dar(ax2)
-ax2.plot(mx,my,'*y')
 
-plt.savefig(out_dir / (moor_fn1.stem + '_map.png'))
+plt.savefig(out_dir / (moor_fn1.stem + '_map.png'), dpi=300, bbox_inches='tight')
 pfun.end_plot()
