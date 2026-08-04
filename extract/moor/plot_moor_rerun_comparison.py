@@ -131,7 +131,7 @@ px, py = pfun.get_plon_plat(x,y)
 zm = np.full_like(h, np.nan)
 zm[m==1] = 0  # ocean
 # plot ocean
-ax2.pcolormesh(px,py,zm,cmap=plt.cm.Blues_r, vmin=-5, vmax=0)
+ax2.pcolormesh(px,py,zm,cmap=plt.cm.Blues_r, vmin=0, vmax=1)
 pfun.add_coast(ax2, color='gray')
 # mooring location 
 mx = float(ds1.lon_rho.values)
