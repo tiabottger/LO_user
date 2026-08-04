@@ -127,8 +127,8 @@ h = gds.h.values
 m = gds.mask_rho.values
 h[m==0] = np.nan
 px, py = pfun.get_plon_plat(x,y)
-mx = float(ds.lon_rho.values)
-my = float(ds.lat_rho.values)
+mx = float(ds1.lon_rho.values)
+my = float(ds1.lat_rho.values)
 cs = ax2.pcolormesh(px,py,h,cmap='jet')
 fig2.colorbar(cs,ax=ax2)
 ax2.contour(x,y,h,40,colors='w')
