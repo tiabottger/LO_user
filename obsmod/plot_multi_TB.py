@@ -67,7 +67,7 @@ plt.close('all')
 
 # specify input (created by process_multi_bottle.py and process_multi_ctd.py)
 for otype in ['bottle']:#, 'ctd']:
-    in_fn = in_dir / ('combined_' + otype + '_' + year + '_cas7_t1_x11ab_ssc.pkl')
+    in_fn = in_dir / ('combined_' + otype + '_' + year + '_cas7_t1_x11ab_ssc_ssm_v1.pkl')
     df0_dict = pickle.load(open(in_fn, 'rb'))
     
     # remove non-DataFrame entries (like meta)
@@ -220,8 +220,8 @@ for otype in ['bottle']:#, 'ctd']:
                 fs = 12
                 pfun.start_plot(figsize=(20,12), fs=fs)
 
-                # gtx_list = ['cas7_t1_x11ab', 'ssc', 'ssm']
-                gtx_list = ['cas7_t1_x11ab', 'ssc']
+                gtx_list = ['cas7_t1_x11ab', 'ssc', 'ssm']
+                # gtx_list = ['cas7_t1_x11ab', 'ssc']
                 c_dict = dict(zip(gtx_list,['r','b','g']))
                 t_dict = dict(zip(gtx_list,[.05,.15,0.25])) # vertical position of stats text
 
@@ -236,7 +236,12 @@ for otype in ['bottle']:#, 'ctd']:
                     vn_list = ['SA','CT','DO','Chl']
                     jj_list = [1,2,4,5] # indices for the data plots
 
-                lim_dict = {'SA':(25,35),'CT':(5,15),'DO':(0,15),
+                # more zoomed in for poster with ssm
+                # lim_dict = {'SA':(25,35),'CT':(5,15),'DO':(0,15),
+                #     'NO3':(0,50),'NH4':(0,10),'DIN':(0,50),
+                #     'DIC':(1500,2500),'TA':(1500,2500),'Chl':(0,20)}
+                
+                lim_dict = {'SA':(14,36),'CT':(0,20),'DO':(0,15),
                     'NO3':(0,50),'NH4':(0,10),'DIN':(0,50),
                     'DIC':(1500,2500),'TA':(1500,2500),'Chl':(0,20)}
 
@@ -308,13 +313,13 @@ for otype in ['bottle']:#, 'ctd']:
                             
                 
                            
-                    # add labels to identify the model runs with the colors
-                    # if jj == 1:
-                    #     yy = 0
-                    #     for gtx in c_dict.keys():
-                    #         ax.text(.05, .7 + 0.1*yy, gtx, c=c_dict[gtx], transform=ax.transAxes,
-                    #             fontweight='bold', ha='left')
-                    #         yy += 1
+                    #add labels to identify the model runs with the colors
+                    if jj == 1:
+                        yy = 0
+                        for gtx in c_dict.keys():
+                            ax.text(.05, .7 + 0.1*yy, gtx, c=c_dict[gtx], transform=ax.transAxes,
+                                fontweight='bold', ha='left')
+                            yy += 1
             
                     vn_label=['Salinity','Temperature','DO','NO3','NH4','DIN',
                         'DIC', 'TA', 'Chl']
@@ -358,7 +363,7 @@ for otype in ['bottle']:#, 'ctd']:
                     plt.show()
                 else:
                     #plt.savefig(out_dir / (ff_str + '.png'))
-                    plt.savefig(out_dir / (ff_str + '_poster.png'))
+                    plt.savefig(out_dir / (ff_str + '_withssm_oldversion.png'))
                     plt.close('all')
 
     
