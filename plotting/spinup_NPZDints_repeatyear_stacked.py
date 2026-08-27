@@ -50,8 +50,8 @@ WWTP_loc = False
 # Hanning window length
 nwin = 20
 
-# years =  ['2013'] 
-years = ['2014']
+years =  ['2013'] 
+# years = ['2014']
 # years =  ['2014','2015','2016','2017','2018','2019','2020']
 
 # which  model run to look at?
