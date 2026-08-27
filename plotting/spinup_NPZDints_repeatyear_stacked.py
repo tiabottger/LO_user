@@ -287,7 +287,8 @@ region_colors = {}
 
 for region in regions:
     cmap = region_cmaps[region]
-    region_colors[region] = cmap([0.45, 0.7, 0.95])
+    #region_colors[region] = cmap([0.45, 0.7, 0.95]) for 3 reruns
+    region_colors[region] = cmap([0.3, 0.5, 0.7, 0.9]) # for 4 reruns
 
 for region in regions: 
     for variable_info in plot_variables:
