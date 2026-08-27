@@ -1,5 +1,9 @@
 """
-Generic code to plot any mooring extraction
+Code to compare more spun-up version of 2014 (with multiple 2013 reruns) with original 2014 run which 
+is used as the boundary condition for SalishSeaCast. Therefore an extraction in the Strait of Juan de Fuca
+is used to see whether the boundary condition information is similar between the two runs.
+
+Instead of just plotting the bottom cell, it has been modified to plot the cell closest to the depth selected.
 """
 from lo_tools import Lfun, zfun
 from lo_tools import plotting_functions as pfun
@@ -87,6 +91,16 @@ fig, axes = plt.subplots(
     sharex=True
 )
 
+z1 = ds1['z_rho'].values
+z2 = ds2['z_rho'].values
+
+# Find vertical layer closest to 100 m
+iz1 = np.abs(z1.mean(axis=0) + 100).argmin()
+iz2 = np.abs(z2.mean(axis=0) + 100).argmin()
+
+print('ds1 depth:', z1[:, iz1].mean())
+print('ds2 depth:', z2[:, iz2].mean())
+
 if len(plot_vars) == 1:
     axes = [axes]
 
@@ -96,9 +110,13 @@ for ax, vn in zip(axes, plot_vars):
         y1 = ds1[vn].values
         y2 = ds2[vn].values
     else:
+        # cell selection
         # bottom layer
-        y1 = ds1[vn][:, 0].values
-        y2 = ds2[vn][:, 0].values
+        # y1 = ds1[vn][:, 0].values
+        # y2 = ds2[vn][:, 0].values
+        # closest to selected depth
+        y1 = ds1[vn][: , iz1].values
+        y2 = ds2[vn][: , iz2].values
 
     ax.plot(ot1, y1, lw=1.5, label=gtagex1)
     ax.plot(ot2, y2, lw=1.5, label=gtagex2)
