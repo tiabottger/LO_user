@@ -266,8 +266,8 @@ plot_variables = [
 ##                    Plotting config                       ##
 ##############################################################
 
-# plot_year = '2013'
-plot_year = '2014'
+plot_year = '2013'
+#plot_year = '2014'
 
 # Puget Sound bounds
 xmin = -123.29
