@@ -411,13 +411,13 @@ for region in regions:
             label='Model runs'
         )
 
-        # 95% convergence threshold
+        # 90% convergence threshold
         ax.axhline(
-            95,
+            90,
             color='black',
             linestyle=':',
             linewidth=1.5,
-            label='95% convergence'
+            label='90% convergence'
         )
 
         # ------------------------------------------------------
