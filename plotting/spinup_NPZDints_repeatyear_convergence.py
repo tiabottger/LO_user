@@ -373,59 +373,7 @@ for region in regions:
         )
 
         # ------------------------------------------------------
-        # Fit exponential convergence curve
-        #
-        # C(n) = 100 * (1 - exp(-k*n))
-        # ------------------------------------------------------
-
-        def convergence_function(n, k):
-            return 100 * (1 - np.exp(-k * n))
-
-        try:
-
-            # Shift n so that first difference corresponds to n = 0
-            n_fit = run_numbers - run_numbers[0]
-
-            popt, pcov = curve_fit(
-                convergence_function,
-                n_fit,
-                convergence,
-                p0=[0.5],
-                bounds=(0, np.inf)
-            )
-
-            k = popt[0]
-
-            # Smooth curve for plotting
-            n_curve = np.linspace(
-                0,
-                n_fit[-1],
-                200
-            )
-
-            convergence_curve = convergence_function(
-                n_curve,
-                k
-            )
-
-            # --------------------------------------------------
-            # Calculate number of reruns needed for 95%
-            # convergence
-            # --------------------------------------------------
-
-            n_95 = -np.log(1 - 0.95) / k
-
-        except RuntimeError:
-
-            print('Could not fit exponential convergence curve')
-
-            k = np.nan
-            n_curve = None
-            convergence_curve = None
-            n_95 = np.nan
-
-        # ------------------------------------------------------
-        # Print values
+        # Print convergence values
         # ------------------------------------------------------
 
         print('\nSuccessive-run RMS differences:')
@@ -439,12 +387,6 @@ for region in regions:
                 f'Run {run}: '
                 f'RMS difference = {diff:.4f}, '
                 f'convergence = {conv:.1f}%'
-            )
-
-        if not np.isnan(n_95):
-            print(
-                f'\n95% convergence occurs at approximately '
-                f'{n_95:.2f} additional reruns'
             )
 
         # ------------------------------------------------------
@@ -463,18 +405,7 @@ for region in regions:
             label='Model runs'
         )
 
-        # Fitted exponential
-        if n_curve is not None:
-
-            ax.plot(
-                run_numbers[0] + n_curve,
-                convergence_curve,
-                linewidth=2,
-                linestyle='--',
-                label='Exponential fit'
-            )
-
-        # 95% convergence line
+        # 95% convergence threshold
         ax.axhline(
             95,
             color='black',
