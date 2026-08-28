@@ -345,11 +345,17 @@ for region in regions:
                 rerun_data[current_run]
                 - rerun_data[previous_run]
             )
+            
+            # Remove NaN / infinite values
+            valid = np.isfinite(difference)
 
-            # RMS difference over the year
-            rms_difference = np.sqrt(
-                np.mean(difference**2)
-            )
+            # RMS difference over valid days
+            if np.any(valid):
+                rms_difference = np.sqrt(
+                    np.mean(difference[valid]**2)
+                )
+            else:
+                rms_difference = np.nan
 
             run_numbers.append(i + 1)
             rms_differences.append(rms_difference)
