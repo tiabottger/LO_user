@@ -24,6 +24,7 @@ from matplotlib.ticker import FuncFormatter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.patheffects as PathEffects
 import pinfo
+from scipy.optimize import curve_fit
 
 from lo_tools import Lfun, zfun, zrfun
 from lo_tools import plotting_functions as pfun
@@ -303,24 +304,6 @@ for region in regions:
         print(f'Plotting {var_name} convergence: {region}')
 
         # ------------------------------------------------------
-        # Create time axis
-        # ------------------------------------------------------
-
-        data_key = gtagexes[0] + region + plot_year
-
-        if data_key not in var_vol_norm:
-            print(f'Missing {data_key}')
-            continue
-
-        n_days = len(var_vol_norm[data_key])
-
-        dates = pd.date_range(
-            start=f'{plot_year}-01-01',
-            periods=n_days,
-            freq='D'
-        )
-
-        # ------------------------------------------------------
         # Get filtered data for each rerun
         # ------------------------------------------------------
 
@@ -336,65 +319,181 @@ for region in regions:
 
             data = np.asarray(var_vol_norm[data_key])
 
-            # Apply same Hanning filter as your original plots
+            # Apply same Hanning filter
             rerun_data[gtagex] = zfun.lowpass(
                 data,
                 n=nwin
             )
 
         # ------------------------------------------------------
-        # Plot successive differences
+        # Calculate RMS difference between successive runs
         # ------------------------------------------------------
 
-        fig, ax = plt.subplots(figsize=(10, 5))
+        run_numbers = []
+        rms_differences = []
 
         for i in range(1, len(gtagexes)):
 
             previous_run = gtagexes[i-1]
             current_run = gtagexes[i]
 
-            # Make sure both runs exist
             if (previous_run not in rerun_data or
                     current_run not in rerun_data):
                 continue
 
-            # Difference between successive runs
             difference = (
                 rerun_data[current_run]
                 - rerun_data[previous_run]
             )
 
-            ax.plot(
-                dates,
-                difference,
-                linewidth=2,
-                label=f'Run {i+1} − Run {i}'
+            # RMS difference over the year
+            rms_difference = np.sqrt(
+                np.mean(difference**2)
+            )
+
+            run_numbers.append(i + 1)
+            rms_differences.append(rms_difference)
+
+        run_numbers = np.asarray(run_numbers)
+        rms_differences = np.asarray(rms_differences)
+
+        if len(rms_differences) == 0:
+            print('No successive-run differences available')
+            continue
+
+        # ------------------------------------------------------
+        # Calculate convergence relative to initial difference
+        # ------------------------------------------------------
+
+        initial_difference = rms_differences[0]
+
+        convergence = (
+            100 *
+            (1 - rms_differences / initial_difference)
+        )
+
+        # ------------------------------------------------------
+        # Fit exponential convergence curve
+        #
+        # C(n) = 100 * (1 - exp(-k*n))
+        # ------------------------------------------------------
+
+        def convergence_function(n, k):
+            return 100 * (1 - np.exp(-k * n))
+
+        try:
+
+            # Shift n so that first difference corresponds to n = 0
+            n_fit = run_numbers - run_numbers[0]
+
+            popt, pcov = curve_fit(
+                convergence_function,
+                n_fit,
+                convergence,
+                p0=[0.5],
+                bounds=(0, np.inf)
+            )
+
+            k = popt[0]
+
+            # Smooth curve for plotting
+            n_curve = np.linspace(
+                0,
+                n_fit[-1],
+                200
+            )
+
+            convergence_curve = convergence_function(
+                n_curve,
+                k
+            )
+
+            # --------------------------------------------------
+            # Calculate number of reruns needed for 95%
+            # convergence
+            # --------------------------------------------------
+
+            n_95 = -np.log(1 - 0.95) / k
+
+        except RuntimeError:
+
+            print('Could not fit exponential convergence curve')
+
+            k = np.nan
+            n_curve = None
+            convergence_curve = None
+            n_95 = np.nan
+
+        # ------------------------------------------------------
+        # Print values
+        # ------------------------------------------------------
+
+        print('\nSuccessive-run RMS differences:')
+
+        for run, diff, conv in zip(
+                run_numbers,
+                rms_differences,
+                convergence):
+
+            print(
+                f'Run {run}: '
+                f'RMS difference = {diff:.4f}, '
+                f'convergence = {conv:.1f}%'
+            )
+
+        if not np.isnan(n_95):
+            print(
+                f'\n95% convergence occurs at approximately '
+                f'{n_95:.2f} additional reruns'
             )
 
         # ------------------------------------------------------
-        # Zero line
+        # Plot convergence
         # ------------------------------------------------------
 
+        fig, ax = plt.subplots(figsize=(9, 5.5))
+
+        # Observed convergence
+        ax.plot(
+            run_numbers,
+            convergence,
+            'o-',
+            linewidth=2,
+            markersize=7,
+            label='Model runs'
+        )
+
+        # Fitted exponential
+        if n_curve is not None:
+
+            ax.plot(
+                run_numbers[0] + n_curve,
+                convergence_curve,
+                linewidth=2,
+                linestyle='--',
+                label='Exponential fit'
+            )
+
+        # 95% convergence line
         ax.axhline(
-            0,
+            95,
             color='black',
-            linestyle='--',
-            linewidth=1
+            linestyle=':',
+            linewidth=1.5,
+            label='95% convergence'
         )
 
         # ------------------------------------------------------
         # Formatting
         # ------------------------------------------------------
 
-        ax.set_xlim(dates[0], dates[-1])
-
-        ax.set_ylabel(
-            f'Change in {var_name}',
+        ax.set_xlabel(
+            'Repeated-year run',
             fontsize=12
         )
 
-        ax.set_xlabel(
-            plot_year,
+        ax.set_ylabel(
+            'Convergence (%)',
             fontsize=12
         )
 
@@ -405,28 +504,18 @@ for region in regions:
             fontweight='bold'
         )
 
-        ax.xaxis.set_major_locator(mdates.MonthLocator())
-        ax.xaxis.set_major_formatter(
-            mdates.DateFormatter('%b')
+        ax.set_ylim(
+            min(-5, np.min(convergence) - 5),
+            105
         )
 
-        ax.tick_params(
-            axis='x',
-            rotation=0,
-            labelsize=10
+        ax.grid(
+            True,
+            alpha=0.3
         )
-
-        ax.tick_params(
-            axis='y',
-            labelsize=12
-        )
-
-        ax.grid(True, alpha=0.3)
 
         ax.legend(
-            title='Successive runs',
-            fontsize=9,
-            title_fontsize=10
+            fontsize=10
         )
 
         fig.tight_layout()
@@ -438,7 +527,7 @@ for region in regions:
         region_str = region.replace(' ', '_')
 
         output_filename = (
-            f'{plot_year}_spinup_difference_'
+            f'{plot_year}_spinup_convergence_'
             f'{region_str}_{var_short_name}.png'
         )
 
