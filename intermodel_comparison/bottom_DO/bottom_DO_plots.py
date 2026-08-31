@@ -396,6 +396,7 @@ pcm1 = axes[0].pcolormesh(
     lat_LO,
     hyp_occurrence_LO,
     shading='auto',
+    cmap= 'YlGnBu',
     vmin=0,
     vmax=100
 )
@@ -427,6 +428,7 @@ pcm2 = axes[1].pcolormesh(
     lat_SSC,
     hyp_occurrence_SSC,
     shading='auto',
+    cmap= 'YlGnBu',
     vmin=0,
     vmax=100
 )
@@ -453,14 +455,40 @@ cbar.set_label(
 # COMMON MAP EXTENT
 # ============================================================
 
+# for ax in axes.flat:
+#     ax.set_xlim(
+#         np.nanmin(mask_lon),
+#         np.nanmax(mask_lon)
+#     )
+#     ax.set_ylim(
+#         np.nanmin(mask_lat),
+#         np.nanmax(mask_lat)
+#     )
+    
+# ============================================================
+# MAP EXTENT — PUGET SOUND ONLY
+# ============================================================
+
+ps_lon = mask_lon[mask_ps == 1]
+ps_lat = mask_lat[mask_ps == 1]
+
+lon_min = np.nanmin(ps_lon)
+lon_max = np.nanmax(ps_lon)
+lat_min = np.nanmin(ps_lat)
+lat_max = np.nanmax(ps_lat)
+
+# Add small padding
+lon_pad = 0.02
+lat_pad = 0.02
+
 for ax in axes.flat:
     ax.set_xlim(
-        np.nanmin(mask_lon),
-        np.nanmax(mask_lon)
+        lon_min - lon_pad,
+        lon_max + lon_pad
     )
     ax.set_ylim(
-        np.nanmin(mask_lat),
-        np.nanmax(mask_lat)
+        lat_min - lat_pad,
+        lat_max + lat_pad
     )
 
 
