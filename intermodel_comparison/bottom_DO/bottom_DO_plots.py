@@ -219,7 +219,7 @@ hyp_area_SSC_ts = np.sum(
 # hyp_thick = m
 # DA_SSC = km2
 # m × km2 = 10^6 m3
-hyp_volume_SSC_ts = np.sum(
+hyp_volume_SSC_ts = np.nansum(
     hypoxic_SSC *
     hyp_thick_SSC *
     DA_SSC[None, :, :],
