@@ -225,15 +225,6 @@ hyp_volume_SSC_ts = np.sum(
     DA_SSC[None, :, :],
     axis=(1, 2)
 )
-
-print('SSC grid shape:', lon_SSC.shape)
-print('SSC mask shape:', mask_ps_SSC.shape)
-
-print('SSC Puget Sound cells:',
-      np.sum(mask_ps_SSC))
-
-print('SSC total cells:',
-      mask_ps_SSC.size)
        
 # ============================================================
 # PLOT HYPOXIC AREA AND VOLUME TS
@@ -253,7 +244,7 @@ ax.plot(
 )
 
 ax.plot(
-    pd.to_datetime(ds_SSC['time_counter'].values),
+    pd.to_datetime(ds_LO['ocean_time'].values),
     hyp_area_SSC_ts, linewidth=2, label='SalishSeaCast'
 )
 
@@ -295,7 +286,7 @@ ax.plot(
 )
 
 ax.plot(
-    pd.to_datetime(ds_SSC['time_counter'].values),
+    pd.to_datetime(ds_LO['ocean_time'].values),
     hyp_volume_SSC_ts, linewidth=2, label='SalishSeaCast'
 )
 
