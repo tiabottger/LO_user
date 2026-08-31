@@ -183,7 +183,7 @@ hyp_area_LO_ts = np.sum(
 # hyp_thick = m
 # DA_ps = km2
 # m × km2 = 10^6 m3
-hyp_volume_LO_ts = np.sum(
+hyp_volume_LO_ts = np.nansum(
     hypoxic_LO *
     hyp_thick_LO *
     DA_ps[None, :, :],
@@ -240,12 +240,12 @@ fig, ax = plt.subplots(figsize=(11, 4.5))
 
 ax.plot(
     pd.to_datetime(ds_LO['ocean_time'].values),
-    hyp_area_LO_ts, linewidth=2, label='LiveOcean'
+    hyp_area_LO_ts, linewidth=2, color= 'red', label='LiveOcean'
 )
 
 ax.plot(
     pd.to_datetime(ds_LO['ocean_time'].values),
-    hyp_area_SSC_ts, linewidth=2, label='SalishSeaCast'
+    hyp_area_SSC_ts, linewidth=2, color= 'blue', label='SalishSeaCast'
 )
 
 ax.set_ylabel(
@@ -282,12 +282,12 @@ fig, ax = plt.subplots(figsize=(11, 4.5))
 
 ax.plot(
     pd.to_datetime(ds_LO['ocean_time'].values),
-    hyp_volume_LO_ts, linewidth=2, label='LiveOcean'
+    hyp_volume_LO_ts, linewidth=2, color= 'red', label='LiveOcean'
 )
 
 ax.plot(
     pd.to_datetime(ds_LO['ocean_time'].values),
-    hyp_volume_SSC_ts, linewidth=2, label='SalishSeaCast'
+    hyp_volume_SSC_ts, linewidth=2, color= 'blue', label='SalishSeaCast'
 )
 
 ax.set_ylabel(
