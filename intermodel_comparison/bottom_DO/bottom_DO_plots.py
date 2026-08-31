@@ -321,6 +321,10 @@ plt.show()
 # LiveOcean
 # ------------------------------------------------------------
 
+# Coordinates must match the bottom_DO / Puget Sound box grid
+lon_LO = box_ds['lon_rho'].values
+lat_LO = box_ds['lat_rho'].values
+
 DO_LO = ds_LO['DO_bot146'].values
 
 # Hypoxic = DO <= 2 mg/L
@@ -333,10 +337,17 @@ hyp_count_LO = np.sum(hypoxic_LO, axis=0)
 valid_count_LO = np.sum(np.isfinite(DO_LO), axis=0)
 
 # Occurrence as percentage of valid time steps
-hyp_occurrence_LO = np.where(
-    valid_count_LO > 0,
-    100 * hyp_count_LO / valid_count_LO,
-    np.nan
+hyp_occurrence_LO = np.full_like(
+    valid_count_LO,
+    np.nan,
+    dtype=float
+)
+
+np.divide(
+    100 * hyp_count_LO,
+    valid_count_LO,
+    out=hyp_occurrence_LO,
+    where=valid_count_LO > 0
 )
 
 # ------------------------------------------------------------
@@ -351,10 +362,17 @@ hyp_count_SSC = np.sum(hypoxic_SSC, axis=0)
 
 valid_count_SSC = np.sum(np.isfinite(DO_SSC), axis=0)
 
-hyp_occurrence_SSC = np.where(
-    valid_count_SSC > 0,
-    100 * hyp_count_SSC / valid_count_SSC,
-    np.nan
+hyp_occurrence_SSC = np.full_like(
+    valid_count_SSC,
+    np.nan,
+    dtype=float
+)
+
+np.divide(
+    100 * hyp_count_SSC,
+    valid_count_SSC,
+    out=hyp_occurrence_SSC,
+    where=valid_count_SSC > 0
 )
 
 
