@@ -224,7 +224,17 @@ hyp_volume_SSC_ts = np.sum(
     hyp_thick_SSC *
     DA_SSC[None, :, :],
     axis=(1, 2)
-)       
+)
+
+print('SSC grid shape:', lon_SSC.shape)
+print('SSC mask shape:', mask_ps_SSC.shape)
+
+print('SSC Puget Sound cells:',
+      np.sum(mask_ps_SSC))
+
+print('SSC total cells:',
+      mask_ps_SSC.size)
+       
 # ============================================================
 # PLOT HYPOXIC AREA AND VOLUME TS
 # ============================================================
@@ -380,6 +390,8 @@ np.divide(
 # PLOT HYPOXIA OCCURRENCE
 # ============================================================
 
+print('Plotting hypoxic ocurrence in bottom 14.6% of water column')
+
 fig, axes = plt.subplots(
     1, 2,
     figsize=(14, 7),
@@ -396,7 +408,7 @@ pcm1 = axes[0].pcolormesh(
     lat_LO,
     hyp_occurrence_LO,
     shading='auto',
-    cmap= 'YlGnBu',
+    cmap= 'jet',
     vmin=0,
     vmax=100
 )
@@ -428,7 +440,7 @@ pcm2 = axes[1].pcolormesh(
     lat_SSC,
     hyp_occurrence_SSC,
     shading='auto',
-    cmap= 'YlGnBu',
+    cmap= 'jet',
     vmin=0,
     vmax=100
 )
