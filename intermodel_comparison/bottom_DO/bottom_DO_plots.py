@@ -243,7 +243,7 @@ ax.plot(
 )
 
 ax.plot(
-    pd.to_datetime(ds_LO['time_counter'].values),
+    pd.to_datetime(ds_SSC['time_counter'].values),
     hyp_area_SSC_ts, linewidth=2, label='SalishSeaCast'
 )
 
@@ -285,7 +285,7 @@ ax.plot(
 )
 
 ax.plot(
-    pd.to_datetime(ds_LO['time_counter'].values),
+    pd.to_datetime(ds_SSC['time_counter'].values),
     hyp_volume_SSC_ts, linewidth=2, label='SalishSeaCast'
 )
 
