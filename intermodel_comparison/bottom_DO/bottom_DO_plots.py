@@ -422,7 +422,7 @@ pcm1 = axes[0].pcolormesh(
     cmap= 'jet',
     vmin=0,
     # vmax=occurrence_max
-    vmax= 365
+    vmax= 80
 )
 
 axes[0].set_title(
@@ -456,7 +456,7 @@ pcm2 = axes[1].pcolormesh(
     cmap= 'jet',
     vmin=0,
     # vmax=occurrence_max
-    vmax = 365
+    vmax = 80
 )
 
 axes[1].set_title(
