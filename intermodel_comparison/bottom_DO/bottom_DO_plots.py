@@ -329,8 +329,8 @@ lat_LO = box_ds['lat_rho'].values
 DO_LO = ds_LO['DO_bot146'].values
 
 # Hypoxic = DO <= 2 mg/L
-# hypoxic_LO = DO_LO <= 2.0
-hypoxic_LO = DO_LO <= 3.0
+hypoxic_LO = DO_LO <= 2.0
+# hypoxic_LO = DO_LO <= 3.0
 
 # Count hypoxic occurrences
 hyp_count_LO = np.sum(hypoxic_LO, axis=0)
@@ -358,8 +358,8 @@ np.divide(
 
 DO_SSC = ds_SSC['DO_bot146'].values
 
-# hypoxic_SSC = DO_SSC <= 2.0
-hypoxic_SSC = DO_SSC <= 3.0
+hypoxic_SSC = DO_SSC <= 2.0
+# hypoxic_SSC = DO_SSC <= 3.0
 
 hyp_count_SSC = np.sum(hypoxic_SSC, axis=0)
 
@@ -426,7 +426,8 @@ pcm1 = axes[0].pcolormesh(
 )
 
 axes[0].set_title(
-    'LiveOcean — Hypoxia Occurrence DO ≤ 3.0 mg/L',
+    'LiveOcean — Hypoxia Occurrence DO ≤ 2.0 mg/L',
+    #'LiveOcean — Hypoxia Occurrence DO ≤ 3.0 mg/L',
     fontsize=14
 )
 
@@ -460,7 +461,8 @@ pcm2 = axes[1].pcolormesh(
 )
 
 axes[1].set_title(
-    'SalishSeaCast — Hypoxia Occurrence DO ≤ 3.0 mg/L',
+    'SalishSeaCast — Hypoxia Occurrence DO ≤ 2.0 mg/L',
+    #'SalishSeaCast — Hypoxia Occurrence DO ≤ 3.0 mg/L',
     fontsize=14
 )
 
