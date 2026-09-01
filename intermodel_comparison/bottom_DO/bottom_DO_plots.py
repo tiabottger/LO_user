@@ -527,3 +527,103 @@ plt.savefig(
     bbox_inches='tight'
 )
 plt.show()
+
+# ============================================================
+# Average DO concentration in bottom 14.6%
+# ============================================================
+
+mean_DO_LO = np.nanmean(ds_LO['DO_bot146'].values, axis=0)
+mean_DO_SSC = np.nanmean(ds_SSC['DO_bot146'].values, axis=0)
+
+# Apply Puget Sound mask
+mean_DO_LO_plot = np.where(mask_ps == 1, mean_DO_LO, np.nan)
+mean_DO_SSC_plot = np.where(mask_ps_SSC, mean_DO_SSC, np.nan)
+
+# Common color scale for both models
+DO_min = np.nanmin([
+    np.nanmin(mean_DO_LO_plot),
+    np.nanmin(mean_DO_SSC_plot)
+])
+
+DO_max = np.nanmax([
+    np.nanmax(mean_DO_LO_plot),
+    np.nanmax(mean_DO_SSC_plot)
+])
+
+print("Mean bottom 14.6% DO range:")
+print("Minimum:", DO_min)
+print("Maximum:", DO_max)
+
+# ============================================================
+# Plot spatially averaged bottom 14.6% DO
+# ============================================================
+
+print('Plotting average DO in bottom 14.6% of water column')
+
+fig, axes = plt.subplots(
+    1, 2,
+    figsize=(12, 6),
+    constrained_layout=True
+)
+
+# ------------------------------------------------------------
+# LiveOcean
+# ------------------------------------------------------------
+
+pcm1 = axes[0].pcolormesh(
+    lon_LO,
+    lat_LO,
+    mean_DO_LO_plot,
+    shading='auto',
+    cmap='viridis',
+    vmin=DO_min,
+    vmax=DO_max
+)
+
+axes[0].set_title('LiveOcean')
+axes[0].set_xlabel('Longitude')
+axes[0].set_ylabel('Latitude')
+
+# ------------------------------------------------------------
+# SalishSeaCast
+# ------------------------------------------------------------
+
+pcm2 = axes[1].pcolormesh(
+    lon_SSC,
+    lat_SSC,
+    mean_DO_SSC_plot,
+    shading='auto',
+    cmap='viridis',
+    vmin=DO_min,
+    vmax=DO_max
+)
+
+axes[1].set_title('SalishSeaCast')
+axes[1].set_xlabel('Longitude')
+axes[1].set_ylabel('Latitude')
+
+# ------------------------------------------------------------
+# Same colorbar for both
+# ------------------------------------------------------------
+
+cbar = fig.colorbar(
+    pcm2,
+    ax=axes,
+    shrink=0.85,
+    pad=0.02
+)
+
+cbar.set_label('Mean DO in bottom 14.6% (mg/L)')
+
+# limits from map extent above
+for ax in axes:
+    ax.set_xlim(lon_min, lon_max)
+    ax.set_ylim(lat_min, lat_max)
+
+plt.savefig(
+    'mean_DO_bottom146_comparison.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+
+plt.show()
