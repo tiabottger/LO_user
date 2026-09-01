@@ -421,7 +421,8 @@ pcm1 = axes[0].pcolormesh(
     shading='auto',
     cmap= 'jet',
     vmin=0,
-    vmax=occurrence_max
+    # vmax=occurrence_max
+    vmax= 365
 )
 
 axes[0].set_title(
@@ -442,8 +443,6 @@ cbar.set_label(
     'Hypoxic days count'
 )
 
-print("LiveOcean timesteps:", len(ds_LO['ocean_time']))
-
 # ------------------------------------------------------------
 # SSC
 # ------------------------------------------------------------
@@ -456,7 +455,8 @@ pcm2 = axes[1].pcolormesh(
     shading='auto',
     cmap= 'jet',
     vmin=0,
-    vmax=occurrence_max
+    # vmax=occurrence_max
+    vmax = 365
 )
 
 axes[1].set_title(
