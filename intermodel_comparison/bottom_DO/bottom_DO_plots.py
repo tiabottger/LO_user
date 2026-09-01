@@ -397,7 +397,8 @@ fig, axes = plt.subplots(
 pcm1 = axes[0].pcolormesh(
     lon_LO,
     lat_LO,
-    hyp_occurrence_LO,
+    # hyp_occurrence_LO, # as percentage
+    hyp_count_LO,
     shading='auto',
     cmap= 'jet',
     vmin=0,
@@ -418,7 +419,8 @@ cbar = fig.colorbar(
 )
 
 cbar.set_label(
-    'Hypoxic occurrence (%)'
+    #'Hypoxic occurrence (%)'
+    'Hypoxic occurrence count'
 )
 
 
@@ -429,7 +431,8 @@ cbar.set_label(
 pcm2 = axes[1].pcolormesh(
     lon_SSC,
     lat_SSC,
-    hyp_occurrence_SSC,
+    # hyp_occurrence_SSC,
+    hyp_count_SSC,
     shading='auto',
     cmap= 'jet',
     vmin=0,
@@ -450,7 +453,8 @@ cbar = fig.colorbar(
 )
 
 cbar.set_label(
-    'Hypoxic occurrence (%)'
+    #'Hypoxic occurrence (%)'
+    'Hypoxic occurrence count'
 )
 
 
