@@ -575,7 +575,7 @@ pcm1 = axes[0].pcolormesh(
     lat_LO,
     mean_DO_LO_plot,
     shading='auto',
-    cmap='viridis',
+    cmap='jet_r',
     vmin=DO_min,
     vmax=DO_max
 )
@@ -593,7 +593,7 @@ pcm2 = axes[1].pcolormesh(
     lat_SSC,
     mean_DO_SSC_plot,
     shading='auto',
-    cmap='viridis',
+    cmap='jet_r',
     vmin=DO_min,
     vmax=DO_max
 )
