@@ -383,6 +383,23 @@ np.divide(
 
 print('Plotting hypoxic ocurrence in bottom 14.6% of water column')
 
+occurrence_max = np.nanmax([
+    np.nanmax(hyp_occurrence_LO),
+    np.nanmax(hyp_occurrence_SSC)
+])
+
+hyp_occurrence_LO_plot = np.where(
+    mask_ps == 1,
+    hyp_occurrence_LO,
+    np.nan
+)
+
+hyp_occurrence_SSC_plot = np.where(
+    mask_ps_SSC,
+    hyp_occurrence_SSC,
+    np.nan
+)
+
 fig, axes = plt.subplots(
     1, 2,
     figsize=(14, 7),
@@ -398,11 +415,11 @@ pcm1 = axes[0].pcolormesh(
     lon_LO,
     lat_LO,
     # hyp_occurrence_LO, # as percentage
-    hyp_count_LO,
+    hyp_occurrence_LO_plot,
     shading='auto',
     cmap= 'jet',
     vmin=0,
-    vmax=100
+    vmax=occurrence_max
 )
 
 axes[0].set_title(
@@ -432,11 +449,11 @@ pcm2 = axes[1].pcolormesh(
     lon_SSC,
     lat_SSC,
     # hyp_occurrence_SSC,
-    hyp_count_SSC,
+    hyp_occurrence_SSC_plot,
     shading='auto',
     cmap= 'jet',
     vmin=0,
-    vmax=100
+    vmax=occurrence_max
 )
 
 axes[1].set_title(
