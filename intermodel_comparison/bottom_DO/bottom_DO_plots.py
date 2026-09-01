@@ -439,9 +439,10 @@ cbar = fig.colorbar(
 
 cbar.set_label(
     #'Hypoxic occurrence (%)'
-    'Hypoxic occurrence count'
+    'Hypoxic days count'
 )
 
+print("LiveOcean timesteps:", len(ds_LO['ocean_time']))
 
 # ------------------------------------------------------------
 # SSC
@@ -473,7 +474,7 @@ cbar = fig.colorbar(
 
 cbar.set_label(
     #'Hypoxic occurrence (%)'
-    'Hypoxic occurrence count'
+    'Hypoxic days count'
 )
 
 
