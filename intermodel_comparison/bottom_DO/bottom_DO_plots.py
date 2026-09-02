@@ -132,7 +132,6 @@ mask_ps_SSC = (
 # ============================================================
 # SSC CELL AREA
 #
-# SSC does not contain pm/pn in your bottom DO file,
 # so estimate horizontal area from lon/lat.
 # ============================================================
 
