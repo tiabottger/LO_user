@@ -180,7 +180,7 @@ pcm1 = axes[0].pcolormesh(
     lat_LO,
     depth_LO_plot,
     shading='auto',
-    cmap='viridis_r',
+    cmap='viridis',
     vmin=depth_min,
     vmax=depth_max
 )
@@ -198,7 +198,7 @@ pcm2 = axes[1].pcolormesh(
     lat_SSC,
     depth_SSC_plot,
     shading='auto',
-    cmap='viridis_r',
+    cmap='viridis',
     vmin=depth_min,
     vmax=depth_max
 )
