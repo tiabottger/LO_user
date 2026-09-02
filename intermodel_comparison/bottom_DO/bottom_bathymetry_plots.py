@@ -82,6 +82,10 @@ else:
 DA = DA * mask_rho
 DA_ps = DA * mask_ps  # mask out non-Puget Sound areas
 
+# Coordinates must match the bottom_DO / Puget Sound box grid
+lon_LO = box_ds['lon_rho'].values
+lat_LO = box_ds['lat_rho'].values
+
 # ============================================================
 # SSC GRID
 # ============================================================
@@ -158,8 +162,76 @@ print("SalishSeaCast depth range:", np.nanmin(depth_SSC_plot),
       np.nanmax(depth_SSC_plot))
 
 # ============================================================
-# PLOT BATHYMETRY
+# COMMON MAP EXTENT
 # ============================================================
+
+# for ax in axes.flat:
+#     ax.set_xlim(
+#         np.nanmin(mask_lon),
+#         np.nanmax(mask_lon)
+#     )
+#     ax.set_ylim(
+#         np.nanmin(mask_lat),
+#         np.nanmax(mask_lat)
+#     )
+    
+# ============================================================
+# MAP EXTENT — PUGET SOUND ONLY
+# ============================================================
+
+ps_lon = mask_lon[mask_ps == 1]
+ps_lat = mask_lat[mask_ps == 1]
+
+lon_min = np.nanmin(ps_lon)
+lon_max = np.nanmax(ps_lon)
+lat_min = np.nanmin(ps_lat)
+lat_max = np.nanmax(ps_lat)
+
+# Add small padding
+lon_pad = 0.02
+lat_pad = 0.02
+
+for ax in axes.flat:
+    ax.set_xlim(
+        lon_min - lon_pad,
+        lon_max + lon_pad
+    )
+    ax.set_ylim(
+        lat_min - lat_pad,
+        lat_max + lat_pad
+    )
+
+# ============================================================
+# Average DO concentration in bottom 14.6%
+# ============================================================
+
+mean_DO_LO = np.nanmean(ds_LO['DO_bot146'].values, axis=0)
+mean_DO_SSC = np.nanmean(ds_SSC['DO_bot146'].values, axis=0)
+
+# Apply Puget Sound mask
+mean_DO_LO_plot = np.where(mask_ps == 1, mean_DO_LO, np.nan)
+mean_DO_SSC_plot = np.where(mask_ps_SSC, mean_DO_SSC, np.nan)
+
+# Common color scale for both models
+DO_min = np.nanmin([
+    np.nanmin(mean_DO_LO_plot),
+    np.nanmin(mean_DO_SSC_plot)
+])
+
+DO_max = np.nanmax([
+    np.nanmax(mean_DO_LO_plot),
+    np.nanmax(mean_DO_SSC_plot)
+])
+
+print("Mean bottom 14.6% DO range:")
+print("Minimum:", DO_min)
+print("Maximum:", DO_max)
+
+# ============================================================
+# Plot spatially averaged bottom 14.6% DO
+# ============================================================
+
+print('Plotting average DO in bottom 14.6% of water column')
 
 fig, axes = plt.subplots(
     1, 2,
@@ -174,11 +246,11 @@ fig, axes = plt.subplots(
 pcm1 = axes[0].pcolormesh(
     lon_LO,
     lat_LO,
-    depth_LO_plot,
+    mean_DO_LO_plot,
     shading='auto',
-    cmap='viridis',
-    vmin=depth_min,
-    vmax=depth_max
+    cmap='viridis_r',
+    vmin=DO_min,
+    vmax=DO_max
 )
 
 axes[0].set_title('LiveOcean')
@@ -192,11 +264,11 @@ axes[0].set_ylabel('Latitude')
 pcm2 = axes[1].pcolormesh(
     lon_SSC,
     lat_SSC,
-    depth_SSC_plot,
+    mean_DO_SSC_plot,
     shading='auto',
-    cmap='viridis',
-    vmin=depth_min,
-    vmax=depth_max
+    cmap='viridis_r',
+    vmin=DO_min,
+    vmax=DO_max
 )
 
 axes[1].set_title('SalishSeaCast')
@@ -204,7 +276,7 @@ axes[1].set_xlabel('Longitude')
 axes[1].set_ylabel('Latitude')
 
 # ------------------------------------------------------------
-# Shared colorbar
+# Same colorbar for both
 # ------------------------------------------------------------
 
 cbar = fig.colorbar(
@@ -214,35 +286,15 @@ cbar = fig.colorbar(
     pad=0.02
 )
 
-cbar.set_label('Bottom depth (m)')
+cbar.set_label('Mean DO in bottom 14.6% (mg/L)')
 
-# ------------------------------------------------------------
-# MAP EXTENT — PUGET SOUND ONLY
-# ------------------------------------------------------------
-
-ps_lon = mask_lon[mask_ps == 1]
-ps_lat = mask_lat[mask_ps == 1]
-
-lon_min = np.nanmin(ps_lon)
-lon_max = np.nanmax(ps_lon)
-lat_min = np.nanmin(ps_lat)
-lat_max = np.nanmax(ps_lat)
-
-lon_pad = 0.02
-lat_pad = 0.02
-
-for ax in axes.flat:
-    ax.set_xlim(
-        lon_min - lon_pad,
-        lon_max + lon_pad
-    )
-    ax.set_ylim(
-        lat_min - lat_pad,
-        lat_max + lat_pad
-    )
+# limits from map extent above
+for ax in axes:
+    ax.set_xlim(lon_min, lon_max)
+    ax.set_ylim(lat_min, lat_max)
 
 plt.savefig(
-    'bathymetry_bottom_depth_comparison.png',
+    'mean_DO_bottom146_comparison.png',
     dpi=300,
     bbox_inches='tight'
 )
