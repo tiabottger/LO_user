@@ -186,7 +186,7 @@ hyp_volume_LO_ts = np.nansum(
     hyp_thick_LO *
     DA_ps[None, :, :],
     axis=(1, 2) 
-)/10e3
+)/1e3
 
 # ============================================================
 # SALISHSEACAST
@@ -221,7 +221,7 @@ hyp_volume_SSC_ts = np.nansum(
     hyp_thick_SSC *
     DA_SSC[None, :, :],
     axis=(1, 2)
-)/ 10e3 # convert m hyp thick to km --> km3
+)/ 1e3 # convert m hyp thick to km --> km3
        
 # ============================================================
 # PLOT HYPOXIC AREA AND VOLUME TS
