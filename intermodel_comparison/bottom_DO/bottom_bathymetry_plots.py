@@ -252,3 +252,135 @@ plt.savefig(
 )
 
 plt.show()
+
+# ============================================================
+# MAP SSC BATHYMETRY ONTO LIVE OCEAN GRID FOR DIFFERENCE CALCULATION
+# ============================================================
+
+depth_LO = ds_LO['depth_bot'].values
+depth_SSC = ds_SSC['depth_bot'].values
+
+# SSC coordinates
+lon_SSC = ds_SSC['nav_lon'].values
+lat_SSC = ds_SSC['nav_lat'].values
+
+# LiveOcean coordinates
+lon_LO = ds_LO['lon_rho'].values
+lat_LO = ds_LO['lat_rho'].values
+
+# ------------------------------------------------------------
+# Build nearest-neighbor tree from SSC grid
+# ------------------------------------------------------------
+
+ssc_points = np.column_stack((
+    lon_SSC.ravel(),
+    lat_SSC.ravel()
+))
+
+valid_ssc = (
+    np.isfinite(ssc_points[:, 0]) &
+    np.isfinite(ssc_points[:, 1])
+)
+
+tree_SSC = cKDTree(ssc_points[valid_ssc])
+
+# ------------------------------------------------------------
+# Find nearest SSC cell for every LiveOcean cell
+# ------------------------------------------------------------
+
+lo_points = np.column_stack((
+    lon_LO.ravel(),
+    lat_LO.ravel()
+))
+
+_, nearest_index = tree_SSC.query(lo_points)
+
+valid_flat_indices = np.flatnonzero(valid_ssc)
+nearest_flat_index = valid_flat_indices[nearest_index]
+
+# Get SSC bathymetry at nearest cells
+depth_SSC_on_LO = depth_SSC.ravel()[nearest_flat_index]
+depth_SSC_on_LO = depth_SSC_on_LO.reshape(depth_LO.shape)
+
+# ============================================================
+# BATHYMETRY DIFFERENCE
+# ============================================================
+
+depth_difference = depth_LO - depth_SSC_on_LO
+
+# apply Puget Sound mask
+depth_difference_plot = np.where(
+    mask_ps == 1,
+    depth_difference,
+    np.nan
+)
+
+# ============================================================
+# PLOT BATHYMETRY DIFFERENCE
+# ============================================================
+
+fig, ax = plt.subplots(
+    figsize=(8, 7),
+    constrained_layout=True
+)
+
+# Use a symmetric color scale around zero
+diff_max = np.nanmax(np.abs(depth_difference_plot))
+
+pcm = ax.pcolormesh(
+    lon_LO,
+    lat_LO,
+    depth_difference_plot,
+    shading='auto',
+    cmap='RdBu_r',
+    vmin=-diff_max,
+    vmax=diff_max
+)
+
+ax.set_title('LiveOcean − SalishSeaCast Bathymetry')
+ax.set_xlabel('Longitude')
+ax.set_ylabel('Latitude')
+
+# ------------------------------------------------------------
+# Colorbar
+# ------------------------------------------------------------
+
+cbar = fig.colorbar(
+    pcm,
+    ax=ax,
+    shrink=0.85,
+    pad=0.02
+)
+
+cbar.set_label('Depth difference (m)')
+
+# ------------------------------------------------------------
+# MAP EXTENT — PUGET SOUND ONLY
+# ------------------------------------------------------------
+
+ps_lon = mask_lon[mask_ps == 1]
+ps_lat = mask_lat[mask_ps == 1]
+
+lon_min = np.nanmin(ps_lon)
+lon_max = np.nanmax(ps_lon)
+lat_min = np.nanmin(ps_lat)
+lat_max = np.nanmax(ps_lat)
+
+lon_pad = 0.02
+lat_pad = 0.02
+
+ax.set_xlim(
+    lon_min - lon_pad,
+    lon_max + lon_pad
+)
+
+ax.set_ylim(
+    lat_min - lat_pad,
+    lat_max + lat_pad
+)
+
+plt.savefig(
+    'bathymetry_difference_LO_minus_SSC.png',
+    dpi=300,
+    bbox_inches='tight'
+)
