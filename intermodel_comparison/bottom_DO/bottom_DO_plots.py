@@ -364,7 +364,7 @@ ax.plot(
 )
 
 ax.plot(
-    pd.to_datetime(ds_SSC['time_counter'].values),
+    pd.to_datetime(ds_LO['ocean_time'].values),
     hyp_volume_pct_SSC,
     linewidth=2,
     color='blue',
