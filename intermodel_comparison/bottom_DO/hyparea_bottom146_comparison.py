@@ -4,6 +4,7 @@ import numpy as np
 import xarray as xr
 import pandas as pd
 import matplotlib.pylab as plt
+from scipy.spatial import cKDTree
 
 from lo_tools import Lfun
 from lo_tools import plotting_functions as pfun
