@@ -68,7 +68,8 @@ for year in years:
 
         print(f'Processing {gtagex}, {region}, {year}')
 
-        fp = in_dir / (gtagex + '_' + region + '_' + year + '_bottom_DO_info.nc')
+        # fp = in_dir / (gtagex + '_' + region + '_' + year + '_bottom_DO_info.nc')
+        fp = in_dir / 'SSC_2014_pugetsound_bottom_DO_info.nc'
         ds = xr.open_dataset(fp)
 
         DO_bot = ds['DO_bot'].values
@@ -129,11 +130,11 @@ ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
 ax.tick_params(axis='x', rotation=30)
 ax.tick_params(axis='both', labelsize=11)
 
-ax.set_title('Hypoxic Area Comparison: Bottom Cell vs Bottom 14.6%', fontsize=13)
+ax.set_title('SSC Hypoxic Area Comparison: Bottom Cell vs Bottom 14.6%', fontsize=13)
 
 plt.tight_layout()
 
-out_fn = out_dir / 'hypoxic_area_bottom_vs_bottom146.png'
+out_fn = out_dir / 'ssc_hypoxic_area_bottom_vs_bottom146.png'
 plt.savefig(out_fn, dpi=300)
 
 ##############################################################
@@ -202,14 +203,14 @@ ax.set_xlabel('Longitude')
 ax.set_ylabel('Latitude')
 
 ax.set_title(
-    'Mean Bottom Layer Thickness Difference\n'
+    'SSC Mean Bottom Layer Thickness Difference\n'
     '(Bottom 14.6% − Bottom Cell)'
 )
 
 plt.tight_layout()
 
 plt.savefig(
-    out_dir / 'bottom_layer_thickness_difference.png',
+    out_dir / 'ssc_bottom_layer_thickness_difference.png',
     dpi=300
 )
 
