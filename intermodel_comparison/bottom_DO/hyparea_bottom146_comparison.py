@@ -60,6 +60,12 @@ DA_ps = DA * mask_ps  # mask out non-Puget Sound areas
 # ============================================================
 # MAP Puget Sound MASK ONTO SSC GRID
 # ============================================================
+ds_SSC = xr.open_dataset(
+    in_dir / 'SSC_2014_pugetsound_bottom_DO_info.nc'
+)
+
+lon_SSC = ds_SSC['nav_lon'].values
+lat_SSC = ds_SSC['nav_lat'].values
 
 mask_lon = basin_mask_ds['lon_rho'].values
 mask_lat = basin_mask_ds['lat_rho'].values
