@@ -257,17 +257,6 @@ plt.show()
 # MAP SSC BATHYMETRY ONTO LIVE OCEAN GRID FOR DIFFERENCE CALCULATION
 # ============================================================
 
-depth_LO = ds_LO['depth_bot'].values
-depth_SSC = ds_SSC['depth_bot'].values
-
-# SSC coordinates
-lon_SSC = ds_SSC['nav_lon'].values
-lat_SSC = ds_SSC['nav_lat'].values
-
-# LiveOcean coordinates
-lon_LO = ds_LO['lon_rho'].values
-lat_LO = ds_LO['lat_rho'].values
-
 # ------------------------------------------------------------
 # Build nearest-neighbor tree from SSC grid
 # ------------------------------------------------------------
