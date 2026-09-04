@@ -56,6 +56,70 @@ else:
 DA = DA * mask_rho
 DA_ps = DA * mask_ps  # mask out non-Puget Sound areas
 
+# ============================================================
+# MAP Puget Sound MASK ONTO SSC GRID
+# ============================================================
+
+mask_lon = basin_mask_ds['lon_rho'].values
+mask_lat = basin_mask_ds['lat_rho'].values
+
+grid_points = np.column_stack((
+    mask_lon.ravel(),
+    mask_lat.ravel()
+))
+
+valid_grid = (
+    np.isfinite(grid_points[:, 0]) &
+    np.isfinite(grid_points[:, 1])
+)
+
+tree = cKDTree(grid_points[valid_grid])
+
+ssc_points = np.column_stack((
+    lon_SSC.ravel(),
+    lat_SSC.ravel()
+))
+
+_, nearest_index = tree.query(ssc_points)
+
+valid_flat_indices = np.flatnonzero(valid_grid)
+
+nearest_flat_index = valid_flat_indices[nearest_index]
+
+eta_index, xi_index = np.unravel_index(
+    nearest_flat_index,
+    mask_lon.shape
+)
+
+mask_ps_SSC = (
+    mask_ps[eta_index, xi_index] == 1
+).reshape(lon_SSC.shape)
+
+# ============================================================
+# SSC CELL AREA
+#
+# so estimate horizontal area from lon/lat.
+# ============================================================
+
+R = 6371000.0
+
+lat_rad = np.deg2rad(lat_SSC)
+lon_rad = np.deg2rad(lon_SSC)
+
+dlat = np.gradient(lat_rad, axis=0)
+dlon = np.gradient(lon_rad, axis=1)
+
+DY_SSC = R * np.abs(dlat)
+DX_SSC = (
+    R *
+    np.abs(dlon) *
+    np.cos(lat_rad)
+)
+
+DA_SSC = DX_SSC * DY_SSC * 1e-6  # m2 to km2
+
+DA_SSC = DA_SSC * mask_ps_SSC 
+
 # dictionaries
 hyp_area_bot = {}
 hyp_area_bot146 = {}
@@ -82,8 +146,10 @@ for year in years:
         hyp_bot146 = DO_bot146 <= 2
 
         # hypoxic area through time [km2]
-        area_bot = np.nansum(hyp_bot * DA_ps[None, :, :], axis=(1, 2))
-        area_bot146 = np.nansum(hyp_bot146 * DA_ps[None, :, :], axis=(1, 2))
+        # area_bot = np.nansum(hyp_bot * DA_ps[None, :, :], axis=(1, 2))
+        # area_bot146 = np.nansum(hyp_bot146 * DA_ps[None, :, :], axis=(1, 2))
+        area_bot = np.nansum(hyp_bot * DA_SSC[None, :, :], axis=(1, 2))
+        area_bot146 = np.nansum(hyp_bot146 * DA_SSC[None, :, :], axis=(1, 2))
 
         key = gtagex + '_' + region + '_' + year
 
