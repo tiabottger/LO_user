@@ -57,80 +57,6 @@ else:
 DA = DA * mask_rho
 DA_ps = DA * mask_ps  # mask out non-Puget Sound areas
 
-# ============================================================
-# MAP Puget Sound MASK ONTO SSC GRID
-# ============================================================
-ds_LO = xr.open_dataset(
-    in_dir / 'cas7_t1_x11ab_pugetsound_2014_bottom_DO_info.nc'
-)
-
-ds_SSC = xr.open_dataset(
-    in_dir / 'SSC_2014_pugetsound_bottom_DO_info.nc'
-)
-
-lon_SSC = ds_SSC['nav_lon'].values
-lat_SSC = ds_SSC['nav_lat'].values
-
-mask_lon = basin_mask_ds['lon_rho'].values
-mask_lat = basin_mask_ds['lat_rho'].values
-
-grid_points = np.column_stack((
-    mask_lon.ravel(),
-    mask_lat.ravel()
-))
-
-valid_grid = (
-    np.isfinite(grid_points[:, 0]) &
-    np.isfinite(grid_points[:, 1])
-)
-
-tree = cKDTree(grid_points[valid_grid])
-
-ssc_points = np.column_stack((
-    lon_SSC.ravel(),
-    lat_SSC.ravel()
-))
-
-_, nearest_index = tree.query(ssc_points)
-
-valid_flat_indices = np.flatnonzero(valid_grid)
-
-nearest_flat_index = valid_flat_indices[nearest_index]
-
-eta_index, xi_index = np.unravel_index(
-    nearest_flat_index,
-    mask_lon.shape
-)
-
-mask_ps_SSC = (
-    mask_ps[eta_index, xi_index] == 1
-).reshape(lon_SSC.shape)
-
-# ============================================================
-# SSC CELL AREA
-#
-# so estimate horizontal area from lon/lat.
-# ============================================================
-
-R = 6371000.0
-
-lat_rad = np.deg2rad(lat_SSC)
-lon_rad = np.deg2rad(lon_SSC)
-
-dlat = np.gradient(lat_rad, axis=0)
-dlon = np.gradient(lon_rad, axis=1)
-
-DY_SSC = R * np.abs(dlat)
-DX_SSC = (
-    R *
-    np.abs(dlon) *
-    np.cos(lat_rad)
-)
-
-DA_SSC = DX_SSC * DY_SSC * 1e-6  # m2 to km2
-
-DA_SSC = DA_SSC * mask_ps_SSC 
-
 # dictionaries
 hyp_area_bot = {}
 hyp_area_bot146 = {}
@@ -143,8 +69,7 @@ for year in years:
 
         print(f'Processing {gtagex}, {region}, {year}')
 
-        # fp = in_dir / (gtagex + '_' + region + '_' + year + '_bottom_DO_info.nc')
-        fp = in_dir / 'SSC_2014_pugetsound_bottom_DO_info.nc'
+        fp = in_dir / (gtagex + '_' + region + '_' + year + '_bottom_DO_info.nc')
         ds = xr.open_dataset(fp)
 
         DO_bot = ds['DO_bot'].values
@@ -157,17 +82,14 @@ for year in years:
         hyp_bot146 = DO_bot146 <= 2
 
         # hypoxic area through time [km2]
-        # area_bot = np.nansum(hyp_bot * DA_ps[None, :, :], axis=(1, 2))
-        # area_bot146 = np.nansum(hyp_bot146 * DA_ps[None, :, :], axis=(1, 2))
-        area_bot = np.nansum(hyp_bot * DA_SSC[None, :, :], axis=(1, 2))
-        area_bot146 = np.nansum(hyp_bot146 * DA_SSC[None, :, :], axis=(1, 2))
+        area_bot = np.nansum(hyp_bot * DA_ps[None, :, :], axis=(1, 2))
+        area_bot146 = np.nansum(hyp_bot146 * DA_ps[None, :, :], axis=(1, 2))
 
         key = gtagex + '_' + region + '_' + year
 
         hyp_area_bot[key] = area_bot
         hyp_area_bot146[key] = area_bot146
-        # time_dict[key] = pd.to_datetime(ds['ocean_time'].values)
-        time_dict[key] = pd.to_datetime(ds_LO['ocean_time'].values)
+        time_dict[key] = pd.to_datetime(ds['ocean_time'].values)
         thick_bot_dict[key] = thick_bot
         thick_bot146_dict[key] = thick_bot146
 ##############################################################
@@ -187,8 +109,7 @@ for year in years:
         dates,
         hyp_area_bot[key],
         linewidth=2,
-        #label='Bottom LiveOcean cell' if year == years[0] else None
-        label='Bottom SalishSeaCast cell' if year == years[0] else None
+        label='Bottom LiveOcean cell' if year == years[0] else None
     )
 
     ax.plot(
@@ -209,11 +130,11 @@ ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
 ax.tick_params(axis='x', rotation=30)
 ax.tick_params(axis='both', labelsize=11)
 
-ax.set_title('SSC Hypoxic Area Comparison: Bottom Cell vs Bottom 14.6%', fontsize=13)
+ax.set_title('Hypoxic Area Comparison: Bottom Cell vs Bottom 14.6%', fontsize=13)
 
 plt.tight_layout()
 
-out_fn = out_dir / 'ssc_hypoxic_area_bottom_vs_bottom146.png'
+out_fn = out_dir / 'hypoxic_area_bottom_vs_bottom146.png'
 plt.savefig(out_fn, dpi=300)
 
 ##############################################################
@@ -282,14 +203,14 @@ ax.set_xlabel('Longitude')
 ax.set_ylabel('Latitude')
 
 ax.set_title(
-    'SSC Mean Bottom Layer Thickness Difference\n'
+    'Mean Bottom Layer Thickness Difference\n'
     '(Bottom 14.6% − Bottom Cell)'
 )
 
 plt.tight_layout()
 
 plt.savefig(
-    out_dir / 'ssc_bottom_layer_thickness_difference.png',
+    out_dir / 'bottom_layer_thickness_difference.png',
     dpi=300
 )
 
