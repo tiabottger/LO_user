@@ -187,7 +187,8 @@ for year in years:
         dates,
         hyp_area_bot[key],
         linewidth=2,
-        label='Bottom LiveOcean cell' if year == years[0] else None
+        #label='Bottom LiveOcean cell' if year == years[0] else None
+        label='Bottom SalishSeaCast cell' if year == years[0] else None
     )
 
     ax.plot(
