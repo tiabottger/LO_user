@@ -222,6 +222,34 @@ hyp_volume_SSC_ts = np.nansum(
     DA_SSC[None, :, :],
     axis=(1, 2)
 )/ 1e3 # convert m hyp thick to km --> km3
+
+# ============================================================
+# TOTAL WATER VOLUME
+# ============================================================
+
+# ------------------------------------------------------------
+# LIVE OCEAN
+# ------------------------------------------------------------
+
+depth_bot_LO = ds_LO['depth_bot'].values
+
+total_volume_LO = np.nansum(
+    depth_bot_LO * DA_ps
+) / 1e3   # m * km2 -> km3
+
+
+# ------------------------------------------------------------
+# SALISHSEACAST
+# ------------------------------------------------------------
+
+depth_bot_SSC = ds_SSC['depth_bot'].values
+
+total_volume_SSC = np.nansum(
+    depth_bot_SSC * DA_SSC
+) / 1e3   # m * km2 -> km3
+
+print(f'LiveOcean total volume: {total_volume_LO:.2f} km3')
+print(f'SalishSeaCast total volume: {total_volume_SSC:.2f} km3')
        
 # ============================================================
 # PLOT HYPOXIC AREA AND VOLUME TS
@@ -309,6 +337,81 @@ plt.savefig(
     dpi=300,
     bbox_inches='tight'
 )
+plt.show()
+
+# ============================================================
+# PLOT HYPOXIC VOLUME (% OF TOTAL VOLUME)
+# ============================================================
+
+hyp_volume_pct_LO = (
+    hyp_volume_LO_ts / total_volume_LO
+) * 100
+
+hyp_volume_pct_SSC = (
+    hyp_volume_SSC_ts / total_volume_SSC
+) * 100
+
+print('Plotting hypoxic volume as percent of total volume')
+
+fig, ax = plt.subplots(figsize=(11, 4.5))
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_pct_LO,
+    linewidth=2,
+    color='red',
+    label='LiveOcean'
+)
+
+ax.plot(
+    pd.to_datetime(ds_SSC['ocean_time'].values),
+    hyp_volume_pct_SSC,
+    linewidth=2,
+    color='blue',
+    label='SalishSeaCast'
+)
+
+ax.set_ylabel(
+    'Hypoxic Volume (% of Total Volume)',
+    fontsize=12
+)
+
+ax.set_xlabel('Date', fontsize=12)
+
+ax.grid(
+    visible=True,
+    axis='both',
+    color='silver',
+    linestyle='--'
+)
+
+ax.legend(loc='upper right')
+
+ax.xaxis.set_major_formatter(
+    mdates.DateFormatter('%Y-%m')
+)
+
+ax.tick_params(
+    axis='x',
+    rotation=30
+)
+
+ax.tick_params(
+    axis='both',
+    labelsize=11
+)
+
+ax.set_title(
+    'Hypoxic Volume — Bottom 14.6%',
+    fontsize=13
+)
+
+plt.savefig(
+    'hypoxic_volume_percent_comparison.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+
 plt.show()
 
 # ============================================================
