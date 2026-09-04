@@ -60,6 +60,10 @@ DA_ps = DA * mask_ps  # mask out non-Puget Sound areas
 # ============================================================
 # MAP Puget Sound MASK ONTO SSC GRID
 # ============================================================
+ds_LO = xr.open_dataset(
+    in_dir / 'cas7_t1_x11ab_pugetsound_2014_bottom_DO_info.nc'
+)
+
 ds_SSC = xr.open_dataset(
     in_dir / 'SSC_2014_pugetsound_bottom_DO_info.nc'
 )
@@ -162,7 +166,8 @@ for year in years:
 
         hyp_area_bot[key] = area_bot
         hyp_area_bot146[key] = area_bot146
-        time_dict[key] = pd.to_datetime(ds['ocean_time'].values)
+        # time_dict[key] = pd.to_datetime(ds['ocean_time'].values)
+        time_dict[key] = pd.to_datetime(ds_LO['ocean_time'].values)
         thick_bot_dict[key] = thick_bot
         thick_bot146_dict[key] = thick_bot146
 ##############################################################
