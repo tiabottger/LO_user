@@ -888,4 +888,9 @@ ani = FuncAnimation(
     blit=False
 )
 
-plt.show()
+ani.save(
+    'daily_DO_bottom146_comparison.mp4',
+    writer='ffmpeg',
+    fps=6,
+    dpi=200
+)
