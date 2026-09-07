@@ -12,6 +12,7 @@ import xarray as xr
 import pandas as pd
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 from scipy.spatial import cKDTree
 from lo_tools import Lfun
 
@@ -724,6 +725,167 @@ plt.savefig(
     'mean_DO_bottom146_comparison.png',
     dpi=300,
     bbox_inches='tight'
+)
+
+plt.show()
+
+
+# ============================================================
+# Daily DO concentration in bottom 14.6%
+# ============================================================
+
+DO_LO = ds_LO['DO_bot146'].values
+DO_SSC = ds_SSC['DO_bot146'].values
+
+# Apply Puget Sound mask
+DO_LO_plot = np.where(
+    mask_ps[None, :, :] == 1,
+    DO_LO,
+    np.nan
+)
+
+DO_SSC_plot = np.where(
+    mask_ps_SSC[None, :, :],
+    DO_SSC,
+    np.nan
+)
+
+# ============================================================
+# Common color scale for both models and all days
+# ============================================================
+
+DO_min = np.nanmin([
+    np.nanmin(DO_LO_plot),
+    np.nanmin(DO_SSC_plot)
+])
+
+DO_max = np.nanmax([
+    np.nanmax(DO_LO_plot),
+    np.nanmax(DO_SSC_plot)
+])
+
+print("Daily bottom 14.6% DO range:")
+print("Minimum:", DO_min)
+print("Maximum:", DO_max)
+
+# ============================================================
+# Time
+# ============================================================
+
+time_LO = pd.to_datetime(ds_LO['ocean_time'].values)
+time_SSC = pd.to_datetime(ds_SSC['ocean_time'].values)
+
+# ============================================================
+# Create figure
+# ============================================================
+
+fig, axes = plt.subplots(
+    1, 2,
+    figsize=(12, 6),
+    constrained_layout=True
+)
+
+# ------------------------------------------------------------
+# Initial frame
+# ------------------------------------------------------------
+
+pcm1 = axes[0].pcolormesh(
+    lon_LO,
+    lat_LO,
+    DO_LO_plot[0, :, :],
+    shading='auto',
+    cmap='viridis_r',
+    vmin=DO_min,
+    vmax=DO_max
+)
+
+pcm2 = axes[1].pcolormesh(
+    lon_SSC,
+    lat_SSC,
+    DO_SSC_plot[0, :, :],
+    shading='auto',
+    cmap='viridis_r',
+    vmin=DO_min,
+    vmax=DO_max
+)
+
+# ------------------------------------------------------------
+# Titles and labels
+# ------------------------------------------------------------
+
+axes[0].set_title('LiveOcean')
+axes[1].set_title('SalishSeaCast')
+
+for ax in axes:
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+
+    ax.set_xlim(lon_min, lon_max)
+    ax.set_ylim(lat_min, lat_max)
+
+# ------------------------------------------------------------
+# Common colorbar
+# ------------------------------------------------------------
+
+cbar = fig.colorbar(
+    pcm2,
+    ax=axes,
+    shrink=0.85,
+    pad=0.02
+)
+
+cbar.set_label('DO in bottom 14.6% (mg/L)')
+
+# ------------------------------------------------------------
+# Date text
+# ------------------------------------------------------------
+
+date_text = fig.suptitle(
+    time_LO[0].strftime('%Y-%m-%d'),
+    fontsize=14
+)
+
+# ============================================================
+# Animation function
+# ============================================================
+
+def update(frame):
+
+    # Update LiveOcean
+    pcm1.set_array(
+        DO_LO_plot[frame, :, :].ravel()
+    )
+
+    # Update SalishSeaCast
+    pcm2.set_array(
+        DO_SSC_plot[frame, :, :].ravel()
+    )
+
+    # Update date
+    date_text.set_text(
+        time_LO[frame].strftime('%Y-%m-%d')
+    )
+
+    return pcm1, pcm2, date_text
+
+
+# ============================================================
+# Create animation
+# ============================================================
+
+print('Creating animation...')
+
+nframes = min(
+    DO_LO_plot.shape[0],
+    DO_SSC_plot.shape[0]
+)
+
+ani = FuncAnimation(
+    fig,
+    update,
+    frames=nframes,
+    interval=150,      # milliseconds between frames
+    blit=False
 )
 
 plt.show()
