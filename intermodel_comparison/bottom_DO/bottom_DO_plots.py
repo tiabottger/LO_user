@@ -764,10 +764,6 @@ DO_max = np.nanmax([
     np.nanmax(DO_SSC_plot)
 ])
 
-print("Daily bottom 14.6% DO range:")
-print("Minimum:", DO_min)
-print("Maximum:", DO_max)
-
 # ============================================================
 # Time
 # ============================================================
