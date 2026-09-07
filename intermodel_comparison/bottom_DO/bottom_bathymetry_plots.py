@@ -385,6 +385,7 @@ thick_SSC = ds_SSC['thick_bot146'].values
 # MAP SSC THICKNESS ONTO LIVE OCEAN GRID
 # ============================================================
 
+# SSC grid points
 ssc_points = np.column_stack((
     lon_SSC.ravel(),
     lat_SSC.ravel()
@@ -397,6 +398,7 @@ valid_ssc = (
 
 tree_SSC = cKDTree(ssc_points[valid_ssc])
 
+# LiveOcean grid points
 lo_points = np.column_stack((
     lon_LO.ravel(),
     lat_LO.ravel()
@@ -407,8 +409,18 @@ _, nearest_index = tree_SSC.query(lo_points)
 valid_flat_indices = np.flatnonzero(valid_ssc)
 nearest_flat_index = valid_flat_indices[nearest_index]
 
-thick_SSC_on_LO = thick_SSC.ravel()[nearest_flat_index]
-thick_SSC_on_LO = thick_SSC_on_LO.reshape(thick_LO.shape)
+# ------------------------------------------------------------
+# Map every SSC timestep onto LO grid
+# ------------------------------------------------------------
+
+thick_SSC_on_LO = np.empty_like(thick_LO)
+
+for t in range(thick_SSC.shape[0]):
+
+    thick_SSC_on_LO[t, :, :] = (
+        thick_SSC[t, :, :].ravel()[nearest_flat_index]
+        .reshape(thick_LO.shape[1:])
+    )
 
 # ============================================================
 # THICKNESS DIFFERENCE
@@ -416,10 +428,15 @@ thick_SSC_on_LO = thick_SSC_on_LO.reshape(thick_LO.shape)
 
 thick_difference = thick_LO - thick_SSC_on_LO
 
-# Apply Puget Sound mask
-thick_difference_plot = np.where(
-    mask_ps == 1,
+mean_thick_difference = np.nanmean(
     thick_difference,
+    axis=0
+)
+
+# Apply Puget Sound mask
+mean_thick_difference_plot = np.where(
+    mask_ps == 1,
+    mean_thick_difference,
     np.nan
 )
 
@@ -433,12 +450,12 @@ fig, ax = plt.subplots(
 )
 
 # Symmetric color scale centered at zero
-diff_max = np.nanmax(np.abs(thick_difference_plot))
+diff_max = np.nanmax(np.abs(mean_thick_difference_plot))
 
 pcm = ax.pcolormesh(
     lon_LO,
     lat_LO,
-    thick_difference_plot,
+    mean_thick_difference_plot,
     shading='auto',
     cmap='RdBu_r',
     vmin=-diff_max,
@@ -447,7 +464,7 @@ pcm = ax.pcolormesh(
 
 ax.set_title(
     'LiveOcean − SalishSeaCast\n'
-    'Bottom 14.6% Layer Thickness'
+    'Mean Bottom 14.6% Layer Thickness Difference'
 )
 
 ax.set_xlabel('Longitude')
