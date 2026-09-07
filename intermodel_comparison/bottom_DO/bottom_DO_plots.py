@@ -773,7 +773,7 @@ print("Maximum:", DO_max)
 # ============================================================
 
 time_LO = pd.to_datetime(ds_LO['ocean_time'].values)
-time_SSC = pd.to_datetime(ds_SSC['ocean_time'].values)
+time_SSC = pd.to_datetime(ds_LO['ocean_time'].values)
 
 # ============================================================
 # Create figure
