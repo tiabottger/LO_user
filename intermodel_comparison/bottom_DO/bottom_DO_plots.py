@@ -16,6 +16,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.colors import ListedColormap
 from scipy.spatial import cKDTree
 from lo_tools import Lfun
+from lo_tools import plotting_functions as pfun
 
 import sys
 from pathlib import Path
@@ -589,22 +590,16 @@ cbar.set_label(
 # BLACK COASTLINE / PUGET SOUND OUTLINE
 # ============================================================
 
-axes[0].contour(
-    mask_lon,
-    mask_lat,
-    mask_ps,
-    levels=[0.5],
-    colors='black',
-    linewidths=0.8
+pfun.add_coast(
+    axes[0],
+    color='black',
+    linewidth=0.8
 )
 
-axes[1].contour(
-    mask_lon,
-    mask_lat,
-    mask_ps_SSC,
-    levels=[0.5],
-    colors='black',
-    linewidths=0.8
+pfun.add_coast(
+    axes[1],
+    color='black',
+    linewidth=0.8
 )
 
 
