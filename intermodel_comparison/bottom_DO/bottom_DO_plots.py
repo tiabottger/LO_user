@@ -13,6 +13,7 @@ import pandas as pd
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from matplotlib.colors import ListedColormap
 from scipy.spatial import cKDTree
 from lo_tools import Lfun
 
@@ -509,6 +510,10 @@ fig, axes = plt.subplots(
     constrained_layout=True
 )
 
+# Color map
+cmap= plt.cm.jet.copy()
+cmap.set_under('white'),
+
 
 # ------------------------------------------------------------
 # LiveOcean
@@ -520,15 +525,15 @@ pcm1 = axes[0].pcolormesh(
     # hyp_occurrence_LO, # as percentage
     hyp_occurrence_LO_plot,
     shading='auto',
-    cmap= 'jet',
-    vmin=0,
+    cmap = cmap,
+    vmin=0.001,
     # vmax=occurrence_max
-    vmax= 80
+    vmax= 140
 )
 
 axes[0].set_title(
-    'LiveOcean — Hypoxia Occurrence DO ≤ 2.0 mg/L',
-    #'LiveOcean — Hypoxia Occurrence DO ≤ 3.0 mg/L',
+    'LiveOcean — Bottom Hypoxia (DO ≤ 2.0 mg/L) Occurrence [Days]',
+    #'LiveOcean — Bottom Hypoxia Occurrence DO ≤ 3.0 mg/L [Days]',
     fontsize=14
 )
 
@@ -555,15 +560,15 @@ pcm2 = axes[1].pcolormesh(
     # hyp_occurrence_SSC,
     hyp_occurrence_SSC_plot,
     shading='auto',
-    cmap= 'jet',
-    vmin=0,
+    cmap= cmap,
+    vmin=0.001,
     # vmax=occurrence_max
-    vmax = 80
+    vmax = 140
 )
 
 axes[1].set_title(
-    'SalishSeaCast — Hypoxia Occurrence DO ≤ 2.0 mg/L',
-    #'SalishSeaCast — Hypoxia Occurrence DO ≤ 3.0 mg/L',
+    'SalishSeaCast — Bottom Hypoxia (DO ≤ 2.0 mg/L) Occurrence [Days]',
+    #'SalishSeaCast — Bottom Hypoxia Occurrence DO ≤ 3.0 mg/L [Days]',
     fontsize=14
 )
 
@@ -578,6 +583,28 @@ cbar = fig.colorbar(
 cbar.set_label(
     #'Hypoxic occurrence (%)'
     'Hypoxic days count'
+)
+
+# ============================================================
+# BLACK COASTLINE / PUGET SOUND OUTLINE
+# ============================================================
+
+axes[0].contour(
+    mask_lon,
+    mask_lat,
+    mask_ps,
+    levels=[0.5],
+    colors='black',
+    linewidths=0.8
+)
+
+axes[1].contour(
+    mask_lon,
+    mask_lat,
+    mask_ps_SSC,
+    levels=[0.5],
+    colors='black',
+    linewidths=0.8
 )
 
 
