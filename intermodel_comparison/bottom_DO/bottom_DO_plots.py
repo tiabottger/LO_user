@@ -429,8 +429,8 @@ plt.show()
 lon_LO = box_ds['lon_rho'].values
 lat_LO = box_ds['lat_rho'].values
 
-#DO_LO = ds_LO['DO_bot146'].values
-DO_LO = ds_LO['DO_bot'].values
+DO_LO = ds_LO['DO_bot146'].values
+# DO_LO = ds_LO['DO_bot'].values
 
 # Hypoxic = DO <= 2 mg/L
 hypoxic_LO = DO_LO <= 2.0
@@ -460,8 +460,8 @@ np.divide(
 # SSC
 # ------------------------------------------------------------
 
-#DO_SSC = ds_SSC['DO_bot146'].values
-DO_SSC = ds_SSC['DO_bot'].values
+DO_SSC = ds_SSC['DO_bot146'].values
+# DO_SSC = ds_SSC['DO_bot'].values
 
 hypoxic_SSC = DO_SSC <= 2.0
 # hypoxic_SSC = DO_SSC <= 3.0
