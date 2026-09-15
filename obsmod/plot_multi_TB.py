@@ -67,7 +67,7 @@ plt.close('all')
 
 # specify input (created by process_multi_bottle.py and process_multi_ctd.py)
 for otype in ['bottle']:#, 'ctd']:
-    in_fn = in_dir / ('combined_' + otype + '_' + year + '_cas7_t1_x11ab_ssc_ssm_v1.pkl')
+    in_fn = in_dir / ('combined_' + otype + '_' + year + '_cas7_t1_x11ab_ssc_ssmpnnl.pkl')
     df0_dict = pickle.load(open(in_fn, 'rb'))
     
     # remove non-DataFrame entries (like meta)
@@ -363,7 +363,7 @@ for otype in ['bottle']:#, 'ctd']:
                     plt.show()
                 else:
                     #plt.savefig(out_dir / (ff_str + '.png'))
-                    plt.savefig(out_dir / (ff_str + '_withssm_oldversion.png'))
+                    plt.savefig(out_dir / (ff_str + '_withssmpnnl.png'))
                     plt.close('all')
 
     
