@@ -775,140 +775,241 @@ obs = (
 
 
 # ============================================================
-# CHECK ALIGNMENT
+# STRICT ALIGNMENT CHECK
 # ============================================================
 
-print("\n============================================")
+print("\n" + "=" * 60)
 print("ALIGNMENT CHECK")
-print("============================================")
+print("=" * 60)
 
-print(
-    "Number of observations:",
-    len(obs)
+print(f"Number of observations: {len(obs)}")
+print(f"Number of SSM rows:     {len(ssm)}")
+
+# ------------------------------------------------------------
+# 1. Check CID
+# ------------------------------------------------------------
+
+cid_match = np.array_equal(
+    obs["cid"].values,
+    ssm["cid"].values
 )
 
-print(
-    "Number of SSM rows:",
-    len(ssm)
-)
+print(f"\nCID match: {cid_match}")
 
-print(
-    "\nCID match:",
-    obs["cid"]
-    .reset_index(drop=True)
-    .equals(
-        ssm["cid"]
-        .reset_index(drop=True)
-    )
-)
+if not cid_match:
+    bad = np.where(obs["cid"].values != ssm["cid"].values)[0]
 
-print(
-    "Time match:",
-    pd.to_datetime(
-        obs["time"]
-    )
-    .reset_index(drop=True)
-    .equals(
-        pd.to_datetime(
-            ssm["time"]
+    print(f"Number of CID mismatches: {len(bad)}")
+    print("\nFirst 10 CID mismatches:")
+
+    for i in bad[:10]:
+        print(
+            f"row {i}: "
+            f"obs={obs.iloc[i]['cid']} | "
+            f"ssm={ssm.iloc[i]['cid']}"
         )
-        .reset_index(drop=True)
+
+
+# ------------------------------------------------------------
+# 2. Check time
+# ------------------------------------------------------------
+
+obs_time = pd.to_datetime(obs["time"]).values
+ssm_time = pd.to_datetime(ssm["time"]).values
+
+time_match = np.array_equal(obs_time, ssm_time)
+
+print(f"\nTime match: {time_match}")
+
+if not time_match:
+
+    time_diff = (
+        pd.to_datetime(ssm["time"]).reset_index(drop=True)
+        - pd.to_datetime(obs["time"]).reset_index(drop=True)
     )
+
+    bad = np.where(time_diff != pd.Timedelta(0))[0]
+
+    print(f"Number of time mismatches: {len(bad)}")
+
+    print("\nFirst 10 time mismatches:")
+
+    for i in bad[:10]:
+        print(
+            f"row {i}: "
+            f"obs={obs.iloc[i]['time']} | "
+            f"ssm={ssm.iloc[i]['time']} | "
+            f"diff={time_diff.iloc[i]}"
+        )
+
+
+# ------------------------------------------------------------
+# 3. Check depth
+# ------------------------------------------------------------
+
+obs_z = obs["z"].astype(float).values
+ssm_z = ssm["z"].astype(float).values
+
+z_diff = ssm_z - obs_z
+
+print(f"\nMaximum |depth difference|: "
+      f"{np.nanmax(np.abs(z_diff)):.6f} m")
+
+print(f"Mean |depth difference|: "
+      f"{np.nanmean(np.abs(z_diff)):.6f} m")
+
+z_match = np.allclose(
+    obs_z,
+    ssm_z,
+    equal_nan=True,
+    atol=0.5
 )
 
-print(
-    "Depth match:",
-    np.allclose(
-        obs["z"].values,
-        ssm["z"].values,
-        equal_nan=True
+print(f"Depth match within 0.5 m: {z_match}")
+
+if not z_match:
+
+    bad = np.where(
+        ~np.isclose(obs_z, ssm_z, equal_nan=True, atol=0.5)
+    )[0]
+
+    print(f"Number of depth mismatches: {len(bad)}")
+
+    print("\nFirst 10 depth mismatches:")
+
+    for i in bad[:10]:
+        print(
+            f"row {i}: "
+            f"obs={obs.iloc[i]['z']:.3f} | "
+            f"ssm={ssm.iloc[i]['z']:.3f} | "
+            f"diff={z_diff[i]:.3f}"
+        )
+
+
+# ------------------------------------------------------------
+# 4. Check longitude / latitude
+# ------------------------------------------------------------
+
+lon_diff = (
+    ssm["lon"].astype(float).values
+    - obs["lon"].astype(float).values
+)
+
+lat_diff = (
+    ssm["lat"].astype(float).values
+    - obs["lat"].astype(float).values
+)
+
+horizontal_distance_km = (
+    np.sqrt(
+        lon_diff**2 +
+        lat_diff**2
+    ) * 111.0
+)
+
+print(f"\nMaximum horizontal distance: "
+      f"{np.nanmax(horizontal_distance_km):.3f} km")
+
+print(f"Mean horizontal distance: "
+      f"{np.nanmean(horizontal_distance_km):.3f} km")
+
+
+# ------------------------------------------------------------
+# 5. Check exact row identity
+# ------------------------------------------------------------
+
+key_cols = ["cid", "lon", "lat", "time", "z"]
+
+print("\nChecking observation keys...")
+
+obs_keys = obs[key_cols].copy()
+ssm_keys = ssm[key_cols].copy()
+
+for col in ["lon", "lat", "z"]:
+    obs_keys[col] = obs_keys[col].astype(float).round(6)
+    ssm_keys[col] = ssm_keys[col].astype(float).round(6)
+
+obs_keys["time"] = pd.to_datetime(obs_keys["time"])
+ssm_keys["time"] = pd.to_datetime(ssm_keys["time"])
+
+exact_key_match = obs_keys.equals(ssm_keys)
+
+print(f"Exact key match: {exact_key_match}")
+
+
+# ------------------------------------------------------------
+# 6. Check whether the same observations exist, regardless
+#    of order
+# ------------------------------------------------------------
+
+obs_key_counts = (
+    obs_keys
+    .value_counts()
+    .sort_index()
+)
+
+ssm_key_counts = (
+    ssm_keys
+    .value_counts()
+    .sort_index()
+)
+
+same_keys_unordered = obs_key_counts.equals(ssm_key_counts)
+
+print(f"Same observation keys ignoring order: "
+      f"{same_keys_unordered}")
+
+
+# ------------------------------------------------------------
+# 7. If order differs, identify what happened
+# ------------------------------------------------------------
+
+if not exact_key_match:
+
+    print("\n" + "-" * 60)
+    print("ORDER / KEY DIAGNOSTICS")
+    print("-" * 60)
+
+    # Keys in obs but not SSM
+    missing_from_ssm = obs_key_counts.subtract(
+        ssm_key_counts,
+        fill_value=0
     )
-)
 
+    missing_from_ssm = missing_from_ssm[
+        missing_from_ssm > 0
+    ]
 
-# ============================================================
-# CHECK TIME MATCHING
-# ============================================================
+    print(
+        f"\nObservation keys missing from SSM: "
+        f"{len(missing_from_ssm)}"
+    )
 
-print("\n============================================")
-print("SSM TIME MATCHING")
-print("============================================")
+    # Keys in SSM but not obs
+    extra_in_ssm = ssm_key_counts.subtract(
+        obs_key_counts,
+        fill_value=0
+    )
 
-print(
-    ssm[
-        [
-            "time",
-            "ssm_time",
-            "ssm_time_difference_hours"
-        ]
-    ].head(10)
-)
+    extra_in_ssm = extra_in_ssm[
+        extra_in_ssm > 0
+    ]
 
-print(
-    "\nMaximum SSM time difference:",
-    ssm[
-        "ssm_time_difference_hours"
-    ].max(),
-    "hours"
-)
+    print(
+        f"SSM keys not present in observations: "
+        f"{len(extra_in_ssm)}"
+    )
 
-print(
-    "Mean SSM time difference:",
-    ssm[
-        "ssm_time_difference_hours"
-    ].mean(),
-    "hours"
-)
-
-
-# ============================================================
-# CHECK VERTICAL MATCHING
-# ============================================================
-
-print("\n============================================")
-print("SSM VERTICAL MATCHING")
-print("============================================")
-
-print(
-    "Mean vertical difference:",
-    ssm[
-        "ssm_vertical_difference"
-    ].mean(),
-    "m"
-)
-
-print(
-    "Maximum vertical difference:",
-    ssm[
-        "ssm_vertical_difference"
-    ].max(),
-    "m"
-)
-
-
-# ============================================================
-# CHECK HORIZONTAL MATCHING
-# ============================================================
-
-print("\n============================================")
-print("SSM HORIZONTAL MATCHING")
-print("============================================")
-
-print(
-    "Mean node distance:",
-    ssm[
-        "ssm_node_distance_deg"
-    ].mean(),
-    "degrees"
-)
-
-print(
-    "Maximum node distance:",
-    ssm[
-        "ssm_node_distance_deg"
-    ].max(),
-    "degrees"
-)
+    if same_keys_unordered:
+        print(
+            "\nIMPORTANT: The same observations are present "
+            "in both tables, but the ROW ORDER differs."
+        )
+    else:
+        print(
+            "\nIMPORTANT: The SSM table does not contain "
+            "exactly the same observation keys as obs."
+        )
 
 
 # ============================================================
