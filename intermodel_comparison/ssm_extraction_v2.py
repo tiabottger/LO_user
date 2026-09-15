@@ -12,15 +12,32 @@
 #   6. Return SSM dataframe with exactly the same row order
 # ============================================================
 
+'''
+SSM WQM extraction at observation locations/times/depths
+
+Uses:
+  data = combined_bottle_2014_cas7_t1_x11ab_ssc.pkl 
+  data["obs"] as the master observation targets
+
+SSM data:
+  https://s3.kopah.uw.edu/ssm/wqm/
+  
+SSM grid:
+    EPSG:26910 (NAD83 / UTM Zone 10N)
+
+No complete daily files are downloaded. fsspec + scipy
+access the NetCDF-3 files remotely using HTTP range requests.
+'''
+
+import pickle
 import numpy as np
 import pandas as pd
-import pickle
-import pyproj
+import xarray as xr
 import fsspec
-import gsw
-
 from scipy.io import netcdf_file
 from scipy.spatial import cKDTree
+import pyproj
+import gsw
 
 from lo_tools import Lfun
 
@@ -29,85 +46,119 @@ from pathlib import Path
 
 Ldir = Lfun.Lstart()
 
-
 # ============================================================
-# USER SETTINGS
+# PATHS
 # ============================================================
 
 year = 2014
 
-pickle_in = (
+pkl_path = (
     Ldir['LOo'] /'obsmod' /
-    f"combined_bottle_{year}_cas7_t1_x11ab_ssc.pkl"
+        f"combined_bottle_{year}_cas7_t1_x11ab_ssc.pkl"
 )
 
-pickle_out = (
+out_pkl_path = (
     Ldir['LOo'] /'obsmod' /
-        f"combined_bottle_{year}_cas7_t1_x11ab_ssc_ssmpnnl.pkl"
-)
+            f"combined_bottle_{year}_cas7_t1_x11ab_ssc_ssmpnnl.pkl"
+            )
 
-ssm_base_url = (
-    "https://s3.kopah.uw.edu/ssm/wqm"
-)
+ssm_base_url = "https://s3.kopah.uw.edu/ssm/wqm/2014/"
 
 
 # ============================================================
 # LOAD EXISTING PICKLE
 # ============================================================
 
-print("Loading existing pickle...")
+print("\nLoading existing pickle...")
 
-with open(pickle_in, "rb") as f:
+with open(pkl_path, "rb") as f:
     data = pickle.load(f)
 
 obs = data["obs"].copy()
 
+print(f"Number of observations: {len(obs)}")
+
+# ------------------------------------------------------------
+# Make sure time is datetime
+# ------------------------------------------------------------
+
 obs["time"] = pd.to_datetime(obs["time"])
 
-print("\nExisting pickle keys:")
-print(data.keys())
+# ------------------------------------------------------------
+# Preserve ORIGINAL observation row number
+#
+# This is the key to guaranteeing that the final SSM table
+# has exactly the same rows and order as obs.
+# ------------------------------------------------------------
 
-print("\nNumber of observations:", len(obs))
+obs["_obs_index"] = np.arange(len(obs))
+
+print("Original observation index created.")
 
 
 # ============================================================
-# SET UP SSM GRID
+# CHECK OBSERVATION DATE RANGE
 # ============================================================
 
-print("\nOpening SSM grid file...")
+print("\nObservation date range:")
+print(f"  First: {obs['time'].min()}")
+print(f"  Last:  {obs['time'].max()}")
+
+unique_dates = (
+    obs["time"]
+    .dt.normalize()
+    .drop_duplicates()
+    .sort_values()
+)
+
+print(f"Number of unique observation dates: {len(unique_dates)}")
+
+
+# ============================================================
+# OPEN FIRST SSM FILE TO GET GRID
+#
+# We use Jan 1 as the grid source.
+# The SSM horizontal grid is static.
+# ============================================================
+
+print("\nOpening SSM grid...")
 
 grid_url = (
-    f"{ssm_base_url}/2014/"
+    ssm_base_url +
     "ssm_FVCOMICM_00001.nc"
 )
 
-fs = fsspec.filesystem("http")
+grid_fs = fsspec.filesystem(
+    "http",
+    block_size=1024 * 1024,
+    cache_type="readahead"
+)
 
-grid_file = fs.open(grid_url, "rb")
+grid_file = grid_fs.open(
+    grid_url,
+    mode="rb"
+)
 
-ds_grid = netcdf_file(
+grid_nc = netcdf_file(
     grid_file,
-    mode="r"
+    mode="r",
+    mmap=False
 )
 
 # ------------------------------------------------------------
-# SSM x/y coordinates
+# Get x/y
 # ------------------------------------------------------------
 
-x_ssm = (
-    ds_grid.variables["x"]
-    .data
-    .copy()
-)
+x = np.array(grid_nc.variables["x"][:]).astype(float)
+y = np.array(grid_nc.variables["y"][:]).astype(float)
 
-y_ssm = (
-    ds_grid.variables["y"]
-    .data
-    .copy()
-)
+print(f"SSM number of nodes: {len(x)}")
 
 # ------------------------------------------------------------
-# Convert NAD83 UTM Zone 10N -> longitude/latitude
+# Convert UTM Zone 10N -> lon/lat
+#
+# SSM x/y:
+#   EPSG:26910 = NAD83 / UTM Zone 10N
 # ------------------------------------------------------------
 
 transformer = pyproj.Transformer.from_crs(
@@ -116,344 +167,404 @@ transformer = pyproj.Transformer.from_crs(
     always_xy=True
 )
 
-lon_ssm, lat_ssm = transformer.transform(
-    x_ssm,
-    y_ssm
+lon_ssm, lat_ssm = transformer.transform(x, y)
+
+lon_ssm = np.asarray(lon_ssm)
+lat_ssm = np.asarray(lat_ssm)
+
+print(
+    f"SSM longitude range: "
+    f"{np.nanmin(lon_ssm):.3f} to {np.nanmax(lon_ssm):.3f}"
 )
 
-# ------------------------------------------------------------
-# Build nearest-node KDTree
-# ------------------------------------------------------------
-
-tree_ssm = cKDTree(
-    np.column_stack(
-        [
-            lon_ssm,
-            lat_ssm
-        ]
-    )
+print(
+    f"SSM latitude range: "
+    f"{np.nanmin(lat_ssm):.3f} to {np.nanmax(lat_ssm):.3f}"
 )
 
-# ------------------------------------------------------------
-# Sigma layers
-# ------------------------------------------------------------
 
-siglay = (
-    ds_grid.variables["siglay"]
-    .data
-    .copy()
+# ============================================================
+# BUILD KD-TREE
+# ============================================================
+
+print("\nBuilding SSM KDTree...")
+
+ssm_xy = np.column_stack([
+    lon_ssm,
+    lat_ssm
+])
+
+tree = cKDTree(ssm_xy)
+
+
+# ============================================================
+# FIND NEAREST SSM NODE FOR EVERY OBSERVATION
+# ============================================================
+
+print("\nFinding nearest SSM node for every observation...")
+
+obs_xy = np.column_stack([
+    obs["lon"].astype(float).values,
+    obs["lat"].astype(float).values
+])
+
+horizontal_distance_deg, nearest_node = tree.query(
+    obs_xy
 )
 
-print("SSM nodes:", len(x_ssm))
-print("SSM sigma layers:", len(siglay))
+nearest_node = nearest_node.astype(int)
 
-ds_grid.close()
+# Approximate horizontal distance in km
+horizontal_distance_km = (
+    horizontal_distance_deg * 111.0
+)
+
+print(
+    f"Mean nearest-node distance: "
+    f"{np.nanmean(horizontal_distance_km):.3f} km"
+)
+
+print(
+    f"Maximum nearest-node distance: "
+    f"{np.nanmax(horizontal_distance_km):.3f} km"
+)
+
+
+# ============================================================
+# STORE NEAREST NODE INFORMATION
+# ============================================================
+
+obs["_ssm_node"] = nearest_node
+
+obs["_ssm_lon"] = lon_ssm[nearest_node]
+obs["_ssm_lat"] = lat_ssm[nearest_node]
+
+obs["_ssm_horizontal_distance_km"] = horizontal_distance_km
+
+
+# ============================================================
+# SSM SIGMA LAYERS
+# ============================================================
+
+siglay = np.array(
+    grid_nc.variables["siglay"][:]
+).astype(float)
+
+print("\nSSM sigma layers:")
+print(siglay)
+
+print(f"Number of sigma layers: {len(siglay)}")
+
+
+# ------------------------------------------------------------
+# Close grid file
+# ------------------------------------------------------------
+
+grid_nc.close()
 grid_file.close()
 
 
 # ============================================================
-# PRECOMPUTE NEAREST SSM NODE FOR EVERY OBSERVATION
+# FUNCTION: OPEN DAILY SSM FILE
 # ============================================================
 
-print("\nFinding nearest SSM node for observations...")
+def open_ssm_daily_file(file_date):
+    """
+    Open one SSM daily NetCDF file remotely.
 
-obs_points = np.column_stack(
-    [
-        obs["lon"].values,
-        obs["lat"].values
-    ]
-)
+    Parameters
+    ----------
+    file_date : pandas.Timestamp
 
-node_distances, node_indices = tree_ssm.query(
-    obs_points
-)
+    Returns
+    -------
+    nc : scipy.io.netcdf_file
+    file_obj : remote file handle
+    """
 
-obs["_ssm_node"] = node_indices.astype(int)
-obs["_ssm_node_distance_deg"] = node_distances
-
-
-# ============================================================
-# GROUP OBSERVATIONS BY CALENDAR DATE
-# ============================================================
-
-obs["_ssm_date"] = (
-    obs["time"]
-    .dt.normalize()
-)
-
-unique_dates = (
-    obs["_ssm_date"]
-    .drop_duplicates()
-    .sort_values()
-)
-
-print(
-    "Number of unique observation dates:",
-    len(unique_dates)
-)
-
-
-# ============================================================
-# FUNCTION TO GET DAILY SSM FILE
-# ============================================================
-
-def get_ssm_url(date):
-
-    year = date.year
-    day_of_year = date.dayofyear
+    day_of_year = file_date.dayofyear
 
     filename = (
         f"ssm_FVCOMICM_{day_of_year:05d}.nc"
     )
 
-    return (
-        f"{ssm_base_url}/{year}/{filename}"
+    url = ssm_base_url + filename
+
+    print(f"\nOpening SSM file:")
+    print(f"  {filename}")
+
+    fs = fsspec.filesystem(
+        "http",
+        block_size=1024 * 1024,
+        cache_type="readahead"
     )
 
-
-# ============================================================
-# FUNCTION TO EXTRACT ONE DAILY SSM FILE
-# ============================================================
-
-def extract_one_day(
-    date,
-    day_obs,
-    fs
-):
-
-    print(
-        f"\nProcessing {date.date()} "
-        f"({len(day_obs)} observations)"
-    )
-
-    url = get_ssm_url(date)
-
-    print(
-        "  Opening:",
-        url
-    )
-
-    remote_file = fs.open(
+    file_obj = fs.open(
         url,
-        "rb"
+        mode="rb"
     )
 
-    ds = netcdf_file(
-        remote_file,
-        mode="r"
+    nc = netcdf_file(
+        file_obj,
+        mode="r",
+        mmap=False
     )
+
+    return nc, file_obj
+
+
+# ============================================================
+# FUNCTION: GET SSM HOURLY TIMES
+# ============================================================
+
+def get_ssm_datetimes(file_date, n_time):
+    """
+    Construct SSM timestamps assuming the first record is
+    00:00:00 on the file date and subsequent records occur
+    every hour.
+    """
+
+    start_time = (
+        file_date.normalize()
+    )
+
+    return pd.date_range(
+        start=start_time,
+        periods=n_time,
+        freq="1h"
+    )
+
+# ============================================================
+# FUNCTION: EXTRACT ONE DAY
+# ============================================================
+
+def extract_ssm_day(day_obs, file_date, siglay):
+    """
+    Extract SSM values for all observations on one date.
+
+    Every row in day_obs produces exactly one row in the
+    returned DataFrame.
+    """
+
+    # --------------------------------------------------------
+    # Number of observations for this date
+    # --------------------------------------------------------
+
+    n_obs = len(day_obs)
+
+    print("\n" + "-" * 60)
+    print(
+        f"Processing {file_date.date()} "
+        f"({n_obs} observations)"
+    )
+    print("-" * 60)
+
+    if n_obs == 0:
+        return None
+
+    # --------------------------------------------------------
+    # Open daily file ONCE
+    # --------------------------------------------------------
+
+    nc, file_obj = open_ssm_daily_file(file_date)
 
     try:
 
         # ====================================================
-        # READ TIME
+        # TIME
         # ====================================================
 
-        time_values = (
-            ds.variables["time"]
-            .data
-            .copy()
-        )
+        time_values = np.array(
+            nc.variables["time"][:]
+        ).astype(float)
 
-        n_times = len(time_values)
+        n_time = len(time_values)
+
+        ssm_datetimes = get_ssm_datetimes(
+            file_date,
+            n_time
+        )
 
         # ----------------------------------------------------
-        # SSM daily files have hourly records.
-        #
-        # The first record is approximately 00:59:50.
-        # Subsequent records are one hour apart.
-        #
-        # We construct actual datetimes from the file date.
+        # Match every observation time to nearest SSM hour
         # ----------------------------------------------------
 
-        ssm_datetimes = pd.date_range(
-            start=(
-                date
-                + pd.Timedelta(seconds=3590)
-            ),
-            periods=n_times,
-            freq="1h"
+        obs_times = pd.to_datetime(
+            day_obs["time"]
         )
 
-        # ====================================================
-        # OBSERVATION TIMES -> SSM TIME INDICES
-        # ====================================================
-
-        obs_times = (
-            pd.to_datetime(
-                day_obs["time"]
-            )
-        )
-
-        # Convert timestamps to nanoseconds
-        # so we can efficiently find nearest time.
-        obs_ns = (
-            obs_times.astype("int64")
-            .values
-        )
-
-        ssm_ns = (
-            ssm_datetimes.astype("int64")
-            .values
-        )
-
-        # Find nearest hourly record
-        time_indices = np.array(
-            [
+        time_idx = np.array([
+            int(
                 np.argmin(
                     np.abs(
-                        ssm_ns - t
+                        ssm_datetimes - t
                     )
                 )
-                for t in obs_ns
-            ],
-            dtype=int
-        )
-
-        ssm_times_selected = (
-            ssm_datetimes[time_indices]
-        )
-
-        time_differences_hours = (
-            np.abs(
-                ssm_times_selected
-                - obs_times
             )
-            / pd.Timedelta(hours=1)
+            for t in obs_times
+        ])
+
+        matched_ssm_times = (
+            ssm_datetimes[time_idx]
+        )
+
+        # ----------------------------------------------------
+        # Time difference
+        # ----------------------------------------------------
+
+        time_difference = (
+            matched_ssm_times
+            - obs_times.values
+        )
+
+        time_difference_minutes = (
+            np.abs(
+                time_difference
+                / np.timedelta64(1, "m")
+            )
+        )
+
+        print(
+            f"Mean time difference: "
+            f"{np.mean(time_difference_minutes):.2f} min"
+        )
+
+        print(
+            f"Maximum time difference: "
+            f"{np.max(time_difference_minutes):.2f} min"
         )
 
         # ====================================================
-        # NODE INDICES
+        # HORIZONTAL NODE
         # ====================================================
 
-        node_indices_day = (
+        node_idx = (
             day_obs["_ssm_node"]
             .astype(int)
             .values
         )
 
         # ====================================================
-        # OBSERVATION DEPTHS
+        # DEPTH
+        #
+        # SSM "depth" is total instantaneous water-column
+        # depth at each node/time.
+        #
+        # Physical sigma-layer depth:
+        #
+        #     z = siglay * depth
+        #
         # ====================================================
 
-        obs_depths = (
+        depth_all = np.array(
+            nc.variables["depth"][
+                time_idx,
+                node_idx
+            ]
+        ).astype(float)
+
+        # ----------------------------------------------------
+        # Calculate physical depth of all sigma layers
+        #
+        # Shape:
+        #     n_obs x n_siglay
+        # ----------------------------------------------------
+
+        layer_depths = (
+            depth_all[:, None]
+            * siglay[None, :]
+        )
+
+        # ----------------------------------------------------
+        # Observation depths
+        # ----------------------------------------------------
+
+        obs_z = (
             day_obs["z"]
             .astype(float)
             .values
         )
 
-        # ====================================================
-        # GET TOTAL WATER-COLUMN DEPTH
-        #
-        # depth is (time, node)
-        # ====================================================
+        # ----------------------------------------------------
+        # Find nearest sigma layer for every observation
+        # ----------------------------------------------------
 
-        depth_all = (
-            ds.variables["depth"]
-            .data
-        )
-
-        H = np.asarray(
-            depth_all[
-                time_indices,
-                node_indices_day
-            ],
-            dtype=float
-        )
-
-        # ====================================================
-        # CALCULATE PHYSICAL SSM DEPTHS
-        #
-        # siglay = 10 sigma-layer center coordinates
-        #
-        # Result:
-        #     (n_observations, 10)
-        # ====================================================
-
-        layer_depths = (
-            H[:, None]
-            * siglay[None, :]
-        )
-
-        # ====================================================
-        # FIND NEAREST SSM VERTICAL LAYER
-        # ====================================================
-
-        vertical_difference = np.abs(
-            layer_depths
-            - obs_depths[:, None]
-        )
-
-        layer_indices = (
-            np.argmin(
-                vertical_difference,
-                axis=1
+        layer_idx = np.array([
+            int(
+                np.argmin(
+                    np.abs(
+                        layer_depths[i, :]
+                        - obs_z[i]
+                    )
+                )
             )
-        )
+            for i in range(n_obs)
+        ])
 
-        ssm_depths = (
-            layer_depths[
-                np.arange(len(day_obs)),
-                layer_indices
-            ]
-        )
+        ssm_depth = layer_depths[
+            np.arange(n_obs),
+            layer_idx
+        ]
 
         vertical_difference = (
-            np.abs(
-                ssm_depths
-                - obs_depths
-            )
+            ssm_depth - obs_z
+        )
+
+        print(
+            f"Mean |vertical difference|: "
+            f"{np.mean(np.abs(vertical_difference)):.3f} m"
+        )
+
+        print(
+            f"Maximum |vertical difference|: "
+            f"{np.max(np.abs(vertical_difference)):.3f} m"
         )
 
         # ====================================================
-        # FUNCTION FOR EXTRACTING 3-D VARIABLES
+        # FUNCTION FOR 3-D VARIABLES
         # ====================================================
 
-        def get_3d_variable(name):
+        def extract_3d(varname):
 
-            arr = (
-                ds.variables[name]
-                .data
-            )
+            arr = np.array(
+                nc.variables[varname][
+                    time_idx,
+                    layer_idx,
+                    node_idx
+                ]
+            ).astype(float)
 
-            return np.asarray(
-                arr[
-                    time_indices,
-                    layer_indices,
-                    node_indices_day
-                ],
-                dtype=float
-            )
+            return arr
 
         # ====================================================
         # EXTRACT RAW SSM VARIABLES
         # ====================================================
 
-        DO_mgL = get_3d_variable(
-            "DOXG"
-        )
-
-        temp = get_3d_variable(
-            "temp"
-        )
-
-        salinity = get_3d_variable(
+        salinity = extract_3d(
             "salinity"
         )
 
-        NO3_gNm3 = get_3d_variable(
+        temp = extract_3d(
+            "temp"
+        )
+
+        DOXG = extract_3d(
+            "DOXG"
+        )
+
+        NO3_raw = extract_3d(
             "NO3"
         )
 
-        NH4_gNm3 = get_3d_variable(
+        NH4_raw = extract_3d(
             "NH4"
         )
 
-        TDIC = get_3d_variable(
+        TDIC = extract_3d(
             "TDIC"
         )
 
-        TALK = get_3d_variable(
+        TALK = extract_3d(
             "TALK"
         )
 
@@ -462,52 +573,77 @@ def extract_one_day(
         # ====================================================
 
         # ----------------------------------------------------
-        # DO
+        # Dissolved oxygen
         #
-        # mg/L -> umol/L
+        # SSM:
+        #   MG/L
+        #
+        # Desired:
+        #   umol/L
+        #
+        # molecular weight O2 = 31.998 g/mol
         # ----------------------------------------------------
 
         DO = (
-            DO_mgL
-            * 1000
+            DOXG
+            * 1000.0
             / 31.998
         )
 
         # ----------------------------------------------------
         # NO3
         #
-        # g N/m3 -> umol N/L
+        # SSM:
+        #   gN m-3
+        #
+        # Numerically:
+        #   mg N L-1
+        #
+        # Convert to umol N L-1
         # ----------------------------------------------------
 
         NO3 = (
-            NO3_gNm3
-            * 1000
+            NO3_raw
+            * 1000.0
             / 14.007
         )
 
         # ----------------------------------------------------
         # NH4
-        #
-        # g N/m3 -> umol N/L
         # ----------------------------------------------------
 
         NH4 = (
-            NH4_gNm3
-            * 1000
+            NH4_raw
+            * 1000.0
             / 14.007
         )
 
         # ----------------------------------------------------
-        # DIC and TA
+        # DIC
         #
-        # mmol/m3 == umol/L
+        # SSM:
+        #   mmol C m-3
+        #
+        # This is numerically equal to:
+        #   umol C L-1
         # ----------------------------------------------------
 
-        DIC = TDIC.copy()
-        TA = TALK.copy()
+        DIC = TDIC
+
+        # ----------------------------------------------------
+        # TA
+        #
+        # SSM:
+        #   mmol m-3
+        #
+        # Numerically equal to:
+        #   umol L-1
+        # ----------------------------------------------------
+
+        TA = TALK
 
         # ====================================================
-        # CALCULATE SA AND CT
+        # PRESSURE
         # ====================================================
 
         obs_lon = (
@@ -522,10 +658,15 @@ def extract_one_day(
             .values
         )
 
+        # SSM z is negative downward
         pressure = gsw.p_from_z(
-            ssm_depths,
+            ssm_depth,
             obs_lat
         )
+
+        # ====================================================
+        # ABSOLUTE SALINITY
+        # ====================================================
 
         SA = gsw.SA_from_SP(
             salinity,
@@ -534,259 +675,377 @@ def extract_one_day(
             obs_lat
         )
 
+        # ====================================================
+        # CONSERVATIVE TEMPERATURE
+        # ====================================================
+
         CT = gsw.CT_from_t(
             SA,
             temp,
             pressure
         )
 
-        # ====================================================
-        # BUILD RESULT DATAFRAME
-        # ====================================================
-
-        result = pd.DataFrame(
-            {
-                # --------------------------------------------
-                # Original observation identifiers
-                # --------------------------------------------
-
-                "cid": day_obs["cid"].values,
-
-                "lon": day_obs["lon"].values,
-
-                "lat": day_obs["lat"].values,
-
-                "time": day_obs["time"].values,
-
-                "z": day_obs["z"].values,
-
-                # --------------------------------------------
-                # SSM values in comparison units
-                # --------------------------------------------
-
-                "SA": SA,
-
-                "CT": CT,
-
-                "DO": DO,
-
-                "NO3": NO3,
-
-                "NH4": NH4,
-
-                "TA": TA,
-
-                "DIC": DIC,
-
-                # Chlorophyll is left as NaN until we
-                # identify the appropriate SSM phytoplankton
-                # variable.
-                "Chl": np.nan,
-
-                # --------------------------------------------
-                # SSM matching information
-                # --------------------------------------------
-
-                "ssm_node": node_indices_day,
-
-                "ssm_lon": (
-                    lon_ssm[
-                        node_indices_day
-                    ]
-                ),
-
-                "ssm_lat": (
-                    lat_ssm[
-                        node_indices_day
-                    ]
-                ),
-
-                "ssm_node_distance_deg": (
-                    day_obs[
-                        "_ssm_node_distance_deg"
-                    ].values
-                ),
-
-                "ssm_time_idx": time_indices,
-
-                "ssm_time": (
-                    ssm_times_selected
-                ),
-
-                "ssm_time_difference_hours": (
-                    np.asarray(
-                        time_differences_hours,
-                        dtype=float
-                    )
-                ),
-
-                "ssm_layer": layer_indices,
-
-                "ssm_depth": ssm_depths,
-
-                "ssm_vertical_difference": (
-                    vertical_difference
-                )
-            }
+        Chl = np.full(
+            n_obs,
+            np.nan
         )
 
-        return result
+        # ====================================================
+        # CREATE EXACTLY ONE ROW PER OBSERVATION
+        # ====================================================
+
+        ssm_day = pd.DataFrame({
+
+            # ------------------------------------------------
+            # ORIGINAL OBSERVATION INDEX
+            # ------------------------------------------------
+
+            "_obs_index":
+                day_obs["_obs_index"].values,
+
+            # ------------------------------------------------
+            # ORIGINAL OBSERVATION TARGET INFORMATION
+            # ------------------------------------------------
+
+            "cid":
+                day_obs["cid"].values,
+
+            "lon":
+                day_obs["lon"].values,
+
+            "lat":
+                day_obs["lat"].values,
+
+            "time":
+                day_obs["time"].values,
+
+            "z":
+                day_obs["z"].values,
+
+            # ------------------------------------------------
+            # MODEL MATCH INFORMATION
+            # ------------------------------------------------
+
+            "ssm_time":
+                matched_ssm_times,
+
+            "ssm_z":
+                ssm_depth,
+
+            "ssm_node":
+                node_idx,
+
+            "ssm_lon":
+                lon_ssm[node_idx],
+
+            "ssm_lat":
+                lat_ssm[node_idx],
+
+            "horizontal_distance_km":
+                day_obs[
+                    "_ssm_horizontal_distance_km"
+                ].values,
+
+            "vertical_difference_m":
+                vertical_difference,
+
+            "time_difference_min":
+                time_difference_minutes,
+
+            # ------------------------------------------------
+            # MODEL VARIABLES
+            # ------------------------------------------------
+
+            "SA":
+                SA,
+
+            "CT":
+                CT,
+
+            "DO":
+                DO,
+
+            "NO3":
+                NO3,
+
+            "NH4":
+                NH4,
+
+            "Chl":
+                Chl,
+
+            "TA":
+                TA,
+
+            "DIC":
+                DIC,
+        })
+
+        # ====================================================
+        # CRITICAL CHECK
+        #
+        # THIS MUST ALWAYS BE TRUE.
+        # ====================================================
+
+        if len(ssm_day) != n_obs:
+
+            raise RuntimeError(
+                f"\nERROR: SSM extraction produced "
+                f"{len(ssm_day)} rows for "
+                f"{n_obs} observations on "
+                f"{file_date.date()}."
+            )
+
+        # ----------------------------------------------------
+        # Check original indices are one-to-one
+        # ----------------------------------------------------
+
+        if ssm_day["_obs_index"].duplicated().any():
+
+            duplicates = (
+                ssm_day
+                .loc[
+                    ssm_day["_obs_index"].duplicated(),
+                    "_obs_index"
+                ]
+                .tolist()
+            )
+
+            raise RuntimeError(
+                f"\nERROR: Duplicate _obs_index values "
+                f"on {file_date.date()}:\n"
+                f"{duplicates[:20]}"
+            )
+
+        return ssm_day
 
     finally:
 
-        ds.close()
-        remote_file.close()
+        # ----------------------------------------------------
+        # ALWAYS close remote file
+        # ----------------------------------------------------
+
+        nc.close()
+        file_obj.close()
 
 
 # ============================================================
-# LOOP THROUGH UNIQUE DAYS
+# EXTRACT ALL DAYS
 # ============================================================
 
-all_ssm_results = []
+print("\n" + "=" * 60)
+print("STARTING SSM EXTRACTION")
+print("=" * 60)
 
-for date in unique_dates:
+ssm_list = []
 
-    # --------------------------------------------------------
-    # Select observations for this day
-    # --------------------------------------------------------
+total_expected = len(obs)
+total_processed = 0
 
-    day_mask = (
-        obs["_ssm_date"] == date
+# ------------------------------------------------------------
+# Group observations by calendar date
+# ------------------------------------------------------------
+
+grouped_obs = obs.groupby(
+    obs["time"].dt.normalize()
+)
+
+for day_number, (file_date, day_obs) in enumerate(
+    grouped_obs,
+    start=1
+):
+
+    print(
+        f"\nDAY {day_number}/{len(grouped_obs)}"
     )
 
-    day_obs = (
-        obs.loc[day_mask]
-        .copy()
+    # --------------------------------------------------------
+    # Extract this date
+    # --------------------------------------------------------
+
+    ssm_day = extract_ssm_day(
+        day_obs,
+        file_date,
+        siglay
+    )
+
+    if ssm_day is None:
+        continue
+
+    # --------------------------------------------------------
+    # Count
+    # --------------------------------------------------------
+
+    total_processed += len(ssm_day)
+
+    print(
+        f"Extracted: {len(ssm_day)} rows"
+    )
+
+    print(
+        f"Cumulative: "
+        f"{total_processed}/{total_expected}"
     )
 
     # --------------------------------------------------------
-    # Extract this entire day from one SSM file
+    # Store
     # --------------------------------------------------------
 
-    try:
-
-        day_result = extract_one_day(
-            date,
-            day_obs,
-            fs
-        )
-
-        all_ssm_results.append(
-            day_result
-        )
-
-    except Exception as e:
-
-        print(
-            f"\nERROR processing {date.date()}:"
-        )
-
-        print(e)
-
-        # Keep rows so final SSM dataframe still
-        # has exactly the same number of observations.
-
-        error_result = pd.DataFrame(
-            {
-                "cid": day_obs["cid"].values,
-                "lon": day_obs["lon"].values,
-                "lat": day_obs["lat"].values,
-                "time": day_obs["time"].values,
-                "z": day_obs["z"].values,
-            }
-        )
-
-        all_ssm_results.append(
-            error_result
-        )
+    ssm_list.append(
+        ssm_day
+    )
 
 
 # ============================================================
-# COMBINE ALL DAYS
+# DAILY EXTRACTION COUNTS
 # ============================================================
 
-print("\nCombining daily SSM results...")
+print("\n" + "=" * 60)
+print("EXTRACTION SUMMARY")
+print("=" * 60)
+
+total_extracted = 0
+
+for i, df in enumerate(ssm_list):
+
+    n = len(df)
+
+    total_extracted += n
+
+    print(
+        f"Day {i + 1:3d}: "
+        f"{n:4d} rows"
+    )
+
+print("-" * 60)
+
+print(
+    f"Total extracted: {total_extracted}"
+)
+
+print(
+    f"Expected:        {len(obs)}"
+)
+
+
+# ============================================================
+# COMBINE ALL SSM RESULTS
+# ============================================================
+
+if len(ssm_list) == 0:
+
+    raise RuntimeError(
+        "No SSM observations were extracted."
+    )
 
 ssm = pd.concat(
-    all_ssm_results,
+    ssm_list,
     ignore_index=True
 )
 
+print(
+    f"\nSSM rows before sorting: "
+    f"{len(ssm)}"
+)
+
 
 # ============================================================
-# RESTORE ORIGINAL OBSERVATION ORDER
+# CRITICAL ROW COUNT CHECK
 # ============================================================
 
-# The daily grouping changed the order, so we need to
-# explicitly restore the original observation order.
+if len(ssm) != len(obs):
 
-original_order = (
-    obs[
-        [
-            "cid",
-            "lon",
-            "lat",
-            "time",
-            "z"
-        ]
-    ]
-    .reset_index()
-    .rename(
-        columns={
-            "index": "_original_index"
-        }
+    print("\n" + "=" * 60)
+    print("FATAL ALIGNMENT ERROR")
+    print("=" * 60)
+
+    print(
+        f"Expected SSM rows: {len(obs)}"
     )
-)
 
-ssm = ssm.merge(
-    original_order,
-    on=[
-        "cid",
-        "lon",
-        "lat",
-        "time",
-        "z"
-    ],
-    how="left"
-)
+    print(
+        f"Actual SSM rows:   {len(ssm)}"
+    )
+
+    print(
+        f"Difference:        "
+        f"{len(ssm) - len(obs)}"
+    )
+
+    raise RuntimeError(
+        "SSM extraction did not produce exactly "
+        "one row per observation. "
+        "STOPPING before reordering/saving."
+    )
+
+
+# ============================================================
+# RESTORE EXACT ORIGINAL OBSERVATION ORDER
+#
+# This is NOT a merge.
+#
+# _obs_index uniquely identifies every original observation.
+# ============================================================
 
 ssm = (
     ssm
-    .sort_values("_original_index")
-    .drop(columns="_original_index")
+    .sort_values("_obs_index")
     .reset_index(drop=True)
 )
 
-
-# ============================================================
-# REMOVE TEMPORARY OBSERVATION COLUMNS
-# ============================================================
-
-obs = (
-    obs
-    .drop(
-        columns=[
-            "_ssm_node",
-            "_ssm_node_distance_deg",
-            "_ssm_date"
-        ]
-    )
+print(
+    f"SSM rows after sorting: "
+    f"{len(ssm)}"
 )
 
 
 # ============================================================
-# STRICT ALIGNMENT CHECK
+# VERIFY _obs_index
+# ============================================================
+
+expected_indices = np.arange(
+    len(obs)
+)
+
+actual_indices = (
+    ssm["_obs_index"]
+    .values
+)
+
+if not np.array_equal(
+    expected_indices,
+    actual_indices
+):
+
+    raise RuntimeError(
+        "SSM _obs_index does not match the "
+        "original observation index."
+    )
+
+print(
+    "Original observation order successfully restored."
+)
+
+
+# ============================================================
+# ALIGNMENT CHECK
 # ============================================================
 
 print("\n" + "=" * 60)
 print("ALIGNMENT CHECK")
 print("=" * 60)
 
-print(f"Number of observations: {len(obs)}")
-print(f"Number of SSM rows:     {len(ssm)}")
+print(
+    f"Number of observations: {len(obs)}"
+)
+
+print(
+    f"Number of SSM rows:     {len(ssm)}"
+)
+
 
 # ------------------------------------------------------------
-# 1. Check CID
+# CID
 # ------------------------------------------------------------
 
 cid_match = np.array_equal(
@@ -794,15 +1053,28 @@ cid_match = np.array_equal(
     ssm["cid"].values
 )
 
-print(f"\nCID match: {cid_match}")
+print(
+    f"\nCID match: {cid_match}"
+)
 
 if not cid_match:
-    bad = np.where(obs["cid"].values != ssm["cid"].values)[0]
 
-    print(f"Number of CID mismatches: {len(bad)}")
-    print("\nFirst 10 CID mismatches:")
+    bad = np.where(
+        obs["cid"].values
+        != ssm["cid"].values
+    )[0]
+
+    print(
+        f"Number of CID mismatches: "
+        f"{len(bad)}"
+    )
+
+    print(
+        "\nFirst 10 CID mismatches:"
+    )
 
     for i in bad[:10]:
+
         print(
             f"row {i}: "
             f"obs={obs.iloc[i]['cid']} | "
@@ -811,52 +1083,93 @@ if not cid_match:
 
 
 # ------------------------------------------------------------
-# 2. Check time
+# TIME
 # ------------------------------------------------------------
 
-obs_time = pd.to_datetime(obs["time"]).values
-ssm_time = pd.to_datetime(ssm["time"]).values
+obs_time = pd.to_datetime(
+    obs["time"]
+).values
 
-time_match = np.array_equal(obs_time, ssm_time)
+ssm_time = pd.to_datetime(
+    ssm["time"]
+).values
 
-print(f"\nTime match: {time_match}")
+time_match = np.array_equal(
+    obs_time,
+    ssm_time
+)
+
+print(
+    f"Time match: {time_match}"
+)
 
 if not time_match:
 
     time_diff = (
-        pd.to_datetime(ssm["time"]).reset_index(drop=True)
-        - pd.to_datetime(obs["time"]).reset_index(drop=True)
+        pd.to_datetime(
+            ssm["time"]
+        ).reset_index(drop=True)
+
+        -
+
+        pd.to_datetime(
+            obs["time"]
+        ).reset_index(drop=True)
     )
 
-    bad = np.where(time_diff != pd.Timedelta(0))[0]
+    bad = np.where(
+        time_diff != pd.Timedelta(0)
+    )[0]
 
-    print(f"Number of time mismatches: {len(bad)}")
+    print(
+        f"Number of time mismatches: "
+        f"{len(bad)}"
+    )
 
-    print("\nFirst 10 time mismatches:")
+    print(
+        "\nFirst 10 time mismatches:"
+    )
 
     for i in bad[:10]:
+
         print(
             f"row {i}: "
             f"obs={obs.iloc[i]['time']} | "
             f"ssm={ssm.iloc[i]['time']} | "
+            f"SSM match={ssm.iloc[i]['ssm_time']} | "
             f"diff={time_diff.iloc[i]}"
         )
 
 
 # ------------------------------------------------------------
-# 3. Check depth
+# DEPTH
 # ------------------------------------------------------------
 
-obs_z = obs["z"].astype(float).values
-ssm_z = ssm["z"].astype(float).values
+obs_z = (
+    obs["z"]
+    .astype(float)
+    .values
+)
 
-z_diff = ssm_z - obs_z
+ssm_z = (
+    ssm["z"]
+    .astype(float)
+    .values
+)
 
-print(f"\nMaximum |depth difference|: "
-      f"{np.nanmax(np.abs(z_diff)):.6f} m")
+z_diff = (
+    ssm_z - obs_z
+)
 
-print(f"Mean |depth difference|: "
-      f"{np.nanmean(np.abs(z_diff)):.6f} m")
+print(
+    f"\nMaximum |depth difference|: "
+    f"{np.nanmax(np.abs(z_diff)):.6f} m"
+)
+
+print(
+    f"Mean |depth difference|: "
+    f"{np.nanmean(np.abs(z_diff)):.6f} m"
+)
 
 z_match = np.allclose(
     obs_z,
@@ -865,19 +1178,33 @@ z_match = np.allclose(
     atol=0.5
 )
 
-print(f"Depth match within 0.5 m: {z_match}")
+print(
+    f"Depth match within 0.5 m: "
+    f"{z_match}"
+)
 
 if not z_match:
 
     bad = np.where(
-        ~np.isclose(obs_z, ssm_z, equal_nan=True, atol=0.5)
+        ~np.isclose(
+            obs_z,
+            ssm_z,
+            equal_nan=True,
+            atol=0.5
+        )
     )[0]
 
-    print(f"Number of depth mismatches: {len(bad)}")
+    print(
+        f"Number of depth mismatches: "
+        f"{len(bad)}"
+    )
 
-    print("\nFirst 10 depth mismatches:")
+    print(
+        "\nFirst 10 depth mismatches:"
+    )
 
     for i in bad[:10]:
+
         print(
             f"row {i}: "
             f"obs={obs.iloc[i]['z']:.3f} | "
@@ -887,136 +1214,184 @@ if not z_match:
 
 
 # ------------------------------------------------------------
-# 4. Check longitude / latitude
+# HORIZONTAL DISTANCE
 # ------------------------------------------------------------
 
-lon_diff = (
-    ssm["lon"].astype(float).values
-    - obs["lon"].astype(float).values
+horizontal_distance = (
+    ssm["horizontal_distance_km"]
+    .astype(float)
+    .values
 )
 
-lat_diff = (
-    ssm["lat"].astype(float).values
-    - obs["lat"].astype(float).values
+print(
+    f"\nMaximum horizontal distance: "
+    f"{np.nanmax(horizontal_distance):.3f} km"
 )
 
-horizontal_distance_km = (
-    np.sqrt(
-        lon_diff**2 +
-        lat_diff**2
-    ) * 111.0
+print(
+    f"Mean horizontal distance: "
+    f"{np.nanmean(horizontal_distance):.3f} km"
 )
 
-print(f"\nMaximum horizontal distance: "
-      f"{np.nanmax(horizontal_distance_km):.3f} km")
-
-print(f"Mean horizontal distance: "
-      f"{np.nanmean(horizontal_distance_km):.3f} km")
-
 
 # ------------------------------------------------------------
-# 5. Check exact row identity
+# SSM MATCHED TIME
 # ------------------------------------------------------------
 
-key_cols = ["cid", "lon", "lat", "time", "z"]
-
-print("\nChecking observation keys...")
-
-obs_keys = obs[key_cols].copy()
-ssm_keys = ssm[key_cols].copy()
-
-for col in ["lon", "lat", "z"]:
-    obs_keys[col] = obs_keys[col].astype(float).round(6)
-    ssm_keys[col] = ssm_keys[col].astype(float).round(6)
-
-obs_keys["time"] = pd.to_datetime(obs_keys["time"])
-ssm_keys["time"] = pd.to_datetime(ssm_keys["time"])
-
-exact_key_match = obs_keys.equals(ssm_keys)
-
-print(f"Exact key match: {exact_key_match}")
-
-
-# ------------------------------------------------------------
-# 6. Check whether the same observations exist, regardless
-#    of order
-# ------------------------------------------------------------
-
-obs_key_counts = (
-    obs_keys
-    .value_counts()
-    .sort_index()
+time_difference = (
+    ssm["time_difference_min"]
+    .astype(float)
+    .values
 )
 
-ssm_key_counts = (
-    ssm_keys
-    .value_counts()
-    .sort_index()
+print(
+    f"\nMaximum |time difference|: "
+    f"{np.nanmax(time_difference):.2f} min"
 )
 
-same_keys_unordered = obs_key_counts.equals(ssm_key_counts)
-
-print(f"Same observation keys ignoring order: "
-      f"{same_keys_unordered}")
-
-
-# ------------------------------------------------------------
-# 7. If order differs, identify what happened
-# ------------------------------------------------------------
-
-if not exact_key_match:
-
-    print("\n" + "-" * 60)
-    print("ORDER / KEY DIAGNOSTICS")
-    print("-" * 60)
-
-    # Keys in obs but not SSM
-    missing_from_ssm = obs_key_counts.subtract(
-        ssm_key_counts,
-        fill_value=0
-    )
-
-    missing_from_ssm = missing_from_ssm[
-        missing_from_ssm > 0
-    ]
-
-    print(
-        f"\nObservation keys missing from SSM: "
-        f"{len(missing_from_ssm)}"
-    )
-
-    # Keys in SSM but not obs
-    extra_in_ssm = ssm_key_counts.subtract(
-        obs_key_counts,
-        fill_value=0
-    )
-
-    extra_in_ssm = extra_in_ssm[
-        extra_in_ssm > 0
-    ]
-
-    print(
-        f"SSM keys not present in observations: "
-        f"{len(extra_in_ssm)}"
-    )
-
-    if same_keys_unordered:
-        print(
-            "\nIMPORTANT: The same observations are present "
-            "in both tables, but the ROW ORDER differs."
-        )
-    else:
-        print(
-            "\nIMPORTANT: The SSM table does not contain "
-            "exactly the same observation keys as obs."
-        )
+print(
+    f"Mean |time difference|: "
+    f"{np.nanmean(time_difference):.2f} min"
+)
 
 
 # ============================================================
-# ADD SSM TO ORIGINAL DATA DICTIONARY
+# CHECK UNIQUE OBSERVATION INDICES
+# ============================================================
+
+print("\nChecking observation indices...")
+
+index_unique = (
+    ssm["_obs_index"]
+    .is_unique
+)
+
+print(
+    f"SSM _obs_index unique: "
+    f"{index_unique}"
+)
+
+if not index_unique:
+
+    raise RuntimeError(
+        "Duplicate observation indices found in SSM."
+    )
+
+
+# ============================================================
+# CHECK FINAL ROW-BY-ROW IDENTITY
+# ============================================================
+
+print("\nChecking row-by-row identity...")
+
+assert len(ssm) == len(obs)
+
+assert np.array_equal(
+    obs["cid"].values,
+    ssm["cid"].values
+)
+
+assert np.array_equal(
+    pd.to_datetime(
+        obs["time"]
+    ).values,
+    pd.to_datetime(
+        ssm["time"]
+    ).values
+)
+
+assert np.allclose(
+    obs["z"].astype(float).values,
+    ssm["z"].astype(float).values,
+    equal_nan=True
+)
+
+print(
+    "PASS: SSM rows correspond one-to-one "
+    "with obs rows."
+)
+
+
+# ============================================================
+# REMOVE INTERNAL BOOKKEEPING COLUMNS
+#
+# Keep useful SSM matching diagnostics, but remove the
+# temporary _obs_index and the internal nearest-node columns
+# that were attached to obs.
+# ============================================================
+
+ssm = ssm.drop(
+    columns=[
+        "_obs_index"
+    ]
+)
+
+
+# ============================================================
+# ADD SSM TO DATA DICTIONARY
 # ============================================================
 
 data["ssm"] = ssm
+
+
+# ============================================================
+# REMOVE TEMPORARY COLUMNS FROM OBS
+# ============================================================
+
+obs_final = obs.drop(
+    columns=[
+        "_obs_index",
+        "_ssm_node",
+        "_ssm_lon",
+        "_ssm_lat",
+        "_ssm_horizontal_distance_km"
+    ]
+)
+
+data["obs"] = obs_final
+
+
+# ============================================================
+# FINAL CHECK AFTER CLEANUP
+# ============================================================
+
+print("\n" + "=" * 60)
+print("FINAL CHECK")
+print("=" * 60)
+
+print(
+    f"obs rows: {len(data['obs'])}"
+)
+
+print(
+    f"ssm rows: {len(data['ssm'])}"
+)
+
+assert len(data["obs"]) == len(data["ssm"])
+
+assert np.array_equal(
+    data["obs"]["cid"].values,
+    data["ssm"]["cid"].values
+)
+
+assert np.array_equal(
+    pd.to_datetime(
+        data["obs"]["time"]
+    ).values,
+    pd.to_datetime(
+        data["ssm"]["time"]
+    ).values
+)
+
+assert np.allclose(
+    data["obs"]["z"].astype(float).values,
+    data["ssm"]["z"].astype(float).values,
+    equal_nan=True
+)
+
+print(
+    "PASS: final obs and SSM tables are aligned."
+)
 
 
 # ============================================================
@@ -1026,7 +1401,7 @@ data["ssm"] = ssm
 print("\nSaving combined pickle...")
 
 with open(
-    pickle_out,
+    out_pkl_path,
     "wb"
 ) as f:
 
@@ -1037,13 +1412,57 @@ with open(
     )
 
 print(
-    "\nSaved:"
+    f"Saved to:\n{out_pkl_path}"
 )
 
-print(pickle_out)
+
+# ============================================================
+# FINAL SUMMARY
+# ============================================================
+
+print("\n" + "=" * 60)
+print("SSM EXTRACTION COMPLETE")
+print("=" * 60)
 
 print(
-    "\nFinal keys:"
+    f"Observations: {len(data['obs'])}"
 )
 
-print(data.keys())
+print(
+    f"SSM rows:     {len(data['ssm'])}"
+)
+
+print(
+    f"Mean horizontal distance: "
+    f"{np.nanmean(data['ssm']['horizontal_distance_km']):.3f} km"
+)
+
+print(
+    f"Max horizontal distance: "
+    f"{np.nanmax(data['ssm']['horizontal_distance_km']):.3f} km"
+)
+
+print(
+    f"Mean |vertical difference|: "
+    f"{np.nanmean(np.abs(data['ssm']['vertical_difference_m'])):.3f} m"
+)
+
+print(
+    f"Max |vertical difference|: "
+    f"{np.nanmax(np.abs(data['ssm']['vertical_difference_m'])):.3f} m"
+)
+
+print(
+    f"Mean |time difference|: "
+    f"{np.nanmean(data['ssm']['time_difference_min']):.2f} min"
+)
+
+print(
+    f"Max |time difference|: "
+    f"{np.nanmax(data['ssm']['time_difference_min']):.2f} min"
+)
+
+print("\nSSM columns:")
+print(
+    list(data["ssm"].columns)
+)

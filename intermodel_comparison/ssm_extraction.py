@@ -7,6 +7,9 @@ Uses:
 
 SSM data:
   https://s3.kopah.uw.edu/ssm/wqm/2014/
+  
+SSM grid:
+    EPSG:26910 (NAD83 / UTM Zone 10N)
 
 No complete daily files are downloaded. fsspec + scipy
 access the NetCDF-3 files remotely using HTTP range requests.
