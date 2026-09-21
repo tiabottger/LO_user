@@ -62,7 +62,7 @@ out_pkl_path = (
             f"combined_bottle_{year}_cas7_t1_x11ab_ssc_ssmpnnl.pkl"
             )
 
-ssm_base_url = "https://s3.kopah.uw.edu/ssm/wqm/2014/"
+ssm_base_url = f"https://s3.kopah.uw.edu/ssm/wqm/{year}/"
 
 
 # ============================================================

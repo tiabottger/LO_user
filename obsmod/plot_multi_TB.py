@@ -296,7 +296,9 @@ for otype in ['bottle']:#, 'ctd']:
                                 x_trend, y_trend, 
                                 color=c_dict[gtx], linewidth=1, linestyle='-')
                         
-                        ax.text(.95,t_dict[gtx],'bias=%0.1f, rmse=%0.1f' % (bias,rmse),c=c_dict[gtx],
+                        ax.text(.95,
+                                t_dict[gtx],
+                                'bias=%0.1f, rmse=%0.1f' % (bias,rmse),c=c_dict[gtx],
                                 transform=ax.transAxes, ha='right', fontweight='bold', bbox=pfun.bbox,
                                 fontsize=15,style='italic')
 
@@ -314,12 +316,12 @@ for otype in ['bottle']:#, 'ctd']:
                 
                            
                     #add labels to identify the model runs with the colors
-                    if jj == 1:
-                        yy = 0
-                        for gtx in c_dict.keys():
-                            ax.text(.05, .7 + 0.1*yy, gtx, c=c_dict[gtx], transform=ax.transAxes,
-                                fontweight='bold', ha='left')
-                            yy += 1
+                    # if jj == 1:
+                    #     yy = 0
+                    #     for gtx in c_dict.keys():
+                    #         ax.text(.05, .7 + 0.1*yy, gtx, c=c_dict[gtx], transform=ax.transAxes,
+                    #             fontweight='bold', ha='left')
+                    #         yy += 1
             
                     vn_label=['Salinity','Temperature','DO','NO3','NH4','DIN',
                         'DIC', 'TA', 'Chl']

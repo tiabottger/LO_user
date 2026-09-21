@@ -5,9 +5,9 @@ Panels:
 1. LiveOcean RMSE
 2. SalishSeaCast RMSE
 3. SSM RMSE
-4. Model disagreement
+4. Model ensemble RMSE
 
-The fourth panel shows where there is the greatest model disagreement (based on RMSE range).
+The fourth panel calculates a mean between the three models and then calculates its RMSE compared to observations.
 """
 
 import sys
@@ -336,31 +336,44 @@ station_rmse['high_variability'] = (
 )
 
 # ============================================================
-# MODEL DISAGREEMENT
-# RMSE range across the three models
+# MODEL-MEAN RMSE
 # ============================================================
 
-rmse_columns = [
-    'lo_rmse',
-    'ssc_rmse',
-    'ssm_rmse'
-]
+# Mean prediction from the three models at each observation
+sample_df['model_mean'] = sample_df[
+    ['lo', 'ssc', 'ssm']
+].mean(axis=1)
 
-station_rmse['rmse_min'] = station_rmse[rmse_columns].min(axis=1)
-station_rmse['rmse_max'] = station_rmse[rmse_columns].max(axis=1)
+# Squared error between model mean and observation
+sample_df['mean_error_sq'] = (
+    sample_df['model_mean'] - sample_df['obs']
+) ** 2
 
-station_rmse['rmse_range'] = (
-    station_rmse['rmse_max']
-    - station_rmse['rmse_min']
+# Calculate station-level RMSE
+mean_model_rmse = (
+    sample_df
+    .groupby('name')
+    .agg(
+        mean_model_rmse=(
+            'mean_error_sq',
+            lambda x: np.sqrt(np.nanmean(x))
+        ),
+        n=('mean_error_sq', 'count')
+    )
+    .reset_index()
 )
 
-print("\nRMSE disagreement:")
-print(
-    station_rmse[
-        ['name', 'lo_rmse', 'ssc_rmse', 'ssm_rmse', 'rmse_range']
-    ].sort_values('rmse_range', ascending=False)
+# Merge into station_rmse
+station_rmse = station_rmse.drop(
+    columns=['mean_model_rmse', 'n_mean'],
+    errors='ignore'
 )
 
+station_rmse = station_rmse.merge(
+    mean_model_rmse,
+    on='name',
+    how='left'
+)
 
 # ============================================================
 # LOAD GRID FOR MAP BACKGROUND
@@ -535,33 +548,35 @@ axes[2].scatter(
 )
 
 # ============================================================
-# PANEL 4 — MODEL DISAGREEMENT
+# PANEL 4 — MEAN MODEL RMSE
 # ============================================================
 
-ax = axes[3]
-
-# Cap RMSE range color scale at 1
-disagreement_vmin = 0
-disagreement_vmax = 1.0
-
-# All stations as circles
-sc_disagreement = ax.scatter(
-    station_rmse['lon'],
-    station_rmse['lat'],
-    c=station_rmse['rmse_range'],
-    cmap='Greys',
-    vmin=disagreement_vmin,
-    vmax=disagreement_vmax,
-    s=55,
+axes[3].scatter(
+    station_rmse.loc[low, 'lon'],
+    station_rmse.loc[low, 'lat'],
+    c=station_rmse.loc[low, 'mean_model_rmse'],
+    cmap='viridis',
+    vmin=0,
+    vmax=rmse_max,
+    s=90,
     marker='o',
-    edgecolor='black',
-    linewidth=0.5,
-    zorder=6
+    edgecolor='k',
+    linewidth=0.6,
+    zorder=10,
 )
 
-ax.set_title(
-    'Intermodel disagreement',
-    fontsize=11
+axes[3].scatter(
+    station_rmse.loc[high, 'lon'],
+    station_rmse.loc[high, 'lat'],
+    c=station_rmse.loc[high, 'mean_model_rmse'],
+    cmap='viridis',
+    vmin=0,
+    vmax=rmse_max,
+    s=110,
+    marker='^',
+    edgecolor='k',
+    linewidth=0.6,
+    zorder=10,
 )
         
     
@@ -572,8 +587,8 @@ ax.set_title(
 titles = [
     'LiveOcean RMSE',
     'SalishSeaCast RMSE',
-    'Salsih Sea Model RMSE',
-    'Model disagreement (RMSE range)'
+    'Salish Sea Model RMSE',
+    'Model Ensemble (Mean) RMSE'
 ]
 
 for ax, title in zip(axes, titles):
@@ -645,18 +660,12 @@ fig.legend(
     loc='lower center',
     bbox_to_anchor=(0.5, -0.015),
     ncol=2,
-    frameon=True,
-    fancybox=False,
-    edgecolor='black',
-    facecolor='white',
-    framealpha=0.9,
-    fontsize=9,
-    borderpad=0.6
+    frameon=True
 )
 
 
 # ------------------------------------------------------------
-# 2. RMSE COLORBAR FOR PANELS 1–3
+# 2. RMSE COLORBAR FOR PANELS 1–4
 # ------------------------------------------------------------
 
 cb_rmse = fig.colorbar(
@@ -671,31 +680,13 @@ cb_rmse.set_label(
     f'RMSE ({units})'
 )
 
-
 # ------------------------------------------------------------
-# 3. RMSE DISAGREEMENT COLORBAR FOR PANEL 4
-# ------------------------------------------------------------
-
-cb_disagreement = fig.colorbar(
-    sc_disagreement,
-    ax=axes[3],
-    orientation='horizontal',
-    fraction=0.05,
-    pad=0.08
-)
-
-cb_disagreement.set_label(
-    f'RMSE range across models ({units})'
-)
-
-
-# ------------------------------------------------------------
-# 4. FIGURE SPACING
+# 3. FIGURE SPACING
 # ------------------------------------------------------------
 
 fig.subplots_adjust(
     bottom=0.20,
-    wspace=0.08
+    wspace=0.02
 )
 
 # ============================================================
@@ -713,7 +704,7 @@ fig.suptitle(
 
 out_fn = out_dir / (
     f'{otype}_{year}_{vn}_'
-    f'station_rmse_LO_SSC_SSM.png'
+    f'station_rmse_ensemble_LO_SSC_SSM.png'
 )
 
 fig.savefig(
