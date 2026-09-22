@@ -376,6 +376,25 @@ station_rmse = station_rmse.merge(
 )
 
 # ============================================================
+# DIFFERENCE FROM MEAN-MODEL RMSE
+# ============================================================
+
+station_rmse['lo_rmse_diff'] = (
+    station_rmse['mean_model_rmse']
+    - station_rmse['lo_rmse']
+)
+
+station_rmse['ssc_rmse_diff'] = (
+    station_rmse['mean_model_rmse']
+    - station_rmse['ssc_rmse']
+)
+
+station_rmse['ssm_rmse_diff'] = (
+    station_rmse['mean_model_rmse']
+    - station_rmse['ssm_rmse']
+)
+
+# ============================================================
 # LOAD GRID FOR MAP BACKGROUND
 # ============================================================
 
@@ -408,21 +427,6 @@ h_plot = np.where(
 # Keep the same RMSE scale across all three models
 rmse_max = 2.0
 
-# ============================================================
-# BEST MODEL COLORS
-# ============================================================
-
-best_model_colors = {
-    'LiveOcean': 'tab:red',
-    'SalishSeaCast': 'tab:blue',
-    'SSM': 'tab:green'
-}
-
-best_model_order = [
-    'LiveOcean',
-    'SalishSeaCast',
-    'SSM'
-]
 
 # ============================================================
 # PLOT
@@ -452,16 +456,14 @@ high = (
 )
 
 # ============================================================
-# PANEL 1: LIVE OCEAN RMSE
+# PANEL 1: MEAN RMSE - LIVE OCEAN RMSE
 # ============================================================
 
 sc_lo = axes[0].scatter(
     station_rmse.loc[low, 'lon'],
     station_rmse.loc[low, 'lat'],
-    c=station_rmse.loc[low, 'lo_rmse'],
-    cmap='viridis',
-    vmin=0,
-    vmax=rmse_max,
+    c=station_rmse.loc[low, 'lo_rmse_diff'],
+    cmap='RdBu_r',
     s=90,
     marker='o',
     edgecolor='k',
@@ -472,10 +474,8 @@ sc_lo = axes[0].scatter(
 axes[0].scatter(
     station_rmse.loc[high, 'lon'],
     station_rmse.loc[high, 'lat'],
-    c=station_rmse.loc[high, 'lo_rmse'],
-    cmap='viridis',
-    vmin=0,
-    vmax=rmse_max,
+    c=station_rmse.loc[high, 'lo_rmse_diff'],
+    cmap='RdBu_r',
     s=110,
     marker='^',
     edgecolor='k',
@@ -484,16 +484,14 @@ axes[0].scatter(
 )
 
 # ============================================================
-# PANEL 2: SALISHSEACAST RMSE
+# PANEL 2: MEAN RMSE - SALISHSEACAST RMSE
 # ============================================================
 
 axes[1].scatter(
     station_rmse.loc[low, 'lon'],
     station_rmse.loc[low, 'lat'],
-    c=station_rmse.loc[low, 'ssc_rmse'],
-    cmap='viridis',
-    vmin=0,
-    vmax=rmse_max,
+    c=station_rmse.loc[low, 'ssc_rmse_diff'],
+    cmap='RdBu_r',
     s=90,
     marker='o',
     edgecolor='k',
@@ -504,10 +502,8 @@ axes[1].scatter(
 axes[1].scatter(
     station_rmse.loc[high, 'lon'],
     station_rmse.loc[high, 'lat'],
-    c=station_rmse.loc[high, 'ssc_rmse'],
-    cmap='viridis',
-    vmin=0,
-    vmax=rmse_max,
+    c=station_rmse.loc[high, 'ssc_rmse_diff'],
+    cmap='RdBu_r',
     s=110,
     marker='^',
     edgecolor='k',
@@ -516,16 +512,14 @@ axes[1].scatter(
 )
 
 # ============================================================
-# PANEL 3: SSM RMSE
+# PANEL 3: MEAN RMSE - SSM RMSE
 # ============================================================
 
 axes[2].scatter(
     station_rmse.loc[low, 'lon'],
     station_rmse.loc[low, 'lat'],
-    c=station_rmse.loc[low, 'ssm_rmse'],
-    cmap='viridis',
-    vmin=0,
-    vmax=rmse_max,
+    c=station_rmse.loc[low, 'ssm_rmse_diff'],
+    cmap='RdBu_r',
     s=90,
     marker='o',
     edgecolor='k',
@@ -536,10 +530,8 @@ axes[2].scatter(
 axes[2].scatter(
     station_rmse.loc[high, 'lon'],
     station_rmse.loc[high, 'lat'],
-    c=station_rmse.loc[high, 'ssm_rmse'],
-    cmap='viridis',
-    vmin=0,
-    vmax=rmse_max,
+    c=station_rmse.loc[high, 'ssm_rmse_diff'],
+    cmap='RdBu_r',
     s=110,
     marker='^',
     edgecolor='k',
@@ -585,9 +577,9 @@ axes[3].scatter(
 # ============================================================
 
 titles = [
-    'LiveOcean RMSE',
-    'SalishSeaCast RMSE',
-    'Salish Sea Model RMSE',
+    'Mean - LiveOcean RMSE',
+    'Mean - SalishSeaCast RMSE',
+    'Mean - Salish Sea Model RMSE',
     'Model Ensemble (Mean) RMSE'
 ]
 
@@ -704,7 +696,7 @@ fig.suptitle(
 
 out_fn = out_dir / (
     f'{otype}_{year}_{vn}_'
-    f'station_rmse_ensemble_LO_SSC_SSM.png'
+    f'station_rmse_ensemble_diff_LO_SSC_SSM.png'
 )
 
 fig.savefig(
