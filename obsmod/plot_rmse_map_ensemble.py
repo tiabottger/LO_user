@@ -266,22 +266,45 @@ print(
 )
 
 # ============================================================
+# VALID OBSERVATIONS FOR THREE-MODEL COMPARISON
+# ============================================================
+
+valid = sample_df[
+    ['obs', 'lo', 'ssc', 'ssm']
+].notna().all(axis=1)
+
+sample_valid = sample_df.loc[valid].copy()
+
+# ============================================================
 # SQUARED ERRORS
 # ============================================================
 
-sample_df['lo_sq_error'] = (
-    sample_df['lo']
-    - sample_df['obs']
+sample_valid['lo_sq_error'] = (
+    sample_valid['lo']
+    - sample_valid['obs']
 ) ** 2
 
-sample_df['ssc_sq_error'] = (
-    sample_df['ssc']
-    - sample_df['obs']
+sample_valid['ssc_sq_error'] = (
+    sample_valid['ssc']
+    - sample_valid['obs']
 ) ** 2
 
-sample_df['ssm_sq_error'] = (
-    sample_df['ssm']
-    - sample_df['obs']
+sample_valid['ssm_sq_error'] = (
+    sample_valid['ssm']
+    - sample_valid['obs']
+) ** 2
+
+# ============================================================
+# THREE-MODEL MEAN
+# ============================================================
+
+sample_valid['model_mean'] = sample_valid[
+    ['lo', 'ssc', 'ssm']
+].mean(axis=1)
+
+sample_valid['mean_sq_error'] = (
+    sample_valid['model_mean']
+    - sample_valid['obs']
 ) ** 2
 
 # ============================================================
@@ -289,7 +312,7 @@ sample_df['ssm_sq_error'] = (
 # ============================================================
 
 station_rmse = (
-    sample_df
+    sample_valid
     .groupby('name', as_index=False)
     .agg(
         lon=('lon', 'mean'),
@@ -302,17 +325,9 @@ station_rmse = (
         lo_mse=('lo_sq_error', 'mean'),
         ssc_mse=('ssc_sq_error', 'mean'),
         ssm_mse=('ssm_sq_error', 'mean'),
+        mean_mse=('mean_sq_error', 'mean'),
     )
 )
-
-# Minimum sample requirement
-station_rmse = station_rmse[
-    station_rmse['n'] >= min_samples
-].copy()
-
-# ============================================================
-# CALCULATE RMSE
-# ============================================================
 
 station_rmse['lo_rmse'] = np.sqrt(
     station_rmse['lo_mse']
@@ -326,6 +341,10 @@ station_rmse['ssm_rmse'] = np.sqrt(
     station_rmse['ssm_mse']
 )
 
+station_rmse['mean_model_rmse'] = np.sqrt(
+    station_rmse['mean_mse']
+)
+
 # ============================================================
 # OBSERVATIONAL VARIABILITY
 # ============================================================
@@ -336,44 +355,44 @@ station_rmse['high_variability'] = (
 )
 
 # ============================================================
-# MODEL-MEAN RMSE
+# OVERALL RMSE ACROSS ALL STATIONS
 # ============================================================
 
-# Mean prediction from the three models at each observation
-sample_df['model_mean'] = sample_df[
-    ['lo', 'ssc', 'ssm']
-].mean(axis=1)
+overall_rmse = {
+    'LiveOcean': np.sqrt(
+        np.mean(
+            (sample_valid['lo'] - sample_valid['obs']) ** 2
+        )
+    ),
 
-# Squared error between model mean and observation
-sample_df['mean_error_sq'] = (
-    sample_df['model_mean'] - sample_df['obs']
-) ** 2
+    'SalishSeaCast': np.sqrt(
+        np.mean(
+            (sample_valid['ssc'] - sample_valid['obs']) ** 2
+        )
+    ),
 
-# Calculate station-level RMSE
-mean_model_rmse = (
-    sample_df
-    .groupby('name')
-    .agg(
-        mean_model_rmse=(
-            'mean_error_sq',
-            lambda x: np.sqrt(np.nanmean(x))
-        ),
-        n=('mean_error_sq', 'count')
+    'SSM': np.sqrt(
+        np.mean(
+            (sample_valid['ssm'] - sample_valid['obs']) ** 2
+        )
+    ),
+
+    'Three-model mean': np.sqrt(
+        np.mean(
+            (sample_valid['model_mean'] - sample_valid['obs']) ** 2
+        )
     )
-    .reset_index()
-)
+}
 
-# Merge into station_rmse
-station_rmse = station_rmse.drop(
-    columns=['mean_model_rmse', 'n_mean'],
-    errors='ignore'
-)
+print()
+print("=" * 60)
+print("OVERALL RMSE — ALL STATIONS")
+print("=" * 60)
 
-station_rmse = station_rmse.merge(
-    mean_model_rmse,
-    on='name',
-    how='left'
-)
+for model, rmse in overall_rmse.items():
+    print(
+        f"{model:20s}: {rmse:.3f} mg/L"
+    )
 
 # ============================================================
 # LOAD GRID FOR MAP BACKGROUND

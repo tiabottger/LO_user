@@ -5,9 +5,9 @@ Panels:
 1. LiveOcean RMSE
 2. SalishSeaCast RMSE
 3. SSM RMSE
-4. Best model at each station
+4. Model ensemble RMSE
 
-The fourth panel shows which model has the lowest station RMSE.
+The fourth panel calculates a mean between the three models and then calculates its RMSE compared to observations.
 """
 
 import sys
@@ -20,6 +20,8 @@ from scipy.spatial import cKDTree
 
 from matplotlib.colors import ListedColormap
 from matplotlib.lines import Line2D
+from matplotlib.colors import TwoSlopeNorm
+from matplotlib.colors import LinearSegmentedColormap
 from lo_tools import plotting_functions as pfun
 from lo_tools import Lfun
 
@@ -391,6 +393,26 @@ station_rmse['best_model'] = (
 )
 
 # ============================================================
+# DIFFERENCE FROM MEAN-MODEL RMSE
+# ============================================================
+
+station_rmse['lo_rmse_diff'] = (
+    station_rmse['lo_rmse']
+    - station_rmse['mean_model_rmse']
+)
+
+station_rmse['ssc_rmse_diff'] = (
+    station_rmse['ssc_rmse']
+    - station_rmse['mean_model_rmse']
+)
+
+station_rmse['ssm_rmse_diff'] = (
+    station_rmse['ssm_rmse']
+    - station_rmse['mean_model_rmse']
+)
+
+
+# ============================================================
 # LOAD GRID FOR MAP BACKGROUND
 # ============================================================
 
@@ -423,23 +445,6 @@ h_plot = np.where(
 # Keep the same RMSE scale across all three models
 rmse_max = 2.0
 
-# ============================================================
-# BEST MODEL COLORS
-# ============================================================
-
-best_model_colors = {
-    'LiveOcean': 'tab:red',
-    'SalishSeaCast': 'tab:blue',
-    'Salish Sea Model': 'tab:green',
-    'Model Mean': 'gray'
-}
-
-best_model_order = [
-    'LiveOcean',
-    'SalishSeaCast',
-    'Salish Sea Model',
-    'Model Mean'
-]
 
 # ============================================================
 # PLOT
@@ -469,16 +474,57 @@ high = (
 )
 
 # ============================================================
-# PANEL 1: LIVE OCEAN RMSE
+# DIFFERENCE COLOR SCALE
+# ============================================================
+
+diff_columns = [
+    'lo_rmse_diff',
+    'ssc_rmse_diff',
+    'ssm_rmse_diff'
+]
+
+diff_max = np.nanmax(
+    np.abs(
+        station_rmse[diff_columns].values
+    )
+)
+
+# Round up to a convenient value
+diff_max = np.ceil(diff_max * 10) / 10
+
+print(
+    f"Difference color scale: "
+    f"-{diff_max:.1f} to +{diff_max:.1f}"
+)
+
+diff_norm = TwoSlopeNorm(
+    vmin=-diff_max,
+    vcenter=0,
+    vmax=diff_max
+)
+
+orange_yellow_seafoam = LinearSegmentedColormap.from_list(
+    'orange_yellow_seafoam',
+    [
+        '#C4511B',  # dark orange
+        '#E69F00',  # orange-yellow
+        '#F7F7F7',  # white center
+        '#66BFA3',  # seafoam
+        '#238B70',  # dark seafoam
+    ]
+)
+
+
+# ============================================================
+# PANEL 1: LIVE OCEAN RMSE - MEAN RMSE
 # ============================================================
 
 sc_lo = axes[0].scatter(
     station_rmse.loc[low, 'lon'],
     station_rmse.loc[low, 'lat'],
-    c=station_rmse.loc[low, 'lo_rmse'],
-    cmap='viridis',
-    vmin=0,
-    vmax=rmse_max,
+    c=station_rmse.loc[low, 'lo_rmse_diff'],
+    cmap=orange_yellow_seafoam,
+    norm=diff_norm,
     s=90,
     marker='o',
     edgecolor='k',
@@ -489,10 +535,9 @@ sc_lo = axes[0].scatter(
 axes[0].scatter(
     station_rmse.loc[high, 'lon'],
     station_rmse.loc[high, 'lat'],
-    c=station_rmse.loc[high, 'lo_rmse'],
-    cmap='viridis',
-    vmin=0,
-    vmax=rmse_max,
+    c=station_rmse.loc[high, 'lo_rmse_diff'],
+    cmap=orange_yellow_seafoam,
+    norm=diff_norm,
     s=110,
     marker='^',
     edgecolor='k',
@@ -501,16 +546,15 @@ axes[0].scatter(
 )
 
 # ============================================================
-# PANEL 2: SALISHSEACAST RMSE
+# PANEL 2: SALISHSEACAST RMSE - MEAN RMSE
 # ============================================================
 
 axes[1].scatter(
     station_rmse.loc[low, 'lon'],
     station_rmse.loc[low, 'lat'],
-    c=station_rmse.loc[low, 'ssc_rmse'],
-    cmap='viridis',
-    vmin=0,
-    vmax=rmse_max,
+    c=station_rmse.loc[low, 'ssc_rmse_diff'],
+    cmap=orange_yellow_seafoam,
+    norm=diff_norm,
     s=90,
     marker='o',
     edgecolor='k',
@@ -521,10 +565,9 @@ axes[1].scatter(
 axes[1].scatter(
     station_rmse.loc[high, 'lon'],
     station_rmse.loc[high, 'lat'],
-    c=station_rmse.loc[high, 'ssc_rmse'],
-    cmap='viridis',
-    vmin=0,
-    vmax=rmse_max,
+    c=station_rmse.loc[high, 'ssc_rmse_diff'],
+    cmap=orange_yellow_seafoam,
+    norm=diff_norm,
     s=110,
     marker='^',
     edgecolor='k',
@@ -533,16 +576,15 @@ axes[1].scatter(
 )
 
 # ============================================================
-# PANEL 3: SSM RMSE
+# PANEL 3: SSM RMSE - MEAN RMSE
 # ============================================================
 
 axes[2].scatter(
     station_rmse.loc[low, 'lon'],
     station_rmse.loc[low, 'lat'],
-    c=station_rmse.loc[low, 'ssm_rmse'],
-    cmap='viridis',
-    vmin=0,
-    vmax=rmse_max,
+    c=station_rmse.loc[low, 'ssm_rmse_diff'],
+    cmap=orange_yellow_seafoam,
+    norm=diff_norm,
     s=90,
     marker='o',
     edgecolor='k',
@@ -553,7 +595,38 @@ axes[2].scatter(
 axes[2].scatter(
     station_rmse.loc[high, 'lon'],
     station_rmse.loc[high, 'lat'],
-    c=station_rmse.loc[high, 'ssm_rmse'],
+    c=station_rmse.loc[high, 'ssm_rmse_diff'],
+    cmap=orange_yellow_seafoam,
+    norm=diff_norm,
+    s=110,
+    marker='^',
+    edgecolor='k',
+    linewidth=0.6,
+    zorder=10,
+)
+
+# ============================================================
+# PANEL 4 — MEAN MODEL RMSE
+# ============================================================
+
+axes[3].scatter(
+    station_rmse.loc[low, 'lon'],
+    station_rmse.loc[low, 'lat'],
+    c=station_rmse.loc[low, 'mean_model_rmse'],
+    cmap='viridis',
+    vmin=0,
+    vmax=rmse_max,
+    s=90,
+    marker='o',
+    edgecolor='k',
+    linewidth=0.6,
+    zorder=10,
+)
+
+axes[3].scatter(
+    station_rmse.loc[high, 'lon'],
+    station_rmse.loc[high, 'lat'],
+    c=station_rmse.loc[high, 'mean_model_rmse'],
     cmap='viridis',
     vmin=0,
     vmax=rmse_max,
@@ -565,125 +638,58 @@ axes[2].scatter(
 )
 
 # ============================================================
-# PANEL 4: BEST MODEL
-# COLOR = MODEL IDENTITY + RMSE MAGNITUDE
+# OUTLINE THE BEST MODEL AT EACH STATION
 # ============================================================
 
-from matplotlib.colors import to_rgb
+# Model corresponding to each panel
+panel_models = [
+    'LiveOcean',
+    'SalishSeaCast',
+    'Salish Sea Model',
+    'Model Mean'
+]
 
+# Marker sizes used above
+low_size = 90
+high_size = 110
 
-def rmse_color(
-    model,
-    rmse,
-    rmse_max
-):
-    """
-    Return a model-specific color whose
-    saturation/darkness increases with RMSE.
-    """
+for ax, model in zip(axes, panel_models):
 
-    base_colors = {
-        'LiveOcean': 'tab:red',
-        'SalishSeaCast': 'tab:blue',
-        'Salish Sea Model': 'tab:green',
-        'Model Mean': 'gray'
-    }
-
-    base = np.array(
-        to_rgb(base_colors[model])
-    )
-
-    # Normalize RMSE to 0-1
-    frac = np.clip(
-        rmse / rmse_max,
-        0,
-        1
-    )
-
-    # Blend with white.
-    # Low RMSE -> light color
-    # High RMSE -> base color
-    color = (
-        (1 - frac) * np.ones(3)
-        + frac * base
-    )
-
-    return color
-
-for model in best_model_order:
-
-    model_mask = (
-        station_rmse['best_model']
-        == model
-    )
-
-    rmse_column = rmse_columns[model]
+    best = station_rmse['best_model'] == model
 
     # --------------------------------------------------------
-    # Low variability
+    # Low-variability stations
     # --------------------------------------------------------
 
-    model_low = (
-        model_mask
-        & ~station_rmse['high_variability']
+    best_low = best & low
+
+    ax.scatter(
+        station_rmse.loc[best_low, 'lon'],
+        station_rmse.loc[best_low, 'lat'],
+        s=low_size + 45,
+        marker='o',
+        facecolors='none',
+        edgecolors='black',
+        linewidths=2.2,
+        zorder=20,
     )
 
-    for idx in station_rmse.index[model_low]:
-
-        rmse_value = (
-            station_rmse.loc[
-                idx,
-                rmse_column
-            ]
-        )
-
-        axes[3].scatter(
-            station_rmse.loc[idx, 'lon'],
-            station_rmse.loc[idx, 'lat'],
-            color=rmse_color(
-                model,
-                rmse_value,
-                rmse_max
-            ),
-            s=90,
-            marker='o',
-            edgecolor='k',
-            linewidth=0.6,
-            zorder=10
-        )
-
     # --------------------------------------------------------
-    # High variability
+    # High-variability stations
     # --------------------------------------------------------
 
-    model_high = (
-        model_mask
-        & station_rmse['high_variability']
+    best_high = best & high
+
+    ax.scatter(
+        station_rmse.loc[best_high, 'lon'],
+        station_rmse.loc[best_high, 'lat'],
+        s=high_size + 45,
+        marker='^',
+        facecolors='none',
+        edgecolors='black',
+        linewidths=2.2,
+        zorder=20,
     )
-
-    for idx in station_rmse.index[model_high]:
-
-        rmse_value = (
-            station_rmse.loc[
-                idx,
-                rmse_column
-            ]
-        )
-
-        axes[3].scatter(
-            station_rmse.loc[idx, 'lon'],
-            station_rmse.loc[idx, 'lat'],
-            color=rmse_color(
-                model,
-                rmse_value,
-                rmse_max
-            ),
-            s=110,
-            marker='^',
-            edgecolor='k',
-            linewidth=0.6,
-            zorder=10
-        )
         
     
 # ============================================================
@@ -691,10 +697,10 @@ for model in best_model_order:
 # ============================================================
 
 titles = [
-    'LiveOcean RMSE',
-    'SalishSeaCast RMSE',
-    'Salish Sea Model RMSE',
-    'Best Model'
+    'LiveOcean - Mean RMSE',
+    'SalishSeaCast - Mean RMSE',
+    'Salish Sea Model - Mean RMSE',
+    'Model Ensemble (Mean) RMSE'
 ]
 
 for ax, title in zip(axes, titles):
@@ -735,12 +741,8 @@ for ax, title in zip(axes, titles):
 # LEGENDS AND COLORBARS
 # ============================================================
 
-from matplotlib.lines import Line2D
-from matplotlib.colors import to_rgb
-
-
 # ------------------------------------------------------------
-# 1. Observation variability legend
+# 1. OBSERVATION VARIABILITY LEGEND
 # ------------------------------------------------------------
 
 legend_elements = [
@@ -749,16 +751,17 @@ legend_elements = [
         marker='o',
         color='none',
         markerfacecolor='white',
-        markeredgecolor='k',
+        markeredgecolor='black',
         markersize=8,
         label=f'Obs. SD < {std_threshold:.1f} {units}'
     ),
+
     Line2D(
         [0], [0],
         marker='^',
         color='none',
         markerfacecolor='white',
-        markeredgecolor='k',
+        markeredgecolor='black',
         markersize=8,
         label=f'Obs. SD ≥ {std_threshold:.1f} {units}'
     )
@@ -767,19 +770,17 @@ legend_elements = [
 fig.legend(
     handles=legend_elements,
     loc='lower center',
-    bbox_to_anchor=(0.5, -0.015),
+    bbox_to_anchor=(0.5, -0.05),
     ncol=2,
-    frameon=True,
-    fontsize=9
+    frameon=True
 )
 
 
 # ------------------------------------------------------------
-# 2. ORIGINAL VIRIDIS RMSE COLORBAR
-#    Keep this for panels 1–3
+# 2. RMSE COLORBAR FOR PANELS 1–4
 # ------------------------------------------------------------
 
-cb = fig.colorbar(
+cb_rmse = fig.colorbar(
     sc_lo,
     ax=axes[:3],
     orientation='horizontal',
@@ -787,122 +788,25 @@ cb = fig.colorbar(
     pad=0.08
 )
 
-cb.set_label(f'RMSE ({units})')
-
+cb_rmse.set_label(
+    f'RMSE difference ({units})'
+)
 
 # ------------------------------------------------------------
-# 3. Make room underneath panel 4
+# 3. FIGURE SPACING
 # ------------------------------------------------------------
 
 fig.subplots_adjust(
-    bottom=0.25,
-    wspace=0.08
+    bottom=0.20,
+    wspace=0.02
 )
-
-
-# ------------------------------------------------------------
-# 4. MODEL-SPECIFIC GRADIENTS
-#    Only underneath panel 4
-# ------------------------------------------------------------
-
-rmse_values = np.linspace(0, rmse_max, 100)
-
-# Get the position of panel 4 in figure coordinates
-pos4 = axes[3].get_position()
-
-# Width and height of each gradient
-gradient_width = pos4.width * 0.80
-gradient_height = 0.025
-
-# Center the gradients underneath panel 4
-gradient_left = (
-    pos4.x0
-    + (pos4.width - gradient_width) / 2
-)
-
-# Vertical positions
-gradient_y = [
-    0.145,   # LiveOcean
-    0.100,   # SalishSeaCast
-    0.055,   # SSM
-    0.010    # Model Mean
-]
-
-for model, y in zip(best_model_order, gradient_y):
-
-    gradient_ax = fig.add_axes([
-        gradient_left,
-        y,
-        gradient_width,
-        gradient_height
-    ])
-
-    colors = np.array([
-        rmse_color(model, rmse, rmse_max)
-        for rmse in rmse_values
-    ])
-
-    gradient = colors.reshape(
-        1,
-        len(rmse_values),
-        3
-    )
-
-    gradient_ax.imshow(
-        gradient,
-        aspect='auto',
-        extent=[0, rmse_max, 0, 1]
-    )
-
-    gradient_ax.set_xlim(0, rmse_max)
-    gradient_ax.set_ylim(0, 1)
-
-    # Model name on the left
-    gradient_ax.text(
-        -0.02 * rmse_max,
-        0.5,
-        model,
-        ha='right',
-        va='center',
-        fontsize=8,
-        transform=gradient_ax.transData
-    )
-
-    gradient_ax.set_yticks([])
-
-    gradient_ax.set_xticks(
-        np.linspace(0, rmse_max, 5)
-    )
-
-    gradient_ax.set_xticklabels(
-        [f'{x:.1f}' for x in np.linspace(0, rmse_max, 5)],
-        fontsize=7
-    )
-
-    gradient_ax.tick_params(
-        axis='x',
-        length=2,
-        pad=1
-    )
-
-    # Only show x-axis label on bottom gradient
-    if model == 'Model Mean':
-        gradient_ax.set_xlabel(
-            f'RMSE of lowest-error model ({units})',
-            fontsize=8,
-            labelpad=1
-        )
-
-    # Border
-    for spine in gradient_ax.spines.values():
-        spine.set_visible(True)
 
 # ============================================================
 # TITLE
 # ============================================================
 
 fig.suptitle(
-    f'{var_label} Station RMSE ({year})',
+    f'{var_label} Station RMSE Model - Mean ({year})',
     fontsize=15
 )
 
@@ -912,7 +816,7 @@ fig.suptitle(
 
 out_fn = out_dir / (
     f'{otype}_{year}_{vn}_'
-    f'station_rmse_best_LO_SSC_SSM.png'
+    f'station_rmse_ensemble_diff_best_LO_SSC_SSM.png'
 )
 
 fig.savefig(
