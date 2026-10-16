@@ -221,7 +221,7 @@ mesh_ds = xr.Dataset(
 daily_datasets = []
 
 # testing for a few days, change to range(1, 366) for full year
-for day in range(1, 3):
+for day in range(1, 366):
 
     filename = f"ssm_FVCOMICM_{day:05d}.nc"
     file_url = ssm_base_url + filename
