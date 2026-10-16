@@ -21,7 +21,7 @@ import xarray as xr
 # CONFIGURATION
 # ============================================================
 
-nc_path = f"/dat2/tbottger/SSM_ecology/2014_Exist_W3_WQ_hot10_Base4_nodes.nc"
+nc_path = Path("/dat2/tbottger/SSM_ecology/2014_Exist_W3_WQ_hot10_Base4_nodes.nc")
 
 # Maximum number of horizontal locations sampled per variable
 MAX_HORIZONTAL_SAMPLES = 100
