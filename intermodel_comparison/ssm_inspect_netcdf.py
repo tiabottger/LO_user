@@ -382,15 +382,6 @@ try:
 
     print_section("9. INSPECTION COMPLETE")
 
-    print("Review the report to identify:")
-    print("  - The primary time coordinate and its units")
-    print("  - Longitude/latitude variables and mesh connectivity")
-    print("  - Vertical coordinate conventions and layer ordering")
-    print("  - Dissolved oxygen variable name and units")
-    print("  - Salinity and temperature variable names and units")
-    print("  - Whether water-quality variables use node or element dimensions")
-    print("  - Whether the file contains hourly output or daily averages")
-
 finally:
     ds.close()
     print("\nClosed NetCDF file.")
