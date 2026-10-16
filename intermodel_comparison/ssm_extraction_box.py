@@ -215,7 +215,7 @@ mesh_ds = xr.Dataset(
 )
 
 # ============================================================
-# LOOP THROUGH DAILY FILES
+# LOOP THROUGH DAILY FILES, DAILY AVERAGE
 # ============================================================
 
 daily_datasets = []
@@ -253,24 +253,36 @@ for day in range(1, 3):
                 var = nc.variables[name]
                 dims = var.dimensions
 
-                # Read and subset node-based variables.
                 if "node" not in dims:
                     continue
 
+                # Read variable and subset the selected nodes.
                 arr = np.asarray(var[:]).copy()
+
                 node_axis = dims.index("node")
                 arr = np.take(arr, node_indices, axis=node_axis)
 
+                # Average across the 24 hourly records.
+                time_axis = dims.index("time")
+                arr_daily = np.nanmean(arr, axis=time_axis)
+
+                # Remove the time dimension after averaging.
                 out_dims = tuple(
                     "local_node" if d == "node" else d
                     for d in dims
+                    if d != "time"
                 )
 
-                data_vars[name] = (out_dims, arr)
+                data_vars[name] = (out_dims, arr_daily)
 
-            # Save each day's time-dependent data.
+            # Use midnight to label each daily mean.
+            day_timestamp = np.datetime64(
+                pd.Timestamp(year, 1, 1) + pd.Timedelta(days=day - 1),
+                "ns",
+            )
+
             coords = {
-                "time": time,
+                "time": [day_timestamp],
                 "local_node": np.arange(len(node_indices)),
             }
 
@@ -284,12 +296,15 @@ for day in range(1, 3):
                     nc.variables["siglev"][:]
                 ).copy()
 
+            # Add a single time dimension to every daily-mean variable.
             daily_ds = xr.Dataset(
-                data_vars=data_vars,
+                data_vars={
+                    name: (("time",) + dims, np.expand_dims(values, axis=0))
+                    for name, (dims, values) in data_vars.items()
+                },
                 coords=coords,
             )
 
-            # Keep time numeric until its units are decoded.
             daily_datasets.append(daily_ds)
 
         finally:
@@ -310,10 +325,10 @@ annual_ds = xr.merge(
     compat="override",
 )
 
-print("Output dimensions:", dict(annual_ds.sizes))
-print("Time length:", annual_ds.sizes["time"])
-print("Variables:", list(annual_ds.data_vars))
-print("DOXG shape:", annual_ds["DOXG"].shape)
+    print("Output dimensions:", dict(annual_ds.sizes))
+    print("Time length:", annual_ds.sizes["time"])
+    print("Variables:", list(annual_ds.data_vars))
+    print("DOXG shape:", annual_ds["DOXG"].shape)
 
 annual_ds.attrs.update(mesh_ds.attrs)
 
