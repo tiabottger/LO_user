@@ -325,10 +325,10 @@ annual_ds = xr.merge(
     compat="override",
 )
 
-    print("Output dimensions:", dict(annual_ds.sizes))
-    print("Time length:", annual_ds.sizes["time"])
-    print("Variables:", list(annual_ds.data_vars))
-    print("DOXG shape:", annual_ds["DOXG"].shape)
+print("Output dimensions:", dict(annual_ds.sizes))
+print("Time length:", annual_ds.sizes["time"])
+print("Variables:", list(annual_ds.data_vars))
+print("DOXG shape:", annual_ds["DOXG"].shape)
 
 annual_ds.attrs.update(mesh_ds.attrs)
 
