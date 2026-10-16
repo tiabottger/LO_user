@@ -221,7 +221,7 @@ station_df['bathymetry_m'] = ocean_depths[
 plt.close('all')
 
 fig, ax = plt.subplots(
-    figsize=(6.5, 8),
+    figsize=(5.5, 7),
     constrained_layout=True,
 )
 
@@ -243,7 +243,7 @@ scatter = ax.scatter(
     station_df['lat'],
     c=station_df['bathymetry_m'],
     cmap='viridis_r',
-    s=90,
+    s=100,
     edgecolor='black',
     linewidth=0.7,
     zorder=5,

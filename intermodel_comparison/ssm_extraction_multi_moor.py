@@ -13,21 +13,29 @@ from lo_tools import Lfun
 
 from pathlib import Path
 
-
+Ldir = Lfun.Lstart()
 
 # ============================================================
 # USER SETTINGS
 # ============================================================
 
-Ldir = Lfun.Lstart()
-
 year = 2014
 
 stations = {
-    "SAR003": {
-        "lon": -122.49000,
-        "lat": 48.10833,
+    "SKG003": {
+        "lon": -122.48830,
+        "lat": 48.29667,
     },
+    
+    "PSS019": {
+            "lon": -122.30000,
+            "lat": 48.01167,
+        },
+    
+    # "SAR003": {
+    #         "lon": -122.49000,
+    #         "lat": 48.10833,
+    #     },
 
     # "ADM003": {
     #     "lon": -122.48180,
@@ -42,7 +50,7 @@ ssm_base_url = f"https://s3.kopah.uw.edu/ssm/wqm/{year}/"
 # OUTPUT FILES
 # ============================================================
 
-out_dir = Path(Ldir["LOo"]) / "stations"
+out_dir = Path(Ldir["LOo"]) / "intermodel_comparison" /"stations"
 out_dir.mkdir(parents=True, exist_ok=True)
 
 out_files = {}
@@ -73,6 +81,8 @@ profile_variables = [
     "salinity",
     "temp",
     "CCHL1",
+    "B1",
+    "B2",
     "DOXG",
     "NH4",
     "NO3",
