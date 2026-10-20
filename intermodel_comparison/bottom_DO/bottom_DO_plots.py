@@ -871,7 +871,7 @@ cbar.set_label(
 pcm3 = axes[2].tripcolor(
     triang,
     facecolors=hyp_occurrence_SSM_plot,
-    shading='auto',
+    shading='flat',
     cmap=cmap,
     vmin=0.001,
     # vmax=occurrence_max
@@ -1033,7 +1033,7 @@ pfun.add_coast(axes[1], color='black', linewidth=0.8)
 pcm3 = axes[2].tripcolor(
     triang,
     facecolors= mean_DO_SSM_plot,
-    shading='auto',
+    shading='flat',
     cmap='viridis_r',
     vmin=DO_min,
     vmax=DO_max
