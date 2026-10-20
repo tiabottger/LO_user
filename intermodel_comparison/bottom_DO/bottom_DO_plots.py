@@ -35,6 +35,8 @@ year = '2014'
 
 in_dir = Ldir['LOo'] / 'intermodel_comparison' / 'bottom_DO'
 
+out_dir = Ldir['LOo'] / 'intermodel_comparison' / 'bottom_DO_plots'
+out_dir.mkdir(parents=True, exist_ok=True)
 
 # ============================================================
 # LOAD DATA
@@ -42,7 +44,7 @@ in_dir = Ldir['LOo'] / 'intermodel_comparison' / 'bottom_DO'
 
 # READ MODEL OUTPUT
 ds_LO = xr.open_dataset(
-    in_dir / 'cas7_t1y14_x11ab_pugetsound_2014_bottom_DO_info.nc'
+    in_dir / 'cas7_t1_x11ab_pugetsound_2014_bottom_DO_info.nc'
 )
 ds_SSC = xr.open_dataset(
     in_dir / 'SSC_2014_pugetsound_bottom_DO_info.nc'
@@ -365,7 +367,41 @@ hyp_volume_SSC_ts = np.nansum(
     axis=(1, 2)
 )/ 1e3 # convert m hyp thick to km --> km3
 
+# ============================================================
+# SALISH SEA MODEL
+# Bottom cell
+# ============================================================
 
+# ------------------------------------------------------------
+# Hypoxic area
+# ------------------------------------------------------------
+
+hypoxic_elem = DO_elem <= 2.0
+
+# km2
+hyp_area_SSM_ts = np.nansum(
+    np.where(
+        hypoxic_elem,
+        area_km2[None, :], # adding None introduces time compatible dimension
+        0.0
+    ),
+    axis=1
+)
+
+# ------------------------------------------------------------
+# Hypoxic volume
+# ------------------------------------------------------------
+
+# hyp_thick is the thickness of water with DO <= threshold.
+# Units: m * km2 / 1000 = km3.
+hyp_volume_SSM_ts = np.nansum(
+    np.where(
+        np.isfinite(hyp_thick_elem),
+        hyp_thick_elem * area_km2[None, :],
+        0.0
+    ),
+    axis=1
+) / 1e3
 
 # ============================================================
 # TOTAL WATER VOLUME
@@ -392,9 +428,19 @@ total_volume_SSC = np.nansum(
     depth_bot_SSC * DA_SSC
 ) / 1e3   # m * km2 -> km3
 
+# ------------------------------------------------------------
+# SALISH SEA MODEL
+# ------------------------------------------------------------
+
+total_volume_SSM = np.nansum(
+    depth_elem[0] * area_km2
+) / 1e3
+
+
 print(f'LiveOcean total volume: {total_volume_LO:.2f} km3')
 print(f'SalishSeaCast total volume: {total_volume_SSC:.2f} km3')
-       
+print(f'Salish Sea Model total volume: {total_volume_SSM:.2f} km3')
+
 # ============================================================
 # PLOT HYPOXIC AREA AND VOLUME TS
 # ============================================================
@@ -417,6 +463,9 @@ ax.plot(
     hyp_area_SSC_ts, linewidth=2, color= 'blue', label='SalishSeaCast'
 )
 
+ax.plot(pd.to_datetime(ds_SSM['time'].values), 
+        hyp_area_SSM_ts, linewidth=2, color='green', label='Salish Sea Model')
+
 ax.set_ylabel(
     'Hypoxic Area (km$^2$)', fontsize=12)
 ax.set_xlabel('Date', fontsize=12)
@@ -435,7 +484,7 @@ ax.tick_params(
 ax.set_title('Hypoxic Area — Bottom 14.6%', fontsize=13)
 
 plt.savefig(
-    'hypoxic_area_comparison.png',
+    out_dir / 'hypoxic_area_comparison.png',
     dpi=300,
     bbox_inches='tight'
 )
@@ -459,6 +508,11 @@ ax.plot(
     hyp_volume_SSC_ts, linewidth=2, color= 'blue', label='SalishSeaCast'
 )
 
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_SSM_ts, linewidth=2, color= 'green', label='Salish Sea Model'
+)
+
 ax.set_ylabel(
     'Hypoxic Volume (km$^3$)', fontsize=12)
 ax.set_xlabel('Date', fontsize=12)
@@ -474,10 +528,10 @@ ax.tick_params(
 ax.tick_params(
     axis='both', labelsize=11)
 
-ax.set_title('Hypoxic Volume — Bottom 14.6%', fontsize=13)
+ax.set_title('Hypoxic Volume', fontsize=13)
 
 plt.savefig(
-    'hypoxic_volume_comparison.png',
+    out_dir / 'hypoxic_volume_comparison.png',
     dpi=300,
     bbox_inches='tight'
 )
@@ -493,6 +547,10 @@ hyp_volume_pct_LO = (
 
 hyp_volume_pct_SSC = (
     hyp_volume_SSC_ts / total_volume_SSC
+) * 100
+
+hyp_volume_pct_SSM = (
+    hyp_volume_SSM_ts / total_volume_SSM
 ) * 100
 
 print('Plotting hypoxic volume as percent of total volume')
@@ -513,6 +571,14 @@ ax.plot(
     linewidth=2,
     color='blue',
     label='SalishSeaCast'
+)
+
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_pct_SSM,
+    linewidth=2,
+    color='green',
+    label='Salish Sea Model'
 )
 
 ax.set_ylabel(
@@ -546,12 +612,12 @@ ax.tick_params(
 )
 
 ax.set_title(
-    'Hypoxic Volume — Bottom 14.6%',
+    'Hypoxic Volume (% of Total Volume)',
     fontsize=13
 )
 
 plt.savefig(
-    'hypoxic_volume_percent_comparison.png',
+    out_dir / 'hypoxic_volume_percent_comparison.png',
     dpi=300,
     bbox_inches='tight'
 )
@@ -624,6 +690,29 @@ np.divide(
     where=valid_count_SSC > 0
 )
 
+# ------------------------------------------------------------
+# SSM
+# ------------------------------------------------------------
+
+# Percentage of valid daily time steps with hypoxic bottom DO.
+hyp_count_SSM = np.sum(
+    hypoxic_elem & np.isfinite(DO_elem),
+    axis=0
+)
+
+valid_count_SSM = np.sum(
+    np.isfinite(DO_elem),
+    axis=0
+)
+
+hyp_occurrence_SSM = np.full(n_elem, np.nan)
+
+np.divide(
+    100 * hyp_count_SSM,
+    valid_count_SSM,
+    out=hyp_occurrence_SSM,
+    where=valid_count_SSM > 0
+)
 
 # ============================================================
 # PLOT HYPOXIA OCCURRENCE
@@ -633,7 +722,8 @@ print('Plotting hypoxic ocurrence in bottom 14.6% of water column')
 
 occurrence_max = np.nanmax([
     np.nanmax(hyp_occurrence_LO),
-    np.nanmax(hyp_occurrence_SSC)
+    np.nanmax(hyp_occurrence_SSC),
+    np.nanmax(hyp_occurrence_SSM)
 ])
 
 hyp_occurrence_LO_plot = np.where(
@@ -648,19 +738,46 @@ hyp_occurrence_SSC_plot = np.where(
     np.nan
 )
 
-fig, axes = plt.subplots(
-    1, 2,
-    figsize=(14, 7),
-    constrained_layout=True
+hyp_occurrence_SSM_plot = np.where(
+    mask_ps_SSM,
+    hyp_occurrence_SSM,
+    np.nan
 )
-
-# Color map
-cmap= plt.cm.jet.copy()
-cmap.set_under('white'),
 
 
 # ------------------------------------------------------------
-# LiveOcean
+# SSM triangular mesh
+# ------------------------------------------------------------
+
+triang = mtri.Triangulation(
+    lon, lat, triangles=triangles
+)
+
+# Mask triangles outside Puget Sound
+triang.set_mask(~mask_elem)
+
+# Common spatial extent
+ps_lon = mask_lon[mask_ps == 1]
+ps_lat = mask_lat[mask_ps == 1]
+
+lon_min, lon_max = np.nanmin(ps_lon), np.nanmax(ps_lon)
+lat_min, lat_max = np.nanmin(ps_lat), np.nanmax(ps_lat)
+
+lon_pad = 0.02
+lat_pad = 0.02
+
+# ------------------------------------------------------------
+# Plot
+# ------------------------------------------------------------
+
+fig, axes = plt.subplots(
+    1, 3,
+    figsize=(20, 7),
+    constrained_layout=True
+)
+
+# ------------------------------------------------------------
+# LO
 # ------------------------------------------------------------
 
 pcm1 = axes[0].pcolormesh(
@@ -675,14 +792,13 @@ pcm1 = axes[0].pcolormesh(
     vmax= 140
 )
 
-axes[0].set_title(
-    'LiveOcean — Bottom Hypoxia (DO ≤ 2.0 mg/L) Occurrence [Days]',
-    #'LiveOcean — Bottom Hypoxia Occurrence DO ≤ 3.0 mg/L [Days]',
-    fontsize=14
-)
-
+axes[0].set_title('LO: Bottom Hypoxia (DO ≤ 2.0 mg/L) Occurrence [Days]')
 axes[0].set_xlabel('Longitude')
 axes[0].set_ylabel('Latitude')
+axes[0].set_xlim(lon_min - lon_pad, lon_max + lon_pad)
+axes[0].set_ylim(lat_min - lat_pad, lat_max + lat_pad)
+
+pfun.add_coast(axes[0], color='black', linewidth=0.8)
 
 cbar = fig.colorbar(
     pcm1,
@@ -710,14 +826,12 @@ pcm2 = axes[1].pcolormesh(
     vmax = 140
 )
 
-axes[1].set_title(
-    'SalishSeaCast — Bottom Hypoxia (DO ≤ 2.0 mg/L) Occurrence [Days]',
-    #'SalishSeaCast — Bottom Hypoxia Occurrence DO ≤ 3.0 mg/L [Days]',
-    fontsize=14
-)
-
+axes[1].set_title('SSC: Bottom Hypoxia (DO ≤ 2.0 mg/L) Occurrence [Days]')
 axes[1].set_xlabel('Longitude')
-axes[1].set_ylabel('Latitude')
+axes[1].set_xlim(lon_min - lon_pad, lon_max + lon_pad)
+axes[1].set_ylim(lat_min - lat_pad, lat_max + lat_pad)
+
+pfun.add_coast(axes[1], color='black', linewidth=0.8)
 
 cbar = fig.colorbar(
     pcm2,
@@ -729,21 +843,45 @@ cbar.set_label(
     'Hypoxic days count'
 )
 
-# ============================================================
-# BLACK COASTLINE / PUGET SOUND OUTLINE
-# ============================================================
+# ------------------------------------------------------------
+# SSM
+# ------------------------------------------------------------
 
-pfun.add_coast(
-    axes[0],
-    color='black',
-    linewidth=0.8
+pcm3 = axes[2].tripcolor(
+    triang,
+    facecolors=hyp_occurrence_SSM_plot,
+    shading='auto',
+    cmap=cmap,
+    vmin=0.001,
+    # vmax=occurrence_max
+    vmax=140
 )
 
-pfun.add_coast(
-    axes[1],
-    color='black',
-    linewidth=0.8
+axes[2].set_title('SSM: Bottom Hypoxia (DO ≤ 2.0 mg/L) Occurrence [Days]')
+axes[2].set_xlabel('Longitude')
+axes[2].set_xlim(lon_min - lon_pad, lon_max + lon_pad)
+axes[2].set_ylim(lat_min - lat_pad, lat_max + lat_pad)
+
+pfun.add_coast(axes[2], color='black', linewidth=0.8)
+
+cbar = fig.colorbar(
+    pcm3,
+    ax=axes[2]
 )
+
+cbar.set_label(
+    #'Hypoxic occurrence (%)'
+    'Hypoxic days count'
+)
+
+# ------------------------------------------------------------
+# Color map
+# ------------------------------------------------------------
+
+# Color map
+cmap = "jet"
+# cmap= plt.cm.jet.copy()
+# cmap.set_under('white'),
 
 
 # ============================================================
@@ -788,7 +926,7 @@ for ax in axes.flat:
 
 
 plt.savefig(
-    'hypoxic_occurrence_comparison.png',
+    out_dir / 'hypoxic_occurrence_comparison.png',
     dpi=300,
     bbox_inches='tight'
 )
@@ -800,20 +938,24 @@ plt.show()
 
 mean_DO_LO = np.nanmean(ds_LO['DO_bot146'].values, axis=0)
 mean_DO_SSC = np.nanmean(ds_SSC['DO_bot146'].values, axis=0)
+mean_DO_SSM = np.nanmean(DO_elem, axis=0)
 
 # Apply Puget Sound mask
 mean_DO_LO_plot = np.where(mask_ps == 1, mean_DO_LO, np.nan)
 mean_DO_SSC_plot = np.where(mask_ps_SSC, mean_DO_SSC, np.nan)
+mean_DO_SSM_plot = np.where(mask_ps_SSM, mean_DO_SSM, np.nan)
 
 # Common color scale for both models
 DO_min = np.nanmin([
     np.nanmin(mean_DO_LO_plot),
-    np.nanmin(mean_DO_SSC_plot)
+    np.nanmin(mean_DO_SSC_plot),
+    np.nanmin(mean_DO_SSM_plot)
 ])
 
 DO_max = np.nanmax([
     np.nanmax(mean_DO_LO_plot),
-    np.nanmax(mean_DO_SSC_plot)
+    np.nanmax(mean_DO_SSC_plot),
+    np.nanmax(mean_DO_SSM_plot)
 ])
 
 print("Mean bottom 14.6% DO range:")
@@ -827,8 +969,8 @@ print("Maximum:", DO_max)
 print('Plotting average DO in bottom 14.6% of water column')
 
 fig, axes = plt.subplots(
-    1, 2,
-    figsize=(12, 6),
+    1, 3,
+    figsize=(18, 6),
     constrained_layout=True
 )
 
@@ -850,6 +992,8 @@ axes[0].set_title('LiveOcean')
 axes[0].set_xlabel('Longitude')
 axes[0].set_ylabel('Latitude')
 
+pfun.add_coast(axes[0], color='black', linewidth=0.8)
+
 # ------------------------------------------------------------
 # SalishSeaCast
 # ------------------------------------------------------------
@@ -868,8 +1012,28 @@ axes[1].set_title('SalishSeaCast')
 axes[1].set_xlabel('Longitude')
 axes[1].set_ylabel('Latitude')
 
+pfun.add_coast(axes[1], color='black', linewidth=0.8)
+
 # ------------------------------------------------------------
-# Same colorbar for both
+# Salish Sea Model
+# ------------------------------------------------------------
+
+pcm3 = axes[2].tripcolor(
+    triang,
+    facecolors= mean_DO_SSM_plot,
+    shading='auto',
+    cmap='viridis_r',
+    vmin=DO_min,
+    vmax=DO_max
+)
+
+axes[2].set_title('Salish Sea Model')
+axes[2].set_xlabel('Longitude')
+axes[2].set_ylabel('Latitude')
+
+pfun.add_coast(axes[2], color='black', linewidth=0.8)
+# ------------------------------------------------------------
+# Same colorbar for all
 # ------------------------------------------------------------
 
 cbar = fig.colorbar(
@@ -887,7 +1051,7 @@ for ax in axes:
     ax.set_ylim(lat_min, lat_max)
 
 plt.savefig(
-    'mean_DO_bottom146_comparison.png',
+    out_dir / 'mean_DO_bottom146_comparison.png',
     dpi=300,
     bbox_inches='tight'
 )
@@ -896,7 +1060,7 @@ plt.show()
 
 
 # ============================================================
-# Daily DO concentration in bottom 14.6%
+# Daily DO concentration in bottom 14.6% animation
 # ============================================================
 
 DO_LO = ds_LO['DO_bot146'].values
@@ -1050,7 +1214,7 @@ ani = FuncAnimation(
 )
 
 ani.save(
-    'daily_DO_bottom146_comparison.mp4',
+    out_dir / 'daily_DO_bottom146_comparison.mp4',
     writer='ffmpeg',
     fps=6,
     dpi=200

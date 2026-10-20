@@ -35,6 +35,8 @@ year = '2014'
 
 in_dir = Ldir['LOo'] / 'intermodel_comparison' / 'bottom_DO'
 
+out_dir = Ldir['LOo'] / 'intermodel_comparison' / 'bottom_DO_plots'
+out_dir.mkdir(parents=True, exist_ok=True)
 
 # ============================================================
 # LOAD DATA
@@ -42,7 +44,7 @@ in_dir = Ldir['LOo'] / 'intermodel_comparison' / 'bottom_DO'
 
 # READ MODEL OUTPUT
 ds_LO = xr.open_dataset(
-    in_dir / 'cas7_t1y14_x11ab_pugetsound_2014_bottom_DO_info.nc'
+    in_dir / 'cas7_t1_x11ab_pugetsound_2014_bottom_DO_info.nc'
 )
 ds_SSC = xr.open_dataset(
     in_dir / 'SSC_2014_pugetsound_bottom_DO_info.nc'
@@ -294,7 +296,7 @@ ax.tick_params(
 ax.set_title('Hypoxic Area — Bottom 14.6%', fontsize=13)
 
 plt.savefig(
-    'hypoxic_area_comparison.png',
+    out_dir /'hypoxic_area_comparison.png',
     dpi=300,
     bbox_inches='tight'
 )
@@ -333,7 +335,7 @@ ax.tick_params(
 ax.tick_params(
     axis='both', labelsize=11)
 
-ax.set_title('Hypoxic Volume — Bottom 14.6%', fontsize=13)
+ax.set_title('Hypoxic Volume', fontsize=13)
 
 plt.savefig(
     'hypoxic_volume_comparison.png',
@@ -405,12 +407,12 @@ ax.tick_params(
 )
 
 ax.set_title(
-    'Hypoxic Volume — Bottom 14.6%',
+    'Hypoxic Volume',
     fontsize=13
 )
 
 plt.savefig(
-    'hypoxic_volume_percent_comparison.png',
+    out_dir / 'hypoxic_volume_percent_comparison.png',
     dpi=300,
     bbox_inches='tight'
 )
@@ -647,7 +649,7 @@ for ax in axes.flat:
 
 
 plt.savefig(
-    'hypoxic_occurrence_comparison.png',
+    out_dir / 'hypoxic_occurrence_comparison.png',
     dpi=300,
     bbox_inches='tight'
 )
@@ -746,7 +748,7 @@ for ax in axes:
     ax.set_ylim(lat_min, lat_max)
 
 plt.savefig(
-    'mean_DO_bottom146_comparison.png',
+    out_dir / 'mean_DO_bottom146_comparison.png',
     dpi=300,
     bbox_inches='tight'
 )
@@ -909,7 +911,7 @@ ani = FuncAnimation(
 )
 
 ani.save(
-    'daily_DO_bottom146_comparison.mp4',
+    out_dir / 'daily_DO_bottom146_comparison.mp4',
     writer='ffmpeg',
     fps=6,
     dpi=200
