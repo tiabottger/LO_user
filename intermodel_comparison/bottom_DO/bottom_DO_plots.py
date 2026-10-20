@@ -476,8 +476,7 @@ ax.plot(
 )
 
 ax.plot(
-    # pd.to_datetime(ds_SSM['time'].values), 
-    pd.to_datetime(ds_LO['ocean_time'].values),
+    pd.to_datetime(ds_SSM['time'].values), 
     hyp_area_SSM_ts, linewidth=2, color='green', label='Salish Sea Model')
 
 ax.set_ylabel(
