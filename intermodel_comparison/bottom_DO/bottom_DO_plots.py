@@ -172,6 +172,9 @@ DO_SSM = ds_SSM['DO_bot'].values
 n_time, n_node = DO_SSM.shape
 n_elem = ds_SSM.sizes['elem']
 
+lon_SSM = ds_SSM['lon'].values
+lat_SSM = ds_SSM['lat'].values
+
 # ------------------------------------------------------------
 # TRIANGULAR MESH CONNECTIVITY
 # ------------------------------------------------------------
@@ -209,7 +212,7 @@ transformer = Transformer.from_crs(
     always_xy=True
 )
 
-x, y = transformer.transform(lon, lat)
+x, y = transformer.transform(lon_SSM, lat_SSM)
 
 # Calculate the area of every triangular element.
 x_tri = x[triangles]
