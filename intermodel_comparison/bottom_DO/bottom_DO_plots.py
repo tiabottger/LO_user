@@ -1,9 +1,9 @@
 """
-This script calculates hypoxic area and volume for LiveOcean and SSC output,
+This script calculates hypoxic area and volume for LiveOcean SSC and SSM output,
 reading netCDF files from LO_output/intermodel_comparison/bottom_DO
 
 This script searches for yearly box extractions in LO_output, for the
-region "pugetsoundDO"
+region "pugetsoundDO". It uses the file created by get_bottom_DO_nc.py.
 """
 
 # import things
@@ -46,6 +46,10 @@ ds_LO = xr.open_dataset(
 )
 ds_SSC = xr.open_dataset(
     in_dir / 'SSC_2014_pugetsound_bottom_DO_info.nc'
+)
+
+ds_SSM= xr.open_dataset(
+    in_dir / 'SSM_2014_pugetsound_bottom_DO_info.nc'
 )
 
 # READ Puget Sound BASIN MASK
@@ -158,6 +162,141 @@ DA_SSC = DX_SSC * DY_SSC * 1e-6  # m2 to km2
 DA_SSC = DA_SSC * mask_ps_SSC 
 
 # ============================================================
+# SSM CELL AREA
+# ============================================================
+
+# ------------------------------------------------------------
+# TRIANGULAR MESH CONNECTIVITY
+# ------------------------------------------------------------
+
+# nv should reference local_node indices.
+nv = ds_SSM['nv'].values.astype(int)
+
+print('nv minimum:', nv.min())
+print('nv maximum:', nv.max())
+
+if nv.min() == 0 and nv.max() < n_node:
+    # Zero-based connectivity
+    triangles = nv.copy()
+elif nv.min() >= 1 and nv.max() == n_node:
+    # One-based connectivity
+    triangles = nv - 1
+else:
+    raise ValueError(
+        'Cannot safely infer nv indexing. Inspect the extraction '
+        'script and confirm that nv references local_node indices.'
+    )
+
+assert triangles.shape == (n_elem, 3)
+assert triangles.min() >= 0
+assert triangles.max() < n_node
+
+# ------------------------------------------------------------
+# PROJECT COORDINATES TO METERS
+# ------------------------------------------------------------
+
+# UTM zone 10N is suitable for this Puget Sound region.
+transformer = Transformer.from_crs(
+    'EPSG:4326',
+    'EPSG:26910',
+    always_xy=True
+)
+
+x, y = transformer.transform(lon, lat)
+
+# Calculate the area of every triangular element.
+x_tri = x[triangles]
+y_tri = y[triangles]
+
+element_area_m2 = 0.5 * np.abs(
+    (x_tri[:, 1] - x_tri[:, 0]) *
+    (y_tri[:, 2] - y_tri[:, 0])
+    -
+    (x_tri[:, 2] - x_tri[:, 0]) *
+    (y_tri[:, 1] - y_tri[:, 0])
+)
+
+element_area_km2 = element_area_m2 / 1e6
+
+print(
+    'Element area range (km2):',
+    element_area_km2.min(),
+    element_area_km2.max()
+)
+
+# ============================================================
+# MAP PUGET SOUND MASK ONTO SSM NODES
+# ============================================================
+
+mask_ps = basin_mask_ds['mask_pugetsound'].values
+mask_lon = basin_mask_ds['lon_rho'].values
+mask_lat = basin_mask_ds['lat_rho'].values
+
+mask_points = np.column_stack((
+    mask_lon.ravel(),
+    mask_lat.ravel()
+))
+
+valid_mask_points = (
+    np.isfinite(mask_points).all(axis=1)
+)
+
+tree = cKDTree(mask_points[valid_mask_points])
+
+ssm_points = np.column_stack((lon, lat))
+_, nearest = tree.query(ssm_points)
+
+valid_flat = np.flatnonzero(valid_mask_points)
+nearest_flat = valid_flat[nearest]
+
+mask_j, mask_i = np.unravel_index(
+    nearest_flat, mask_lon.shape
+)
+
+mask_node = mask_ps[mask_j, mask_i] == 1
+
+# Classify an element as Puget Sound if at least two of
+# its three vertices fall within the Puget Sound mask.
+mask_elem = (
+    mask_node[triangles].sum(axis=1) >= 2
+)
+
+print('SSM elements inside Puget Sound:', mask_elem.sum())
+
+# Apply the basin mask to element areas.
+area_km2 = element_area_km2 * mask_elem
+
+# ============================================================
+# NODE VALUES TO ELEMENT VALUES
+# ============================================================
+
+# The SSM variables are node-based. Approximate element values
+# by averaging the three vertices of each triangular element.
+
+def node_to_element(values, triangles):
+    """
+    Convert node-based data to element averages.
+
+    Supports:
+        (node,) -> (element,)
+        (time, node) -> (time, element)
+    """
+    if values.ndim == 1:
+        return np.nanmean(values[triangles], axis=1)
+
+    return np.nanmean(values[:, triangles], axis=2)
+
+
+DO_elem = node_to_element(DO, triangles)
+hyp_thick_elem = node_to_element(hyp_thick, triangles)
+depth_elem = node_to_element(depth_bot, triangles)
+thick_bot_elem = node_to_element(thick_bot, triangles)
+
+# Exclude elements outside Puget Sound.
+DO_elem[:, ~mask_elem] = np.nan
+hyp_thick_elem[:, ~mask_elem] = np.nan
+
+# ============================================================
 # LIVE OCEAN
 # Bottom 14.6% of water column
 # ============================================================
@@ -225,6 +364,8 @@ hyp_volume_SSC_ts = np.nansum(
     DA_SSC[None, :, :],
     axis=(1, 2)
 )/ 1e3 # convert m hyp thick to km --> km3
+
+
 
 # ============================================================
 # TOTAL WATER VOLUME

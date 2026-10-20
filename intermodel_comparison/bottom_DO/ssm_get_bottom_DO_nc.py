@@ -27,7 +27,7 @@ import xarray as xr
 year = 2014
 
 input_fp = Path(
-    f"/dat2/tbottger/SSM_pnnl/ssm_box/{year}/SSM_{year}_box_subset.nc"
+    f"/dat2/tbottger/SSM_pnnl/ssm_pugetsound/{year}/SSM_{year}_box_subset.nc"
 )
 
 out_dir = Path(
@@ -340,7 +340,7 @@ with xr.open_dataset(input_fp) as ds_raw:
     # --------------------------------------------------------
 
     output_fp = out_dir / (
-        f"SSM_{year}_box_bottom_DO_info.nc"
+        f"SSM_{year}_pugetsound_bottom_DO_info.nc"
     )
 
     print(f"Saving: {output_fp}")
