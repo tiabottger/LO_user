@@ -761,9 +761,9 @@ hyp_occurrence_SSM_plot = np.where(
 # ------------------------------------------------------------
 
 # Color map
-cmap = "jet"
-# cmap= plt.cm.jet.copy()
-# cmap.set_under('white'),
+# cmap = "jet"
+cmap= plt.cm.jet.copy()
+cmap.set_under('white'),
 
 
 # ------------------------------------------------------------
