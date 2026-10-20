@@ -166,6 +166,9 @@ DA_SSC = DA_SSC * mask_ps_SSC
 # ============================================================
 # SSM CELL AREA
 # ============================================================
+DO_SSM = ds_SSM['DO_bot'].values
+n_time, n_node = DO_SSM.shape
+n_elem = ds_SSM.sizes['elem']
 
 # ------------------------------------------------------------
 # TRIANGULAR MESH CONNECTIVITY
