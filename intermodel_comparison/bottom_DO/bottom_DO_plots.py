@@ -169,6 +169,10 @@ DA_SSC = DA_SSC * mask_ps_SSC
 # SSM CELL AREA
 # ============================================================
 DO_SSM = ds_SSM['DO_bot'].values
+hyp_thick_SSM = ds_SSM['hyp_thick'].values
+thick_bot_SSM = ds_SSM['thick_bot'].values
+depth_bot_SSM = ds_SSM['depth_bot'].values
+
 n_time, n_node = DO_SSM.shape
 n_elem = ds_SSM.sizes['elem']
 
@@ -253,7 +257,7 @@ valid_mask_points = (
 
 tree = cKDTree(mask_points[valid_mask_points])
 
-ssm_points = np.column_stack((lon, lat))
+ssm_points = np.column_stack((lon_SSM, lat_SSM))
 _, nearest = tree.query(ssm_points)
 
 valid_flat = np.flatnonzero(valid_mask_points)
@@ -297,10 +301,10 @@ def node_to_element(values, triangles):
     return np.nanmean(values[:, triangles], axis=2)
 
 
-DO_elem = node_to_element(DO, triangles)
-hyp_thick_elem = node_to_element(hyp_thick, triangles)
-depth_elem = node_to_element(depth_bot, triangles)
-thick_bot_elem = node_to_element(thick_bot, triangles)
+DO_elem = node_to_element(DO_SSM, triangles)
+hyp_thick_elem = node_to_element(hyp_thick_SSM, triangles)
+depth_elem = node_to_element(depth_bot_SSM, triangles)
+thick_bot_elem = node_to_element(thick_bot_SSM, triangles)
 
 # Exclude elements outside Puget Sound.
 DO_elem[:, ~mask_elem] = np.nan
@@ -747,10 +751,19 @@ hyp_occurrence_SSC_plot = np.where(
 )
 
 hyp_occurrence_SSM_plot = np.where(
-    mask_ps_SSM,
+    mask_elem,
     hyp_occurrence_SSM,
     np.nan
 )
+
+# ------------------------------------------------------------
+# Color map
+# ------------------------------------------------------------
+
+# Color map
+cmap = "jet"
+# cmap= plt.cm.jet.copy()
+# cmap.set_under('white'),
 
 
 # ------------------------------------------------------------
@@ -758,7 +771,7 @@ hyp_occurrence_SSM_plot = np.where(
 # ------------------------------------------------------------
 
 triang = mtri.Triangulation(
-    lon, lat, triangles=triangles
+    lon_SSM, lat_SSM, triangles=triangles
 )
 
 # Mask triangles outside Puget Sound
@@ -882,15 +895,6 @@ cbar.set_label(
     'Hypoxic days count'
 )
 
-# ------------------------------------------------------------
-# Color map
-# ------------------------------------------------------------
-
-# Color map
-cmap = "jet"
-# cmap= plt.cm.jet.copy()
-# cmap.set_under('white'),
-
 
 # ============================================================
 # COMMON MAP EXTENT
@@ -951,7 +955,7 @@ mean_DO_SSM = np.nanmean(DO_elem, axis=0)
 # Apply Puget Sound mask
 mean_DO_LO_plot = np.where(mask_ps == 1, mean_DO_LO, np.nan)
 mean_DO_SSC_plot = np.where(mask_ps_SSC, mean_DO_SSC, np.nan)
-mean_DO_SSM_plot = np.where(mask_ps_SSM, mean_DO_SSM, np.nan)
+mean_DO_SSM_plot = np.where(mask_elem, mean_DO_SSM, np.nan)
 
 # Common color scale for both models
 DO_min = np.nanmin([
