@@ -1093,7 +1093,7 @@ DO_SSC_plot = np.where(
 )
 
 DO_SSM_plot = np.where(
-    mask_elem[None, :, :],
+    mask_elem[None, :], #2D because [time, element] rather than [time, lat, lon]
     DO_SSM,
     np.nan
 )
