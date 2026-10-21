@@ -1079,6 +1079,11 @@ plt.show()
 DO_LO = ds_LO['DO_bot146'].values
 DO_SSC = ds_SSC['DO_bot146'].values
 
+DO_SSM_elem = np.nanmean(
+    DO_SSM[:, triangles],
+    axis=2
+)
+
 # Apply Puget Sound mask
 DO_LO_plot = np.where(
     mask_ps[None, :, :] == 1,
@@ -1094,7 +1099,7 @@ DO_SSC_plot = np.where(
 
 DO_SSM_plot = np.where(
     mask_elem[None, :], #2D because [time, element] rather than [time, lat, lon]
-    DO_SSM,
+    DO_SSM_elem,
     np.nan
 )
 
@@ -1158,7 +1163,7 @@ pcm2 = axes[1].pcolormesh(
 
 pcm3 = axes[2].tripcolor(
     triang,
-    facecolors= DO_SSM_plot[0, :, :],
+    facecolors= DO_SSM_plot[0, :],
     shading='flat',
     cmap='viridis_r',
     vmin=DO_min,
@@ -1224,7 +1229,7 @@ def update(frame):
 
     # Update Salish Sea Model
     pcm3.set_array(
-        DO_SSM_plot[frame, :, :].ravel()
+        DO_SSM_plot[frame, :].ravel()
     )
 
     return pcm1, pcm2, pcm3, date_text
