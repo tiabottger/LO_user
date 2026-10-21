@@ -1163,12 +1163,15 @@ pcm2 = axes[1].pcolormesh(
 
 pcm3 = axes[2].tripcolor(
     triang,
-    facecolors= DO_SSM_plot[0, :],
+    facecolors= DO_SSM_elem[0, :],
     shading='flat',
     cmap='viridis_r',
     vmin=DO_min,
     vmax=DO_max
 )
+pfun.add_coast(axes[0], color='black', linewidth=0.8)
+pfun.add_coast(axes[1], color='black', linewidth=0.8)
+pfun.add_coast(axes[2], color='black', linewidth=0.8)
 
 # ------------------------------------------------------------
 # Titles and labels
@@ -1229,7 +1232,7 @@ def update(frame):
 
     # Update Salish Sea Model
     pcm3.set_array(
-        DO_SSM_plot[frame, :].ravel()
+        DO_SSM_elem[frame, :].ravel()
     )
 
     return pcm1, pcm2, pcm3, date_text
