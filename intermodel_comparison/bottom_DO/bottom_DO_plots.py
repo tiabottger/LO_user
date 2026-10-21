@@ -1092,34 +1092,43 @@ DO_SSC_plot = np.where(
     np.nan
 )
 
-# ============================================================
+DO_SSM_plot = np.where(
+    mask_elem[None, :, :],
+    DO_SSM,
+    np.nan
+)
+
+# ------------------------------------------------------------
 # Common color scale for both models and all days
-# ============================================================
+# ------------------------------------------------------------
 
 DO_min = np.nanmin([
     np.nanmin(DO_LO_plot),
-    np.nanmin(DO_SSC_plot)
+    np.nanmin(DO_SSC_plot),
+    np.nanmin(DO_SSM_plot)
 ])
 
 DO_max = np.nanmax([
     np.nanmax(DO_LO_plot),
-    np.nanmax(DO_SSC_plot)
+    np.nanmax(DO_SSC_plot),
+    np.nanmax(DO_SSM_plot)
 ])
 
-# ============================================================
+# ------------------------------------------------------------
 # Time
-# ============================================================
+# ------------------------------------------------------------
 
 time_LO = pd.to_datetime(ds_LO['ocean_time'].values)
 time_SSC = pd.to_datetime(ds_LO['ocean_time'].values)
+time_SSM = pd.to_datetime(ds_SSM['time'].values)
 
-# ============================================================
+# ------------------------------------------------------------
 # Create figure
-# ============================================================
+# ------------------------------------------------------------
 
 fig, axes = plt.subplots(
-    1, 2,
-    figsize=(12, 6),
+    1, 3,
+    figsize=(18, 6),
     constrained_layout=True
 )
 
@@ -1147,13 +1156,22 @@ pcm2 = axes[1].pcolormesh(
     vmax=DO_max
 )
 
+pcm3 = axes[2].tripcolor(
+    triang,
+    facecolors= DO_SSM_plot[0, :, :],
+    shading='flat',
+    cmap='viridis_r',
+    vmin=DO_min,
+    vmax=DO_max
+)
+
 # ------------------------------------------------------------
 # Titles and labels
 # ------------------------------------------------------------
 
 axes[0].set_title('LiveOcean')
 axes[1].set_title('SalishSeaCast')
-
+axes[2].set_title('Salish Sea Model')
 for ax in axes:
     ax.set_xlabel('Longitude')
     ax.set_ylabel('Latitude')
@@ -1204,7 +1222,12 @@ def update(frame):
         time_LO[frame].strftime('%Y-%m-%d')
     )
 
-    return pcm1, pcm2, date_text
+    # Update Salish Sea Model
+    pcm3.set_array(
+        DO_SSM_plot[frame, :, :].ravel()
+    )
+
+    return pcm1, pcm2, pcm3, date_text
 
 
 # ============================================================
@@ -1215,7 +1238,8 @@ print('Creating animation...')
 
 nframes = min(
     DO_LO_plot.shape[0],
-    DO_SSC_plot.shape[0]
+    DO_SSC_plot.shape[0],
+    DO_SSM_plot.shape[0]
 )
 
 ani = FuncAnimation(
