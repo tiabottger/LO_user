@@ -1171,7 +1171,11 @@ for ax, day in zip(axes, test_days):
     ax.set_title(pd.Timestamp(time_SSM[day]).strftime('%Y-%m-%d'))
 
 fig.colorbar(pcm, ax=axes, label='DO (mg/L)', shrink=0.85)
-plt.show()
+plt.savefig(
+    out_dir / 'DO_bottom146_testing.png',
+    dpi=300,
+    bbox_inches='tight'
+)
 
 # ------------------------------------------------------------
 # Create figure
