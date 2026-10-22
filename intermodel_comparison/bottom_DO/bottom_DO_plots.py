@@ -1098,11 +1098,14 @@ DO_SSC_plot = np.where(
     np.nan
 )
 
-DO_SSM_plot = np.where(
-    mask_elem[None, :], #2D because [time, element] rather than [time, lat, lon]
-    DO_elem,
-    np.nan
-)
+# I think the mask is already applied to DO_elem
+# DO_SSM_plot = np.where(
+#     mask_elem[None, :], #2D because [time, element] rather than [time, lat, lon]
+#     DO_elem,
+#     np.nan
+# )
+
+DO_SSM_plot = DO_elem.copy()
 
 # ------------------------------------------------------------
 # Common color scale for both models and all days
