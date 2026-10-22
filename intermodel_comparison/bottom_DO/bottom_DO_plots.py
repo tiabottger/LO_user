@@ -1275,14 +1275,14 @@ def update(frame):
         DO_SSC_plot[frame, :, :].ravel()
     )
 
+    # Update Salish Sea Model
+    pcm3.set_array(
+        DO_elem[frame, :]
+    )
+
     # Update date
     date_text.set_text(
         time_LO[frame].strftime('%Y-%m-%d')
-    )
-
-    # Update Salish Sea Model
-    pcm3.set_array(
-        DO_elem[frame, :].ravel()
     )
 
     return pcm1, pcm2, pcm3, date_text
@@ -1313,4 +1313,29 @@ ani.save(
     writer='ffmpeg',
     fps=6,
     dpi=200
+)
+
+frame = 0
+
+fig_test, ax_test = plt.subplots(figsize=(10, 8))
+
+pcm_test = ax_test.tripcolor(
+    triang,
+    facecolors=DO_SSM_plot[frame, :],
+    shading='flat',
+    cmap='viridis_r',
+    vmin=DO_min,
+    vmax=DO_max
+)
+
+pfun.add_coast(ax_test, color='black', linewidth=0.8)
+ax_test.set_xlim(lon_min, lon_max)
+ax_test.set_ylim(lat_min, lat_max)
+ax_test.set_title(time_SSM[frame].strftime('%Y-%m-%d'))
+
+fig_test.colorbar(pcm_test, ax=ax_test, label='DO (mg/L)')
+plt.savefig(
+    out_dir / 'DO_bottom146_frame_test.png',
+    dpi=300,
+    bbox_inches='tight'
 )
