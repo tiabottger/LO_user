@@ -1076,15 +1076,6 @@ plt.show()
 # Daily DO concentration in bottom 14.6% animation
 # ============================================================
 
-DO_LO = ds_LO['DO_bot146'].values
-DO_SSC = ds_SSC['DO_bot146'].values
-
-# I think we can use DO_elem directly, this seems to be creating weird discontinuities
-# DO_SSM_elem = np.nanmean(
-#     DO_SSM[:, triangles],
-#     axis=2
-# )
-
 # Apply Puget Sound mask
 DO_LO_plot = np.where(
     mask_ps[None, :, :] == 1,
@@ -1098,14 +1089,12 @@ DO_SSC_plot = np.where(
     np.nan
 )
 
-# I think the mask is already applied to DO_elem
+# mask already applied to DO_elem
 # DO_SSM_plot = np.where(
 #     mask_elem[None, :], #2D because [time, element] rather than [time, lat, lon]
 #     DO_elem,
 #     np.nan
 # )
-
-DO_SSM_plot = DO_elem.copy()
 
 # ------------------------------------------------------------
 # Common color scale for both models and all days
@@ -1114,13 +1103,13 @@ DO_SSM_plot = DO_elem.copy()
 DO_min = np.nanmin([
     np.nanmin(DO_LO_plot),
     np.nanmin(DO_SSC_plot),
-    np.nanmin(DO_SSM_plot)
+    np.nanmin(DO_elem)
 ])
 
 DO_max = np.nanmax([
     np.nanmax(DO_LO_plot),
     np.nanmax(DO_SSC_plot),
-    np.nanmax(DO_SSM_plot)
+    np.nanmax(DO_elem)
 ])
 
 # ------------------------------------------------------------
@@ -1130,52 +1119,6 @@ DO_max = np.nanmax([
 time_LO = pd.to_datetime(ds_LO['ocean_time'].values)
 time_SSC = pd.to_datetime(ds_LO['ocean_time'].values)
 time_SSM = pd.to_datetime(ds_SSM['time'].values)
-
-## TESTING
-
-print("DO_SSM shape:", DO_SSM.shape)
-print("DO_elem shape:", DO_elem.shape)
-
-print("\nMissing values in nodal DO:")
-print("Total NaNs:", np.isnan(DO_SSM).sum())
-print("NaN fraction:", np.isnan(DO_SSM).mean())
-
-print("\nMissing values in element DO:")
-print("Total NaNs:", np.isnan(DO_elem).sum())
-print("NaN fraction:", np.isnan(DO_elem).mean())
-
-print("\nNaNs on first day:", np.isnan(DO_elem[0]).sum())
-print("NaNs in annual mean:", np.isnan(mean_DO_SSM).sum())
-
-test_days = [0, 180, 364]
-
-fig, axes = plt.subplots(
-    1, 3,
-    figsize=(18, 7),
-    constrained_layout=True
-)
-
-for ax, day in zip(axes, test_days):
-    pcm = ax.tripcolor(
-        triang,
-        facecolors=DO_elem[day, :],
-        shading='flat',
-        cmap='viridis_r',
-        vmin=DO_min,
-        vmax=DO_max
-    )
-
-    pfun.add_coast(ax, color='black', linewidth=0.8)
-    ax.set_xlim(lon_min, lon_max)
-    ax.set_ylim(lat_min, lat_max)
-    ax.set_title(pd.Timestamp(time_SSM[day]).strftime('%Y-%m-%d'))
-
-fig.colorbar(pcm, ax=axes, label='DO (mg/L)', shrink=0.85)
-plt.savefig(
-    out_dir / 'DO_bottom146_testing.png',
-    dpi=300,
-    bbox_inches='tight'
-)
 
 # ------------------------------------------------------------
 # Create figure
@@ -1277,7 +1220,7 @@ def update(frame):
 
     # Update Salish Sea Model
     pcm3.set_array(
-        DO_elem[frame, :]
+        np.asarray(DO_elem[frame, :]).ravel()
     )
 
     # Update date
@@ -1297,7 +1240,7 @@ print('Creating animation...')
 nframes = min(
     DO_LO_plot.shape[0],
     DO_SSC_plot.shape[0],
-    DO_SSM_plot.shape[0]
+    DO_elem.shape[0]
 )
 
 ani = FuncAnimation(
@@ -1308,6 +1251,16 @@ ani = FuncAnimation(
     blit=False
 )
 
+update(180)
+fig.canvas.draw()
+plt.show()
+plt.savefig(
+    out_dir / 'DO_bottom146_frame_test_update.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+
+
 ani.save(
     out_dir / 'daily_DO_bottom146_comparison.mp4',
     writer='ffmpeg',
@@ -1315,13 +1268,13 @@ ani.save(
     dpi=200
 )
 
-frame = 0
+frame = 180
 
 fig_test, ax_test = plt.subplots(figsize=(10, 8))
 
 pcm_test = ax_test.tripcolor(
     triang,
-    facecolors=DO_SSM_plot[frame, :],
+    facecolors=DO_elem[frame, :],
     shading='flat',
     cmap='viridis_r',
     vmin=DO_min,
