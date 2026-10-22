@@ -1207,6 +1207,7 @@ date_text = fig.suptitle(
 # ============================================================
 
 def update(frame):
+    global pcm3
 
     # Update LiveOcean
     pcm1.set_array(
@@ -1218,9 +1219,17 @@ def update(frame):
         DO_SSC_plot[frame, :, :].ravel()
     )
 
-    # Update Salish Sea Model
-    pcm3.set_array(
-        np.asarray(DO_elem[frame, :]).ravel()
+    # Remove the previous SSM collection
+    pcm3.remove()
+
+    # Recreate the SSM plot for this frame
+    pcm3 = axes[2].tripcolor(
+        triang,
+        facecolors=DO_elem[frame, :],
+        shading='flat',
+        cmap='viridis_r',
+        vmin=DO_min,
+        vmax=DO_max
     )
 
     # Update date
