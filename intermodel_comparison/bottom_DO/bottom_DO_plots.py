@@ -1268,3 +1268,45 @@ ani.save(
     fps=6,
     dpi=200
 )
+
+## TESTING
+
+print("DO_SSM shape:", DO_SSM.shape)
+print("DO_elem shape:", DO_elem.shape)
+
+print("\nMissing values in nodal DO:")
+print("Total NaNs:", np.isnan(DO_SSM).sum())
+print("NaN fraction:", np.isnan(DO_SSM).mean())
+
+print("\nMissing values in element DO:")
+print("Total NaNs:", np.isnan(DO_elem).sum())
+print("NaN fraction:", np.isnan(DO_elem).mean())
+
+print("\nNaNs on first day:", np.isnan(DO_elem[0]).sum())
+print("NaNs in annual mean:", np.isnan(mean_DO_SSM).sum())
+
+test_days = [0, 180, 364]
+
+fig, axes = plt.subplots(
+    1, 3,
+    figsize=(18, 7),
+    constrained_layout=True
+)
+
+for ax, day in zip(axes, test_days):
+    pcm = ax.tripcolor(
+        triang,
+        facecolors=DO_elem[day, :],
+        shading='flat',
+        cmap='viridis_r',
+        vmin=DO_min,
+        vmax=DO_max
+    )
+
+    pfun.add_coast(ax, color='black', linewidth=0.8)
+    ax.set_xlim(lon_min, lon_max)
+    ax.set_ylim(lat_min, lat_max)
+    ax.set_title(pd.Timestamp(time_SSM[day]).strftime('%Y-%m-%d'))
+
+fig.colorbar(pcm, ax=axes, label='DO (mg/L)', shrink=0.85)
+plt.show()
