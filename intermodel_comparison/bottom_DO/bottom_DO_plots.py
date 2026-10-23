@@ -1413,3 +1413,17 @@ ani.save(
 #     dpi=300,
 #     bbox_inches='tight'
 # )
+
+print("LO:")
+print("NaNs:", np.isnan(DO_LO_plot[0]).sum())
+print("Zeros:", np.sum(DO_LO_plot[0] == 0))
+print("Masked:", np.ma.getmaskarray(DO_LO_plot[0]).sum())
+
+print("\nSSC:")
+print("NaNs:", np.isnan(DO_SSC_plot[0]).sum())
+print("Zeros:", np.sum(DO_SSC_plot[0] == 0))
+print("Masked:", np.ma.getmaskarray(DO_SSC_plot[0]).sum())
+
+print("Axes facecolor:", axes[0].get_facecolor())
+print("Colormap bad color:", cmap_oxy.get_bad())
+print("Color at zero:", cmap_oxy(norm(0.0)))

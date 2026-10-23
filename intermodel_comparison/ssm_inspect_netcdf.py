@@ -376,11 +376,7 @@ try:
             print(f"    Units: {get_attr(var, 'units', '')}")
             inspect_sample(var, ds)
 
-    # ========================================================
-    # 8. SUMMARY FOR NEXT STEPS
-    # ========================================================
 
-    print_section("9. INSPECTION COMPLETE")
 
 finally:
     ds.close()
