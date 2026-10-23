@@ -1308,6 +1308,14 @@ ax_ts.set_position([
     ts_pos.height
 ])
 
+# Keep latitude labels only on the leftmost map
+for ax in axes[1:]:
+    ax.set_ylabel('')
+    ax.tick_params(axis='y', labelleft=False)
+
+# Add a little space between map panels
+fig.subplots_adjust(wspace=0.12)
+
 # ============================================================
 # Animation function
 # ============================================================
