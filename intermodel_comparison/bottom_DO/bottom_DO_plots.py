@@ -1191,9 +1191,11 @@ pcm1 = axes[0].pcolormesh(
     lat_LO,
     DO_LO_plot[0, :, :],
     shading='auto',
-    cmap='viridis_r',
-    vmin=DO_min,
-    vmax=DO_max
+    #cmap='viridis_r',
+    cmap=cmap_oxy,
+    norm=norm,
+    # vmin=DO_min,
+    # vmax=DO_max
 )
 
 pcm2 = axes[1].pcolormesh(
@@ -1201,18 +1203,22 @@ pcm2 = axes[1].pcolormesh(
     lat_SSC,
     DO_SSC_plot[0, :, :],
     shading='auto',
-    cmap='viridis_r',
-    vmin=DO_min,
-    vmax=DO_max
+    #cmap='viridis_r',
+    cmap=cmap_oxy,
+    norm=norm,
+    # vmin=DO_min,
+    # vmax=DO_max
 )
 
 pcm3 = axes[2].tripcolor(
     triang,
     facecolors= DO_elem[0, :],
     shading='flat',
-    cmap='viridis_r',
-    vmin=DO_min,
-    vmax=DO_max
+    #cmap='viridis_r',
+    cmap=cmap_oxy,
+    norm=norm,
+    # vmin=DO_min,
+    # vmax=DO_max
 )
 pfun.add_coast(axes[0], color='black', linewidth=0.8)
 pfun.add_coast(axes[1], color='black', linewidth=0.8)
@@ -1341,9 +1347,8 @@ def update(frame):
         triang,
         facecolors=DO_elem[frame, :],
         shading='flat',
-        cmap='viridis_r',
-        vmin=DO_min,
-        vmax=DO_max
+        cmap=cmap_oxy,
+        norm=norm
     )
     
     # Move the time-series marker to the current animation date
