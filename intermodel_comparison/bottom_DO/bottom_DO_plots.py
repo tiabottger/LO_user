@@ -14,11 +14,13 @@ import matplotlib.dates as mdates
 import matplotlib.tri as mtri
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-from matplotlib.colors import ListedColormap
+from matplotlib.colors import FuncNorm, ListedColormap
 from scipy.spatial import cKDTree
 from pyproj import Transformer
 from lo_tools import Lfun
 from lo_tools import plotting_functions as pfun
+import cmocean
+import cmocean.tools
 
 import sys
 from pathlib import Path
@@ -1074,6 +1076,7 @@ plt.show()
 
 # ============================================================
 # Daily DO concentration in bottom 14.6% animation
+# with hypoxic area time series
 # ============================================================
 
 # Apply Puget Sound mask
@@ -1090,6 +1093,7 @@ DO_SSC_plot = np.where(
 )
 
 # mask already applied to DO_elem
+# LO and SSC had masks applied to DA for hypoxic area and volume calculations, but DO_elem is already masked to Puget Sound elements.
 # DO_SSM_plot = np.where(
 #     mask_elem[None, :], #2D because [time, element] rather than [time, lat, lon]
 #     DO_elem,
@@ -1100,17 +1104,53 @@ DO_SSC_plot = np.where(
 # Common color scale for both models and all days
 # ------------------------------------------------------------
 
-DO_min = np.nanmin([
-    np.nanmin(DO_LO_plot),
-    np.nanmin(DO_SSC_plot),
-    np.nanmin(DO_elem)
-])
+# DO_min = np.nanmin([
+#     np.nanmin(DO_LO_plot),
+#     np.nanmin(DO_SSC_plot),
+#     np.nanmin(DO_elem)
+# ])
 
-DO_max = np.nanmax([
-    np.nanmax(DO_LO_plot),
-    np.nanmax(DO_SSC_plot),
-    np.nanmax(DO_elem)
-])
+# DO_max = np.nanmax([
+#     np.nanmax(DO_LO_plot),
+#     np.nanmax(DO_SSC_plot),
+#     np.nanmax(DO_elem)
+# ])
+
+# Original oxygen colormap
+cmap = cmocean.cm.oxy
+
+# Crop the upper 20% of the colormap (supersaturated colors)
+cmap_oxy = cmocean.tools.crop_by_percent(
+    cmap,
+    20,
+    which='max',
+    N=None
+)
+
+# Common oxygen limits for LO, SSC, and SSM
+DO_min = 0.0
+DO_max = 20.0  
+
+# Map DO = 2 mg/L to 20% of the colormap
+def forward(x):
+    return np.where(
+        x <= 2.0,
+        0.2 * x / 2.0,
+        0.2 + 0.8 * (x - 2.0) / (DO_max - 2.0)
+    )
+
+def inverse(y):
+    return np.where(
+        y <= 0.2,
+        2.0 * y / 0.2,
+        2.0 + (DO_max - 2.0) * (y - 0.2) / 0.8
+    )
+
+norm = FuncNorm(
+    (forward, inverse),
+    vmin=DO_min,
+    vmax=DO_max
+)
 
 # ------------------------------------------------------------
 # Time
@@ -1124,12 +1164,24 @@ time_SSM = pd.to_datetime(ds_SSM['time'].values)
 # Create figure
 # ------------------------------------------------------------
 
-fig, axes = plt.subplots(
-    1, 3,
-    figsize=(18, 6),
-    constrained_layout=True
+fig = plt.figure(figsize=(22, 10))
+
+gs = fig.add_gridspec(
+    2, 3,
+    height_ratios=[1, 3],
+    hspace=0.25,
+    wspace=0.05
 )
 
+# Time series spans all three columns
+ax_ts = fig.add_subplot(gs[0, :])
+
+# Map panels
+axes = [
+    fig.add_subplot(gs[1, 0]),
+    fig.add_subplot(gs[1, 1]),
+    fig.add_subplot(gs[1, 2])
+]
 # ------------------------------------------------------------
 # Initial frame
 # ------------------------------------------------------------
@@ -1179,6 +1231,51 @@ for ax in axes:
 
     ax.set_xlim(lon_min, lon_max)
     ax.set_ylim(lat_min, lat_max)
+
+# ------------------------------------------------------------
+# Plot hypoxic area time series
+# ------------------------------------------------------------
+
+# Use the same dates as the animation frames
+time = pd.to_datetime(time_LO)
+
+ax_ts.plot(
+    time, hyp_area_LO_ts,
+    color='red', label='LiveOcean'
+)
+ax_ts.plot(
+    time, hyp_area_SSC_ts,
+    color='blue', label='SalishSeaCast'
+)
+ax_ts.plot(
+    time, hyp_area_SSM_ts,
+    color='green', label='SSM'
+)
+
+ax_ts.set_ylabel('Hypoxic area (km²)')
+ax_ts.set_title('Daily hypoxic area (DO ≤ 2 mg/L)')
+ax_ts.legend(loc='upper right', ncol=3)
+ax_ts.grid(True, alpha=0.3)
+
+ax_ts.xaxis.set_major_locator(mdates.MonthLocator())
+ax_ts.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
+ax_ts.set_xlim(time[0], time[-1])
+
+# Animated vertical date marker
+time_marker = ax_ts.axvline(
+    time[0],
+    color='black',
+    linestyle='--',
+    linewidth=2
+)
+
+# Moving date label
+date_label = ax_ts.text(
+    0.01, 0.90, '',
+    transform=ax_ts.transAxes,
+    ha='left',
+    va='top'
+)
 
 # ------------------------------------------------------------
 # Common colorbar
@@ -1231,13 +1328,14 @@ def update(frame):
         vmin=DO_min,
         vmax=DO_max
     )
+    
+    # Move the time-series marker to the current animation date
+    current_time = time[frame]
 
-    # Update date
-    date_text.set_text(
-        time_LO[frame].strftime('%Y-%m-%d')
-    )
+    time_marker.set_xdata([current_time, current_time])
+    date_label.set_text(current_time.strftime('%Y-%m-%d'))
 
-    return pcm1, pcm2, pcm3, date_text
+    return pcm1, pcm2, pcm3, time_marker, date_label
 
 
 # ============================================================
@@ -1246,28 +1344,23 @@ def update(frame):
 
 print('Creating animation...')
 
-nframes = min(
-    DO_LO_plot.shape[0],
-    DO_SSC_plot.shape[0],
-    DO_elem.shape[0]
-)
-
 ani = FuncAnimation(
     fig,
     update,
-    frames=nframes,
+    frames=len(time),
     interval=150,      # milliseconds between frames
     blit=False
 )
 
-update(180)
-fig.canvas.draw()
-plt.show()
-plt.savefig(
-    out_dir / 'DO_bottom146_frame_test_update.png',
-    dpi=300,
-    bbox_inches='tight'
-)
+# TESTING
+# update(180)
+# fig.canvas.draw()
+# plt.show()
+# plt.savefig(
+#     out_dir / 'DO_bottom146_frame_test_update.png',
+#     dpi=300,
+#     bbox_inches='tight'
+# )
 
 
 ani.save(
@@ -1277,27 +1370,28 @@ ani.save(
     dpi=200
 )
 
-frame = 180
+# TESTING 
+# frame = 180
 
-fig_test, ax_test = plt.subplots(figsize=(10, 8))
+# fig_test, ax_test = plt.subplots(figsize=(10, 8))
 
-pcm_test = ax_test.tripcolor(
-    triang,
-    facecolors=DO_elem[frame, :],
-    shading='flat',
-    cmap='viridis_r',
-    vmin=DO_min,
-    vmax=DO_max
-)
+# pcm_test = ax_test.tripcolor(
+#     triang,
+#     facecolors=DO_elem[frame, :],
+#     shading='flat',
+#     cmap='viridis_r',
+#     vmin=DO_min,
+#     vmax=DO_max
+# )
 
-pfun.add_coast(ax_test, color='black', linewidth=0.8)
-ax_test.set_xlim(lon_min, lon_max)
-ax_test.set_ylim(lat_min, lat_max)
-ax_test.set_title(time_SSM[frame].strftime('%Y-%m-%d'))
+# pfun.add_coast(ax_test, color='black', linewidth=0.8)
+# ax_test.set_xlim(lon_min, lon_max)
+# ax_test.set_ylim(lat_min, lat_max)
+# ax_test.set_title(time_SSM[frame].strftime('%Y-%m-%d'))
 
-fig_test.colorbar(pcm_test, ax=ax_test, label='DO (mg/L)')
-plt.savefig(
-    out_dir / 'DO_bottom146_frame_test.png',
-    dpi=300,
-    bbox_inches='tight'
-)
+# fig_test.colorbar(pcm_test, ax=ax_test, label='DO (mg/L)')
+# plt.savefig(
+#     out_dir / 'DO_bottom146_frame_test.png',
+#     dpi=300,
+#     bbox_inches='tight'
+# )
