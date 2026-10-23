@@ -1246,6 +1246,8 @@ axes[0].set_title('LiveOcean')
 axes[1].set_title('SalishSeaCast')
 axes[2].set_title('Salish Sea Model')
 for ax in axes:
+    ax.set_facecolor('white')
+    
     ax.set_xlabel('Longitude')
     ax.set_ylabel('Latitude')
 
