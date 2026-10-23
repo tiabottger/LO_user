@@ -1129,7 +1129,7 @@ cmap_oxy = cmocean.tools.crop_by_percent(
     20,
     which='max',
     N=None
-)
+).copy()
 
 # Missing/invalid cells should not be colored as low oxygen
 cmap_oxy.set_bad('white')
@@ -1238,9 +1238,9 @@ pcm3 = axes[2].tripcolor(
     norm=norm,
 )
 
-pfun.add_coast(axes[0], color='black', linewidth=0.8)
-pfun.add_coast(axes[1], color='black', linewidth=0.8)
-pfun.add_coast(axes[2], color='black', linewidth=0.8)
+# pfun.add_coast(axes[0], color='black', linewidth=0.8)
+# pfun.add_coast(axes[1], color='black', linewidth=0.8)
+# pfun.add_coast(axes[2], color='black', linewidth=0.8)
 
 # ------------------------------------------------------------
 # Titles and labels
