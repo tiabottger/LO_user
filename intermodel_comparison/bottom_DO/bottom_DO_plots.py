@@ -1143,20 +1143,49 @@ DO_threshold = 2.0  # mg/L
 # Since we cropped the top 20% of the colormap, this becomes 25% of cropped colormap
 hypoxic_fraction = 0.2 / 0.8 # 0.25
 
+# explicitly preserve invalid values (NaN) 
 def forward(x):
-    return np.where(
-        x <= DO_threshold,
-        hypoxic_fraction * x / DO_threshold,
-        hypoxic_fraction + (1 - hypoxic_fraction) 
-        * (x - DO_threshold) / (DO_max - DO_threshold)
+    x = np.asarray(x, dtype=float)
+    out = np.full_like(x, np.nan)
+
+    valid = np.isfinite(x)
+    hypoxic = valid & (x <= DO_threshold)
+    oxic = valid & (x > DO_threshold)
+
+    out[hypoxic] = (
+        hypoxic_fraction * x[hypoxic] / DO_threshold
     )
 
-def inverse(y):
-    return np.where(
-        y <= hypoxic_fraction,
-        DO_threshold * y / hypoxic_fraction,
-        DO_threshold + (DO_max - DO_threshold) * (y - hypoxic_fraction) / (1 - hypoxic_fraction)
+    out[oxic] = (
+        hypoxic_fraction
+        + (1 - hypoxic_fraction)
+        * (x[oxic] - DO_threshold)
+        / (DO_max - DO_threshold)
     )
+
+    return out
+
+
+def inverse(y):
+    y = np.asarray(y, dtype=float)
+    out = np.full_like(y, np.nan)
+
+    valid = np.isfinite(y)
+    hypoxic = valid & (y <= hypoxic_fraction)
+    oxic = valid & (y > hypoxic_fraction)
+
+    out[hypoxic] = (
+        DO_threshold * y[hypoxic] / hypoxic_fraction
+    )
+
+    out[oxic] = (
+        DO_threshold
+        + (DO_max - DO_threshold)
+        * (y[oxic] - hypoxic_fraction)
+        / (1 - hypoxic_fraction)
+    )
+
+    return out
 
 norm = FuncNorm(
     (forward, inverse),
@@ -1418,29 +1447,5 @@ ani.save(
 #     bbox_inches='tight'
 # )
 
-print("LO bad color:", pcm1.cmap.get_bad())
-print("SSC bad color:", pcm2.cmap.get_bad())
-
-print("LO facecolor for NaN:", pcm1.cmap(norm(np.nan)))
-print("LO norm(0):", norm(0.0))
-print("LO norm(15):", norm(15.0))
-
-print("LO frame min/max:",
-      np.nanmin(DO_LO_frame), np.nanmax(DO_LO_frame))
-print("SSC frame min/max:",
-      np.nanmin(DO_SSC_frame), np.nanmax(DO_SSC_frame))
-
-outside_LO = mask_ps != 1
-outside_SSC = mask_ps_SSC == 0
-
-print("LO finite values outside mask:",
-      np.isfinite(DO_LO[0][outside_LO]).sum())
-
-print("SSC finite values outside mask:",
-      np.isfinite(DO_SSC[0][outside_SSC]).sum())
-
-print("LO finite values after mask:",
-      np.isfinite(DO_LO_plot[0]).sum())
-
-print("SSC finite values after mask:",
-      np.isfinite(DO_SSC_plot[0]).sum())
+print("Color for NaN:", cmap_oxy(norm(np.nan)))
+print("Color for zero:", cmap_oxy(norm(0.0)))
