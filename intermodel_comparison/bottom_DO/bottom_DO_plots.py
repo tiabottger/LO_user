@@ -1167,7 +1167,8 @@ time_SSM = pd.to_datetime(ds_SSM['time'].values)
 fig = plt.figure(figsize=(22, 10))
 
 gs = fig.add_gridspec(
-    2, 3,
+    2, 4,
+    width_ratios=[1, 1, 1, 0.045],
     height_ratios=[1, 3],
     hspace=0.25,
     wspace=0.05
@@ -1182,6 +1183,9 @@ axes = [
     fig.add_subplot(gs[1, 1]),
     fig.add_subplot(gs[1, 2])
 ]
+
+# Dedicated colorbar axis
+cax = fig.add_subplot(gs[1, 3])
 # ------------------------------------------------------------
 # Initial frame
 # ------------------------------------------------------------
@@ -1289,38 +1293,15 @@ date_label = ax_ts.text(
 
 cbar = fig.colorbar(
     pcm2,
-    ax=axes,
-    shrink=0.85,
-    pad=0.02
+    cax=cax
 )
 
 cbar.set_label('DO in bottom 14.6% (mg/L)')
-
-# ------------------------------------------------------------
-# Align hypoxic area time-series panel with the three map panels
-# ------------------------------------------------------------
-
-# Align time-series panel horizontally with the three map panels
-fig.canvas.draw()
-
-map_pos_left = axes[0].get_position().x0
-map_pos_right = axes[2].get_position().x1
-ts_pos = ax_ts.get_position()
-
-ax_ts.set_position([
-    map_pos_left,
-    ts_pos.y0,
-    map_pos_right - map_pos_left,
-    ts_pos.height
-])
 
 # Keep latitude labels only on the leftmost map
 for ax in axes[1:]:
     ax.set_ylabel('')
     ax.tick_params(axis='y', labelleft=False)
-
-# Add a little space between map panels
-fig.subplots_adjust(wspace=0.12)
 
 # ============================================================
 # Animation function
