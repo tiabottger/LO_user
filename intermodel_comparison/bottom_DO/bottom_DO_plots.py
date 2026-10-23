@@ -1127,24 +1127,31 @@ cmap_oxy = cmocean.tools.crop_by_percent(
     N=None
 )
 
+# Missing/invalid cells should not be colored as low oxygen
+cmap_oxy.set_bad('white')
+
 # Common oxygen limits for LO, SSC, and SSM
 DO_min = 0.0
-DO_max = 20.0  
+DO_max = 15.0  
 DO_threshold = 2.0  # mg/L
 
 # Map DO = 2 mg/L to 20% of the colormap
+# Since we cropped the top 20% of the colormap, this becomes 25% of cropped colormap
+hypoxic_fraction = 0.2 / 0.8 # 0.25
+
 def forward(x):
     return np.where(
         x <= DO_threshold,
-        0.2 * x / DO_threshold,
-        0.2 + 0.8 * (x - DO_threshold) / (DO_max - DO_threshold)
+        hypoxic_fraction * x / DO_threshold,
+        hypoxic_fraction + (1 - hypoxic_fraction) 
+        * (x - DO_threshold) / (DO_max - DO_threshold)
     )
 
 def inverse(y):
     return np.where(
-        y <= 0.2,
-        DO_threshold * y / 0.2,
-        DO_threshold + (DO_max - DO_threshold) * (y - 0.2) / 0.8
+        y <= hypoxic_fraction,
+        DO_threshold * y / hypoxic_fraction,
+        DO_threshold + (DO_max - DO_threshold) * (y - hypoxic_fraction) / (1 - hypoxic_fraction)
     )
 
 norm = FuncNorm(
