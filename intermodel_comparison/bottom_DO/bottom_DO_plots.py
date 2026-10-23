@@ -1265,7 +1265,7 @@ ax_ts.set_xlim(time[0], time[-1])
 time_marker = ax_ts.axvline(
     time[0],
     color='black',
-    linestyle='--',
+    linestyle='-',
     linewidth=2
 )
 
@@ -1289,6 +1289,24 @@ cbar = fig.colorbar(
 )
 
 cbar.set_label('DO in bottom 14.6% (mg/L)')
+
+# ------------------------------------------------------------
+# Align hypoxic area time-series panel with the three map panels
+# ------------------------------------------------------------
+
+# Align time-series panel horizontally with the three map panels
+fig.canvas.draw()
+
+map_pos_left = axes[0].get_position().x0
+map_pos_right = axes[2].get_position().x1
+ts_pos = ax_ts.get_position()
+
+ax_ts.set_position([
+    map_pos_left,
+    ts_pos.y0,
+    map_pos_right - map_pos_left,
+    ts_pos.height
+])
 
 # ------------------------------------------------------------
 # Date text
