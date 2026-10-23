@@ -1130,26 +1130,28 @@ cmap_oxy = cmocean.tools.crop_by_percent(
 # Common oxygen limits for LO, SSC, and SSM
 DO_min = 0.0
 DO_max = 20.0  
+DO_threshold = 2.0  # mg/L
 
 # Map DO = 2 mg/L to 20% of the colormap
 def forward(x):
     return np.where(
-        x <= 2.0,
-        0.2 * x / 2.0,
-        0.2 + 0.8 * (x - 2.0) / (DO_max - 2.0)
+        x <= DO_threshold,
+        0.2 * x / DO_threshold,
+        0.2 + 0.8 * (x - DO_threshold) / (DO_max - DO_threshold)
     )
 
 def inverse(y):
     return np.where(
         y <= 0.2,
-        2.0 * y / 0.2,
-        2.0 + (DO_max - 2.0) * (y - 0.2) / 0.8
+        DO_threshold * y / 0.2,
+        DO_threshold + (DO_max - DO_threshold) * (y - 0.2) / 0.8
     )
 
 norm = FuncNorm(
     (forward, inverse),
     vmin=DO_min,
-    vmax=DO_max
+    vmax=DO_max,
+    clip=True
 )
 
 # ------------------------------------------------------------
@@ -1195,11 +1197,11 @@ pcm1 = axes[0].pcolormesh(
     lat_LO,
     DO_LO_plot[0, :, :],
     shading='auto',
-    cmap='viridis_r',
-    # cmap=cmap_oxy,
-    # norm=norm,
-    vmin=DO_min,
-    vmax=DO_max
+    # cmap='viridis_r',
+    # vmin=DO_min,
+    # vmax=DO_max,
+    cmap=cmap_oxy,
+    norm=norm,
 )
 
 pcm2 = axes[1].pcolormesh(
@@ -1207,23 +1209,24 @@ pcm2 = axes[1].pcolormesh(
     lat_SSC,
     DO_SSC_plot[0, :, :],
     shading='auto',
-    cmap='viridis_r',
-    # cmap=cmap_oxy,
-    # norm=norm,
-    vmin=DO_min,
-    vmax=DO_max
+    # cmap='viridis_r',
+    # vmin=DO_min,
+    # vmax=DO_max,
+    cmap=cmap_oxy,
+    norm=norm,
 )
 
 pcm3 = axes[2].tripcolor(
     triang,
     facecolors= DO_elem[0, :],
     shading='flat',
-    cmap='viridis_r',
-    # cmap=cmap_oxy,
-    # norm=norm,
-    vmin=DO_min,
-    vmax=DO_max
+    # cmap='viridis_r',
+    # vmin=DO_min,
+    # vmax=DO_max,
+    cmap=cmap_oxy,
+    norm=norm,
 )
+
 pfun.add_coast(axes[0], color='black', linewidth=0.8)
 pfun.add_coast(axes[1], color='black', linewidth=0.8)
 pfun.add_coast(axes[2], color='black', linewidth=0.8)
@@ -1328,11 +1331,11 @@ def update(frame):
         triang,
         facecolors=DO_elem[frame, :],
         shading='flat',
-        cmap='viridis_r',
-        vmin=DO_min,
-        vmax=DO_max
-        # cmap=cmap_oxy,
-        # norm=norm
+        # cmap='viridis_r',
+        # vmin=DO_min,
+        # vmax=DO_max
+        cmap=cmap_oxy,
+        norm=norm,
     )
     
     # Move the time-series marker to the current animation date
