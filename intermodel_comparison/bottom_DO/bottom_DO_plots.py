@@ -1238,9 +1238,9 @@ pcm3 = axes[2].tripcolor(
     norm=norm,
 )
 
-# pfun.add_coast(axes[0], color='black', linewidth=0.8)
-# pfun.add_coast(axes[1], color='black', linewidth=0.8)
-# pfun.add_coast(axes[2], color='black', linewidth=0.8)
+pfun.add_coast(axes[0], color='black', linewidth=0.8)
+pfun.add_coast(axes[1], color='black', linewidth=0.8)
+pfun.add_coast(axes[2], color='black', linewidth=0.8)
 
 # ------------------------------------------------------------
 # Titles and labels
@@ -1417,3 +1417,30 @@ ani.save(
 #     dpi=300,
 #     bbox_inches='tight'
 # )
+
+print("LO bad color:", pcm1.cmap.get_bad())
+print("SSC bad color:", pcm2.cmap.get_bad())
+
+print("LO facecolor for NaN:", pcm1.cmap(norm(np.nan)))
+print("LO norm(0):", norm(0.0))
+print("LO norm(15):", norm(15.0))
+
+print("LO frame min/max:",
+      np.nanmin(DO_LO_frame), np.nanmax(DO_LO_frame))
+print("SSC frame min/max:",
+      np.nanmin(DO_SSC_frame), np.nanmax(DO_SSC_frame))
+
+outside_LO = mask_ps != 1
+outside_SSC = mask_ps_SSC == 0
+
+print("LO finite values outside mask:",
+      np.isfinite(DO_LO[0][outside_LO]).sum())
+
+print("SSC finite values outside mask:",
+      np.isfinite(DO_SSC[0][outside_SSC]).sum())
+
+print("LO finite values after mask:",
+      np.isfinite(DO_LO_plot[0]).sum())
+
+print("SSC finite values after mask:",
+      np.isfinite(DO_SSC_plot[0]).sum())
