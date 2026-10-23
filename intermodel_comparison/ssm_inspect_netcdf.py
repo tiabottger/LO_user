@@ -246,123 +246,109 @@ try:
         print(f"    Sample indices: {indices}")
         print(f"    Sample values: {var.isel({var.dims[0]: indices}).values}")
 
-    else:
-        print("    Multidimensional time-related variable; "
-                "not reading the entire variable.")
-
-    # ========================================================
-    # 4. SPATIAL GRID AND MESH
-    # ========================================================
-
-    print_section("5. SPATIAL COORDINATES AND MESH")
-
-    spatial_tokens = (
-        "lon", "lat", "longitude", "latitude",
-        "coord", "node", "nele", "element",
-        "connect", "nv", "x", "y", "xc", "yc",
-        "h", "bathym"
-    )
+    print("\n" + "=" * 70)
+    print("TIME VARIABLES AND ATTRIBUTES")
+    print("=" * 70)
 
     for name, var in ds.variables.items():
-        if any(token in name.lower() for token in spatial_tokens):
-            print(
-                f"{name:25s} "
-                f"dims={str(var.dims):35s} "
-                f"shape={str(var.shape):20s} "
-                f"units={get_attr(var, 'units', '')}"
-            )
-
-    print(
-        "\nInspect connectivity metadata (for example, "
-        "nv or element-node arrays) to determine how "
-        "the triangular mesh is represented."
-    )
-
-    # ========================================================
-    # 5. VERTICAL COORDINATES
-    # ========================================================
-
-    print_section("6. VERTICAL COORDINATES")
-
-    vertical_tokens = (
-        "siglay", "siglev", "sigma", "depth",
-        "layer", "level", "zeta", "elevation",
-        "bathym", "h"
-    )
-
-    for name, var in ds.variables.items():
-        if any(token in name.lower() for token in vertical_tokens):
+        if "time" in name.lower() or name.lower() in (
+            "gemss_time", "mat_time"
+        ):
             print(f"\n{name}")
-            print(f"    Dimensions: {var.dims}")
-            print(f"    Shape: {var.shape}")
+            print("  dimensions:", var.dims)
+            print("  attributes:", var.attrs)
 
-            for attr in (
-                "long_name", "units", "positive",
-                "standard_name", "formula_terms"
-            ):
-                if attr in var.attrs:
-                    print(
-                        f"    {attr}: "
-                        f"{short_value(var.attrs[attr])}"
-                    )
+            if var.size <= 10000:
+                print("  values:", var.values.flat[:5])
+                print("  first:", var.values.flat[0])
+                print("  last:", var.values.flat[-1])
 
-            if var.ndim <= 2 and var.size <= 100:
-                print(f"    Values: {var.values}")
+    # ============================================================
+    # 3. INSPECT VAR_9
+    # ============================================================
 
-    # ========================================================
-    # 6. WATER-QUALITY AND PHYSICAL VARIABLES
-    # ========================================================
+    print("\n" + "=" * 70)
+    print("VAR_9 METADATA")
+    print("=" * 70)
 
-    print_section("7. LIKELY MODEL VARIABLES")
-
-    keywords = (
-        "do", "oxygen", "dox", "salt", "salinity",
-        "temp", "temperature", "no3", "nitrate",
-        "nh4", "ammonium", "chl", "chlorophyll",
-        "po4", "phosphate", "turb", "ph", "alk",
-        "dic", "ta", "carbon"
+    # Locate the variable without assuming capitalization.
+    var9_name = next(
+        (name for name in ds.variables
+        if name.lower() == "var_9"),
+        None
     )
 
-    candidates = []
-
-    for name, var in ds.data_vars.items():
-        searchable = (
-            name + " " +
-            str(get_attr(var, "long_name", "")) + " " +
-            str(get_attr(var, "standard_name", ""))
-        ).lower()
-
-        if any(keyword in searchable for keyword in keywords):
-            candidates.append(name)
-
-    if candidates:
-        for name in candidates:
-            var = ds[name]
-            print(f"\n{name}")
-            print(f"    Dimensions: {var.dims}")
-            print(f"    Shape: {var.shape}")
-            print(f"    Units: {get_attr(var, 'units', 'not specified')}")
-            print(f"    Description: {get_attr(var, 'long_name', '')}")
-            inspect_sample(var, ds)
+    if var9_name is None:
+        print("Var_9 not found. Check the variable list above.")
     else:
-        print(
-            "No variables matched the search terms. "
-            "Review the complete variable listing above."
-        )
+        z = ds[var9_name]
 
-    # ========================================================
-    # 7. ALL THREE-DIMENSIONAL AND FOUR-DIMENSIONAL VARIABLES
-    # ========================================================
+        print("Name:", var9_name)
+        print("Dimensions:", z.dims)
+        print("Shape:", z.shape)
+        print("Data type:", z.dtype)
+        print("Attributes:", z.attrs)
 
-    print_section("8. VARIABLES WITH 3 OR MORE DIMENSIONS")
+        # Identify a possible time dimension.
+        time_dims = [
+            dim for dim in z.dims
+            if "time" in dim.lower()
+        ]
 
-    for name, var in ds.data_vars.items():
-        if var.ndim >= 3 and name not in candidates:
-            print(f"\n{name}: dims={var.dims}, shape={var.shape}")
-            print(f"    Units: {get_attr(var, 'units', '')}")
-            inspect_sample(var, ds)
+        if time_dims:
+            time_dim = time_dims[0]
+            ntime = z.sizes[time_dim]
 
+            sample_indices = sorted(set([
+                0, ntime // 2, ntime - 1
+            ]))
 
+            for ti in sample_indices:
+                # Read only one time slice.
+                sample = z.isel({time_dim: ti}).values
+                finite = sample[np.isfinite(sample)]
+
+                print(f"\nVar_9 at {time_dim} index {ti}")
+                print("  shape:", sample.shape)
+                print("  finite count:", finite.size)
+
+                if finite.size:
+                    print("  min:", finite.min())
+                    print("  max:", finite.max())
+                    print("  first 12 values:", finite.flat[:12])
+
+            # Compare first and last sampled times if shapes agree.
+            z_first = z.isel({time_dim: 0}).values
+            z_last = z.isel({time_dim: ntime - 1}).values
+
+            valid = np.isfinite(z_first) & np.isfinite(z_last)
+
+            if valid.any():
+                diff = z_last[valid] - z_first[valid]
+
+                print("\nFirst-to-last depth comparison:")
+                print("  valid paired values:", valid.sum())
+                print("  maximum absolute difference:",
+                    np.max(np.abs(diff)))
+                print("  median difference:", np.median(diff))
+        else:
+            print("No obvious time dimension in Var_9.")
+            print("Inspect its dimensions above to determine its layout.")
+
+    # ============================================================
+    # 5. CHECK NODE-LAYER DIMENSIONS
+    # ============================================================
+
+    print("\n" + "=" * 70)
+    print("DIMENSIONS RELEVANT TO FLATTENED INDEXING")
+    print("=" * 70)
+
+    for dim, size in ds.sizes.items():
+        print(f"{dim:25s} {size}")
+
+    print("\nInspection complete.")
+    ds.close()
+    
 
 finally:
     ds.close()
