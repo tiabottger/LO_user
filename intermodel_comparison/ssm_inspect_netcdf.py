@@ -227,42 +227,28 @@ try:
 
     print_section("4. TIME COORDINATES")
 
-    time_candidates = [
-        name for name in ds.variables
-        if any(
-            token in name.lower()
-            for token in (
-                "time", "date", "itime", "julian"
-            )
-        )
-    ]
+    var = ds['Var_1']
 
-    if not time_candidates:
-        print("No obvious time variables found.")
+    print(f"\nVariable: {name}")
+    print(f"    Dimensions: {var.dims}")
+    print(f"    Shape: {var.shape}")
+    print(f"    Units: {get_attr(var, 'units', 'not specified')}")
+    print(f"    Calendar: {get_attr(var, 'calendar', 'not specified')}")
 
-    for name in time_candidates:
-        var = ds[name]
+    if var.ndim == 0:
+        print(f"    Value: {var.values}")
 
-        print(f"\nVariable: {name}")
-        print(f"    Dimensions: {var.dims}")
-        print(f"    Shape: {var.shape}")
-        print(f"    Units: {get_attr(var, 'units', 'not specified')}")
-        print(f"    Calendar: {get_attr(var, 'calendar', 'not specified')}")
+    elif var.size <= 20:
+        print(f"    Values: {var.values}")
 
-        if var.ndim == 0:
-            print(f"    Value: {var.values}")
+    elif var.ndim == 1:
+        indices = sample_indices(var.size, 5)
+        print(f"    Sample indices: {indices}")
+        print(f"    Sample values: {var.isel({var.dims[0]: indices}).values}")
 
-        elif var.size <= 20:
-            print(f"    Values: {var.values}")
-
-        elif var.ndim == 1:
-            indices = sample_indices(var.size, 5)
-            print(f"    Sample indices: {indices}")
-            print(f"    Sample values: {var.isel({var.dims[0]: indices}).values}")
-
-        else:
-            print("    Multidimensional time-related variable; "
-                  "not reading the entire variable.")
+    else:
+        print("    Multidimensional time-related variable; "
+                "not reading the entire variable.")
 
     # ========================================================
     # 4. SPATIAL GRID AND MESH
