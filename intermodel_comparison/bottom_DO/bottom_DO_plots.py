@@ -1446,6 +1446,3 @@ ani.save(
 #     dpi=300,
 #     bbox_inches='tight'
 # )
-
-print("Color for NaN:", cmap_oxy(norm(np.nan)))
-print("Color for zero:", cmap_oxy(norm(0.0)))
