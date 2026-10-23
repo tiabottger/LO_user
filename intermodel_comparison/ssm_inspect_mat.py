@@ -2,6 +2,7 @@
 from pathlib import Path
 import numpy as np
 from scipy.io import loadmat
+import scipy.io as sio
 
 mat_path = Path(
     "/dat2/tbottger/SSM_ecology/"
