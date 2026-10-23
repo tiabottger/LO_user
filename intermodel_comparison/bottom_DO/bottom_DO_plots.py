@@ -1093,8 +1093,8 @@ DO_SSC_plot = np.where(
 )
 
 # mask nans for plotting
-DO_LO_plot = np.ma.masked_invalid(DO_LO_plot[0, :, :])
-DO_SSC_plot = np.ma.masked_invalid(DO_SSC_plot[0, :, :])
+DO_LO_frame = np.ma.masked_invalid(DO_LO_plot[0, :, :])
+DO_SSC_frame = np.ma.masked_invalid(DO_SSC_plot[0, :, :])
 
 # mask already applied to DO_elem
 # LO and SSC had masks applied to DA for hypoxic area and volume calculations, but DO_elem is already masked to Puget Sound elements.
@@ -1206,7 +1206,7 @@ cax = fig.add_subplot(gs[1, 3])
 pcm1 = axes[0].pcolormesh(
     lon_LO,
     lat_LO,
-    DO_LO_plot[0, :, :],
+    DO_LO_frame,
     shading='auto',
     # cmap='viridis_r',
     # vmin=DO_min,
@@ -1218,7 +1218,7 @@ pcm1 = axes[0].pcolormesh(
 pcm2 = axes[1].pcolormesh(
     lon_SSC,
     lat_SSC,
-    DO_SSC_plot[0, :, :],
+    DO_SSC_frame,
     shading='auto',
     # cmap='viridis_r',
     # vmin=DO_min,
@@ -1328,12 +1328,12 @@ def update(frame):
 
     # Update LiveOcean
     pcm1.set_array(
-        DO_LO_plot[frame, :, :].ravel()
+        np.ma.masked_invalid(DO_LO_plot[frame, :, :]).ravel()
     )
 
     # Update SalishSeaCast
     pcm2.set_array(
-        DO_SSC_plot[frame, :, :].ravel()
+        np.ma.masked_invalid(DO_SSC_plot[frame, :, :]).ravel()
     )
 
     # Remove the previous SSM collection
