@@ -50,11 +50,11 @@ out_pkl_path = (
 )
 
 nc_path = Path(
-    "dat2/tbottger/SSM_ecology/2014_Exist_W3_WQ_hot10_Base4_nodes.nc"
+    "/dat2/tbottger/SSM_ecology/2014_Exist_W3_WQ_hot10_Base4_nodes.nc"
 )
 
 mat_path = Path(
-    "dat2/tbottger/SSM_ecology/2014_Exist_W3_WQ_hot10_Base4_nodes.mat"
+    "/dat2/tbottger/SSM_ecology/2014_Exist_W3_WQ_hot10_Base4_nodes.mat"
 )
 
 # Verified grid dimensions
