@@ -49,7 +49,6 @@ out_pkl_path = (
     f"combined_bottle_{year}_cas7_t1_x11ab_ssc_ssm_ecology.pkl"
 )
 
-# Update these paths if your files are stored elsewhere.
 nc_path = Path(
     "dat2/tbottger/SSM_ecology/2014_Exist_W3_WQ_hot10_Base4_nodes.nc"
 )
@@ -62,6 +61,12 @@ mat_path = Path(
 n_nodes = 16012
 n_layers = 10
 n_flat = n_nodes * n_layers
+
+nc = netcdf_file(
+    str(nc_path),
+    mode="r",
+    mmap=True
+)
 
 # ========================================================
 # VARIABLES TO EXTRACT
@@ -289,13 +294,10 @@ try:
         print(f"  {name}: {dim}")
 
     depth_var = nc.variables[depth_varname]
-    do_var = nc.variables[do_varname]
 
     print("\nDepth variable:", depth_varname, depth_var.shape)
-    print("DO variable:", do_varname, do_var.shape)
 
     assert depth_var.shape == (8760, n_flat)
-    assert do_var.shape == (8760, n_flat)
 
     # --------------------------------------------------------
     # Cache each requested (time, node) profile.
@@ -316,11 +318,11 @@ try:
         ).copy()
 
         profiles = {
-        name: np.asarray(
-            var[t_idx, start:stop],
-            dtype=float
-        ).copy()
-        for name, var in ecology_var_objects.items()
+            name: np.asarray(
+                var[t_idx, start:stop],
+                dtype=float
+            ).copy()
+            for name, var in ecology_var_objects.items()
         }
 
         return depths, profiles
@@ -337,8 +339,8 @@ try:
     model_layer = np.full(n_obs, -1, dtype=int)
     
     model_vars = {
-    name: np.full(n_obs, np.nan)
-    for name in ecology_vars
+        name: np.full(n_obs, np.nan)
+        for name in ecology_vars
     }
 
     for row in range(n_obs):
