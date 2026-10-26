@@ -485,6 +485,20 @@ print(ecology["DO"].describe())
 # Remove the internal row-index column from the final model table.
 ecology = ecology.drop(columns="_obs_index")
 
+# ------------------------------------------------------------
+# CONVERT ECOLOGY CONCENTRATIONS FROM mg/L TO uM to match 
+# conventions in other models
+# ------------------------------------------------------------
+
+# DO: O2 molecular weight = 31.998 g/mol
+ecology["DO"] *= 1000 / 31.998
+
+# NO3: nitrate molecular weight = 62.004 g/mol
+ecology["NO3"] *= 1000 / 62.004
+
+# NH3: ammonia molecular weight = 17.031 g/mol
+ecology["NH3"] *= 1000 / 17.031
+
 # Preserve existing LO, SSC, or SSM entries if present.
 data["ecology"] = ecology
 
