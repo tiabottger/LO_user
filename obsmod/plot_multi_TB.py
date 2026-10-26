@@ -85,8 +85,7 @@ for otype in ['bottle']:#, 'ctd']:
         for gtx in df0_dict.keys(): 
             if gtx == 'ecology': # no NH4 in ecology data
                 continue
-        for gtx in df0_dict.keys():
-            if gtx == 'cas6_v0_live':
+            elif gtx == 'cas6_v0_live':
                 df0_dict[gtx]['DIN'] = df0_dict[gtx]['NO3']
             else:
                 df0_dict[gtx]['DIN'] = df0_dict[gtx]['NO3'] + df0_dict[gtx]['NH4']
