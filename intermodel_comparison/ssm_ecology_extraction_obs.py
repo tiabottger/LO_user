@@ -42,12 +42,12 @@ year = 2014
 
 pkl_path = (
     Ldir["LOo"] / "obsmod" /
-    f"combined_bottle_{year}_cas7_t1_x11ab_ssc_ssm.pkl"
+    f"combined_bottle_{year}_cas7_t1_x11ab_ssc_ssmpnnl.pkl"
 )
 
 out_pkl_path = (
     Ldir["LOo"] / "obsmod" /
-    f"combined_bottle_{year}_cas7_t1_x11ab_ssc_ssm_ecology.pkl"
+    f"combined_bottle_{year}_cas7_t1_x11ab_ssc_ssmpnnl_ecology.pkl"
 )
 
 nc_path = Path(
