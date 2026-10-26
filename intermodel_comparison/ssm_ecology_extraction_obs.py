@@ -26,6 +26,7 @@ from functools import lru_cache
 import numpy as np
 import pandas as pd
 from scipy.io import loadmat, netcdf_file
+from netCDF4 import Dataset
 from scipy.spatial import cKDTree
 
 from lo_tools import Lfun
@@ -62,10 +63,9 @@ n_nodes = 16012
 n_layers = 10
 n_flat = n_nodes * n_layers
 
-nc = netcdf_file(
+nc = Dataset(
     str(nc_path),
-    mode="r",
-    mmap=True
+    mode="r"
 )
 
 # ========================================================
@@ -277,16 +277,6 @@ print(f"Max |time difference|:  {time_difference_min.max():.2f} min")
 # ============================================================
 # OPEN ANNUAL NETCDF
 # ============================================================
-
-print("\nOpening annual Ecology/WQM NetCDF...")
-
-# mmap=True avoids loading the entire multi-gigabyte variables
-# into RAM at file-open time.
-nc = netcdf_file(
-    str(nc_path),
-    mode="r",
-    mmap=True
-)
 
 try:
     print("NetCDF dimensions:")
