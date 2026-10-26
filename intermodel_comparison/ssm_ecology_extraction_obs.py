@@ -270,7 +270,7 @@ obs["_model_time"] = matched_model_times
 obs["_model_time_difference_min"] = time_difference_min
 
 print("\nTime matching:")
-print(f"Mean |time difference|: {time_difference_min.mean():.2f} min")
+print(f"Mean |time difference|: " f"{np.mean(np.abs(time_difference_min)):.2f} min")
 print(f"Max |time difference|:  {time_difference_min.max():.2f} min")
 
 
