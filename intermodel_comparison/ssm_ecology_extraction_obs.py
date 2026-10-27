@@ -174,8 +174,8 @@ layer_top = np.asarray(
 layer_fraction = -(layer_top - layer_thickness / 2)
 
 # Shape: (n_nodes, n_layers)
-# Positive-down reconstructed layer-center depths in metres.
-reconstructed_depths = (
+# Negative-down reconstructed layer-center depths in metres.
+reconstructed_depths = -(
     bottom_depth[:, None] * layer_fraction[None, :]
 )
 
@@ -206,7 +206,7 @@ expected_layers = np.tile(
 
 assert reconstructed_depths.shape == (n_nodes, n_layers)
 assert np.all(np.isfinite(reconstructed_depths))
-assert np.all(reconstructed_depths > 0)
+assert np.all(reconstructed_depths < 0)
 
 assert np.array_equal(node_mapping, expected_nodes)
 assert np.array_equal(layer_mapping, expected_layers)
