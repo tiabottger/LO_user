@@ -282,7 +282,7 @@ try:
     for name, dim in nc.dimensions.items():
         print(f"  {name}: {dim}")
 
-    depth_var = -(nc.variables[depth_varname])
+    depth_var = nc.variables[depth_varname]
 
     print("\nDepth variable:", depth_varname, depth_var.shape)
 
@@ -301,7 +301,7 @@ try:
         start = node_row * n_layers
         stop = start + n_layers
 
-        depths = np.asarray(
+        depths = -np.asarray(
             depth_var[t_idx, start:stop],
             dtype=float
         ).copy()
