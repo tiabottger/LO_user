@@ -1,4 +1,3 @@
-
 # ============================================================
 # Ecology/WQM extraction at observation locations, times, depths
 #
@@ -96,9 +95,6 @@ ecology_var_objects = {
 }
 
 depth_varname = "Var_9"
-# Var_9 has incomplete depth information, and is zero for all but 230 nodes
-# (16012 total). Instead we will use the depth bathymetry from the .mat file to reconstruct 
-# layer depths
 
 # ============================================================
 # LOAD OBSERVATIONS
@@ -139,7 +135,7 @@ if (
 
 
 # ============================================================
-# LOAD MAT HORIZONTAL GRID AND READ DEPTHS
+# LOAD MAT HORIZONTAL GRID
 # ============================================================
 
 print("\nLoading Ecology/WQM horizontal grid...")
@@ -149,36 +145,6 @@ mat = loadmat(
     squeeze_me=True,
     struct_as_record=False
 )
-
-grd = mat["grd"]
-
-# Node-specific positive-down bottom depths
-bottom_depth = np.asarray(
-    grd.horiz.elev_bottom,
-    dtype=float
-)
-
-# Vertical-grid metadata
-layer_thickness = np.asarray(
-    grd.vert.thickness,
-    dtype=float
-)
-
-layer_top = np.asarray(
-    grd.vert.elev_top,
-    dtype=float
-)
-
-# Fraction of the total water depth at each layer center.
-# Assumes elev_top is negative-down and thickness is positive.
-layer_fraction = -(layer_top - layer_thickness / 2)
-
-# Shape: (n_nodes, n_layers)
-# Negative-down reconstructed layer-center depths in metres.
-reconstructed_depths = -(
-    bottom_depth[:, None] * layer_fraction[None, :]
-)
-
 
 horiz = mat["grd"].horiz
 cellidx = mat["grd"].cellidx
@@ -204,10 +170,6 @@ expected_layers = np.tile(
     n_nodes
 )
 
-assert reconstructed_depths.shape == (n_nodes, n_layers)
-assert np.all(np.isfinite(reconstructed_depths))
-assert np.all(reconstructed_depths < 0)
-
 assert np.array_equal(node_mapping, expected_nodes)
 assert np.array_equal(layer_mapping, expected_layers)
 
@@ -215,11 +177,6 @@ print("Horizontal nodes:", len(lon_model))
 print("Layers per node:", n_layers)
 print("Flattened entries:", n_flat)
 print("MAT node/layer mapping verified.")
-
-print("Reconstructed layer-depth array:", reconstructed_depths.shape)
-print("Number of nodes:", n_nodes)
-print("Number of layers:", n_layers)
-print("Layer-center fractions:", layer_fraction)
 
 
 # ============================================================
@@ -325,31 +282,11 @@ try:
     for name, dim in nc.dimensions.items():
         print(f"  {name}: {dim}")
 
-        n_times, n_flat = nc.variables["Var_10"].shape
-
-    assert n_flat == n_nodes * n_layers, (
-        f"Flattened NetCDF dimension {n_flat} does not match "
-        f"{n_nodes} nodes x {n_layers} layers"
-    )
-    
-    for name, dim in nc.dimensions.items():
-        print(f"  {name}: {dim}")
-
-    depth_var = -nc.variables[depth_varname]
+    depth_var = -(nc.variables[depth_varname])
 
     print("\nDepth variable:", depth_varname, depth_var.shape)
 
     assert depth_var.shape == (8760, n_flat)
-
-    print("\nNetCDF time steps:", n_times)
-    print("Flattened node-layer dimension:", n_flat)
-
-    # Check that each requested variable has the expected layout.
-    for name, var in ecology_var_objects.items():
-        assert var.shape == (n_times, n_flat), (
-            f"{name} has shape {var.shape}; "
-            f"expected {(n_times, n_flat)}"
-        )
 
     # --------------------------------------------------------
     # Cache each requested (time, node) profile.
@@ -363,7 +300,7 @@ try:
     def get_profile(t_idx, node_row):
         start = node_row * n_layers
         stop = start + n_layers
-        
+
         depths = np.asarray(
             depth_var[t_idx, start:stop],
             dtype=float
@@ -387,10 +324,10 @@ try:
 
     n_obs = len(obs)
 
-    ssm_z = np.full(n_obs, np.nan)
-    ssm_layer = np.full(n_obs, -1, dtype=int)
-    
-    ssm_vars = {
+    model_z = np.full(n_obs, np.nan)
+    model_layer = np.full(n_obs, -1, dtype=int)
+
+    model_vars = {
         name: np.full(n_obs, np.nan)
         for name in ecology_vars
     }
@@ -418,16 +355,15 @@ try:
 
         layer_idx = int(np.argmin(depth_difference))
 
-        ssm_layer[row] = layer_idx + 1  # 1-based layer number
-        ssm_z[row] = depths[layer_idx]
+        model_layer[row] = layer_idx + 1  # 1-based layer number
+        model_z[row] = depths[layer_idx]
 
         for name, profile in profiles.items():
             if np.isfinite(profile[layer_idx]):
-                ssm_vars[name][row] = profile[layer_idx]
+                model_vars[name][row] = profile[layer_idx]
 
         if (row + 1) % 500 == 0 or row + 1 == n_obs:
             print(f"Processed {row + 1}/{n_obs} observations")
-
 
     # ========================================================
     # BUILD OUTPUT DATAFRAME
@@ -444,23 +380,23 @@ try:
         "z": obs["z"].to_numpy(),
 
         # Model match information
-        "ssm_time": matched_model_times,
-        "ssm_z": ssm_z,
-        "ssm_node": nearest_node + 1,  # Convert to 1-based ID
-        "ssm_layer": ssm_layer,
-        "ssm_lon": lon_model[nearest_node],
-        "ssm_lat": lat_model[nearest_node],
+        "model_time": matched_model_times,
+        "model_z": model_z,
+        "model_node": nearest_node + 1,  # Convert to 1-based ID
+        "model_layer": model_layer,
+        "model_lon": lon_model[nearest_node],
+        "model_lat": lat_model[nearest_node],
         "horizontal_distance_km": horizontal_distance_km,
-        "vertical_difference_m": ssm_z - obs["z"].to_numpy(dtype=float),
+        "vertical_difference_m": model_z - obs["z"].to_numpy(dtype=float),
         "time_difference_min": time_difference_min,
 
-        **ssm_vars
+        **model_vars
     })
 
 finally:
     nc.close()
 
-    
+
 # ============================================================
 # RESTORE AND VERIFY EXACT OBSERVATION ORDER
 # ============================================================
