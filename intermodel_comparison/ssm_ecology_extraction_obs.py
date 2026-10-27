@@ -95,7 +95,7 @@ ecology_var_objects = {
     for name, varname in ecology_vars.items()
 }
 
-# depth_varname = "Var_9"
+depth_varname = "Var_9"
 # Var_9 has incomplete depth information, and is zero for all but 230 nodes
 # (16012 total). Instead we will use the depth bathymetry from the .mat file to reconstruct 
 # layer depths
@@ -355,13 +355,7 @@ try:
         start = node_row * n_layers
         stop = start + n_layers
         
-        # Use the reconstructed depths, not NetCDF Var_9 (depth_var).
         depths = reconstructed_depths[node_row]
-
-        # depths = np.asarray(
-        #     depth_var[t_idx, start:stop],
-        #     dtype=float
-        # ).copy()
 
         profiles = {
             name: np.asarray(
