@@ -545,10 +545,14 @@ ecology = ecology.drop(columns="_obs_index")
 ecology["DO"] *= 1000 / 31.998
 
 # NO3: nitrate molecular weight = 62.004 g/mol
-ecology["NO3"] *= 1000 / 62.004
+# use just molecular weight of N = 14.007 g/mol
+# ecology["NO3"] *= 1000 / 62.004
+ecology["NO3"] *= 1000 / 14.007
 
 # NH3: ammonia molecular weight = 17.031 g/mol
-ecology["NH3"] *= 1000 / 17.031
+# use just molecular weight of N = 14.007 g/mol
+# ecology["NH3"] *= 1000 / 17.031
+ecology["NH3"] *= 1000 / 14.007
 
 # Preserve existing LO, SSC, or SSM entries if present.
 data["ecology"] = ecology

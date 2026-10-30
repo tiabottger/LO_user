@@ -17,6 +17,7 @@ import xarray as xr
 from scipy.spatial import cKDTree
 
 from matplotlib.colors import TwoSlopeNorm
+from matplotlib.colors import LinearSegmentedColormap
 from lo_tools import plotting_functions as pfun
 from lo_tools import Lfun
 
@@ -216,6 +217,29 @@ station_rmse = station_rmse.drop(
 # )
 
 # ============================================================
+# OVERALL RMSE (ALL STATIONS)
+# ============================================================
+
+n_overall = len(sample_df)
+
+ssm_pnnl_rmse_overall = np.sqrt(
+    sample_df['ssm_pnnl_sq_error'].mean()
+)
+
+ecology_rmse_overall = np.sqrt(
+    sample_df['ecology_sq_error'].mean()
+)
+
+rmse_difference_overall = (
+    ssm_pnnl_rmse_overall - ecology_rmse_overall
+)
+
+print(f"Overall n (all stations): {n_overall}")
+print(f"SSM PNNL overall RMSE:    {ssm_pnnl_rmse_overall:.4f}")
+print(f"Ecology overall RMSE:     {ecology_rmse_overall:.4f}")
+print(f"RMSE difference:          {rmse_difference_overall:.4f}")
+
+# ============================================================
 # LOAD GRID FOR MAP BACKGROUND
 # ============================================================
 Ldir = Lfun.Lstart(gridname='cas7')
@@ -239,14 +263,43 @@ rmse_max = max(
     station_rmse['ecology_rmse'].max()
 )
 
+# ============================================================
+# DIFFERENCE COLOR SCALE
+# ============================================================
+
+diff_columns = [
+    'lo_rmse_diff',
+    'ssc_rmse_diff',
+    'ssm_rmse_diff'
+]
+
 diff_max = np.max(
     np.abs(station_rmse['rmse_difference'])
+)
+
+# Round up to a convenient value
+diff_max = np.ceil(diff_max * 10) / 10
+
+print(
+    f"Difference color scale: "
+    f"-{diff_max:.1f} to +{diff_max:.1f}"
 )
 
 diff_norm = TwoSlopeNorm(
     vmin=-diff_max,
     vcenter=0,
     vmax=diff_max
+)
+
+orange_yellow_seafoam = LinearSegmentedColormap.from_list(
+    'orange_yellow_seafoam',
+    [
+        '#C4511B',  # dark orange
+        '#E69F00',  # orange-yellow
+        '#F7F7F7',  # white center
+        '#66BFA3',  # seafoam
+        '#238B70',  # dark seafoam
+    ]
 )
 
 
@@ -275,8 +328,8 @@ sc1 = axes[0].scatter(
     c=station_rmse['ssm_pnnl_rmse'],
     cmap='viridis',
     vmin=0,
-    vmax=rmse_max,
-    #vmax = 2,# set max to 2 since if we're off by 2 we're not capturing hypoxia
+    # vmax=rmse_max,
+    vmax = 2,# set max to 2 since if we're off by 2 we're not capturing hypoxia
     s=90,
     edgecolor='k',
     linewidth=0.6,
@@ -293,8 +346,8 @@ sc2 = axes[1].scatter(
     c=station_rmse['ecology_rmse'],
     cmap='viridis',
     vmin=0,
-    vmax=rmse_max,
-    #vmax = 2,# set max to 2 since if we're off by 2 we're not capturing hypoxia
+    # vmax=rmse_max,
+    vmax = 2,# set max to 2 since if we're off by 2 we're not capturing hypoxia
     s=90,
     edgecolor='k',
     linewidth=0.6,
@@ -309,7 +362,7 @@ sc3 = axes[2].scatter(
     station_rmse['lon'],
     station_rmse['lat'],
     c=station_rmse['rmse_difference'],
-    cmap='RdBu_r',
+    cmap=orange_yellow_seafoam,
     norm=diff_norm,
     s=90,
     edgecolor='k',
