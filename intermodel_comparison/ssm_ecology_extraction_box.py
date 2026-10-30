@@ -382,6 +382,29 @@ for day in range(1, 366):
     )
 
     daily_datasets.append(daily_ds)
+    
+# ========================================================
+# RECONSTRUCT DAILY LAYER-CENTER DEPTHS USING ZETA
+# ========================================================
+
+# Daily mean surface elevation (m).
+# zeta is repeated across the 10 layers.
+zeta_daily = data_vars["zeta"][1][:, 0]
+
+# Reconstruct negative-down layer-center depths.
+# Shape: (local_node, layer)
+reconstructed_depths = -(
+    (
+        bottom_depth[node_indices, None]
+        + zeta_daily[:, None]
+    )
+    * layer_fraction[None, :]
+)
+
+data_vars["layer_depth"] = (
+    ("local_node", "layer"),
+    reconstructed_depths
+)
 
 # ============================================================
 # COMBINE DAILY DATA
