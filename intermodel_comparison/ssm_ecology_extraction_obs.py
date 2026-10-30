@@ -364,6 +364,7 @@ try:
                 dtype=float
             ).copy()
             for name, var in ecology_var_objects.items()
+            if name != "zeta"
         }
 
         return depths, profiles
@@ -421,7 +422,7 @@ try:
         ssm_z[row] = depths[layer_idx]
 
         for name, profile in profiles.items():
-            if np.isfinite(profile[layer_idx]):
+            if name in ssm_vars and np.isfinite(profile[layer_idx]):
                 ssm_vars[name][row] = profile[layer_idx]
 
         if (row + 1) % 500 == 0 or row + 1 == n_obs:
