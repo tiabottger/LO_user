@@ -4,6 +4,7 @@ Ecology SSM WQM box extraction
 
 import os
 import pickle
+import xarray as xr
 from pathlib import Path
 from functools import lru_cache
 
@@ -53,6 +54,17 @@ nc = Dataset(
 )
 
 # ========================================================
+# DEFINE BOX
+# ========================================================
+
+# box extent
+# [-123.29, -122.1, 46.95, 48.93] pugetsoundDO from job_definitions in LO_user/extract/box
+lon0, lon1 = -123.29, -122.1
+lat0, lat1 = 46.95, 48.93
+# note: triangular elements selected by their centroids, then includes all nodes belonging to 
+# those elements, so the actual extent of the extracted data is slightly larger than the box defined above.
+
+# ========================================================
 # VARIABLES TO EXTRACT
 # ========================================================
 
@@ -65,6 +77,7 @@ nc = Dataset(
 # Var_31 TAlk mmol/m3
 
 ecology_vars = {
+    "zeta": "Var_5",
     "DO": "Var_10",
     "NH3": "Var_14",
     "NO3": "Var_15",
@@ -121,13 +134,6 @@ layer_top = np.asarray(
 # Assumes elev_top is negative-down and thickness is positive.
 layer_fraction = -(layer_top - layer_thickness / 2)
 
-# Shape: (n_nodes, n_layers)
-# Negative-down reconstructed layer-center depths in metres.
-reconstructed_depths = -(
-    bottom_depth[:, None] * layer_fraction[None, :]
-)
-
-
 assert len(lon) == n_nodes
 assert len(lat) == n_nodes
 assert len(bottom_depth) == n_nodes
@@ -148,399 +154,281 @@ expected_layers = np.tile(
     n_nodes
 )
 
-assert reconstructed_depths.shape == (n_nodes, n_layers)
-assert np.all(np.isfinite(reconstructed_depths))
-assert np.all(reconstructed_depths < 0)
-
 assert np.array_equal(node_mapping, expected_nodes)
 assert np.array_equal(layer_mapping, expected_layers)
 
-print("Horizontal nodes:", len(lon_model))
+print("Horizontal nodes:", len(lon))
 print("Layers per node:", n_layers)
 print("Flattened entries:", n_flat)
 print("MAT node/layer mapping verified.")
 
-print("Reconstructed layer-depth array:", reconstructed_depths.shape)
 print("Number of nodes:", n_nodes)
 print("Number of layers:", n_layers)
 print("Layer-center fractions:", layer_fraction)
 
-
 # ============================================================
-# BUILD SPHERICAL KD-TREE
+# VERIFY FLATTENED NODE-LAYER MAPPING
 # ============================================================
 
-def lonlat_to_xyz(lon_deg, lat_deg):
-    """Convert longitude/latitude to 3-D unit-sphere coordinates."""
-    lon_rad = np.deg2rad(lon_deg)
-    lat_rad = np.deg2rad(lat_deg)
+node_mapping = np.asarray(
+    cellidx.I
+).ravel()
 
-    return np.column_stack([
-        np.cos(lat_rad) * np.cos(lon_rad),
-        np.cos(lat_rad) * np.sin(lon_rad),
-        np.sin(lat_rad),
-    ])
+layer_mapping = np.asarray(
+    cellidx.K
+).ravel()
 
-
-print("\nBuilding nearest-node KDTree...")
-
-model_xyz = lonlat_to_xyz(lon_model, lat_model)
-tree = cKDTree(model_xyz)
-
-obs_lon = obs["lon"].to_numpy(dtype=float)
-obs_lat = obs["lat"].to_numpy(dtype=float)
-
-obs_xyz = lonlat_to_xyz(obs_lon, obs_lat)
-
-chord_distance, nearest_node = tree.query(obs_xyz)
-
-# nearest_node is zero-based, suitable for NumPy indexing.
-nearest_node = nearest_node.astype(int)
-
-# Convert unit-sphere chord distance to great-circle distance.
-central_angle = 2.0 * np.arcsin(
-    np.clip(chord_distance / 2.0, 0.0, 1.0)
+expected_nodes = np.repeat(
+    np.arange(1, n_nodes + 1),
+    n_layers
 )
 
-earth_radius_km = 6371.0
-horizontal_distance_km = earth_radius_km * central_angle
-
-obs["_model_node"] = nearest_node
-obs["_model_lon"] = lon_model[nearest_node]
-obs["_model_lat"] = lat_model[nearest_node]
-obs["_model_horizontal_distance_km"] = horizontal_distance_km
-
-print(
-    "Mean nearest-node distance: "
-    f"{np.mean(horizontal_distance_km):.3f} km"
-)
-print(
-    "Maximum nearest-node distance: "
-    f"{np.max(horizontal_distance_km):.3f} km"
+expected_layers = np.tile(
+    np.arange(1, n_layers + 1),
+    n_nodes
 )
 
+assert np.array_equal(node_mapping, expected_nodes)
+assert np.array_equal(layer_mapping, expected_layers)
+
+print("MAT node/layer mapping verified.")
 
 # ============================================================
-# CREATE THE VALIDATED HOURLY TIMELINE
+# IDENTIFY NODES INSIDE GEOGRAPHIC BOX
+# ============================================================
+
+node_inside = (
+    (lon >= lon0) & (lon <= lon1) &
+    (lat >= lat0) & (lat <= lat1)
+)
+
+node_indices = np.flatnonzero(node_inside)
+
+if len(node_indices) == 0:
+    raise ValueError(
+        "No Ecology nodes found inside the requested box."
+    )
+
+# Flattened IJK indices for selected nodes.
+# Original ordering is node-major, layer-fast.
+
+ijk_indices = (
+    node_indices[:, None] * n_layers +
+    np.arange(n_layers)[None, :]
+).ravel()
+
+print(f"Nodes selected: {len(node_indices):,}")
+print(f"Layers per node: {n_layers}")
+print(f"Flattened entries: {len(ijk_indices):,}")
+
+# ============================================================
+# SAVE STATIC GRID INFORMATION
+# ============================================================
+
+mesh_ds = xr.Dataset(
+    coords={
+        "local_node": np.arange(len(node_indices)),
+        "layer": np.arange(n_layers),
+        "local_ijk": np.arange(len(ijk_indices)),
+    },
+
+    data_vars={
+        "lon": (
+            "local_node",
+            lon[node_indices]
+        ),
+
+        "lat": (
+            "local_node",
+            lat[node_indices]
+        ),
+
+        "bottom_depth": (
+            "local_node",
+            bottom_depth[node_indices]
+        ),
+
+        "layer_fraction": (
+            "layer",
+            layer_fraction
+        ),
+
+        "original_node_index": (
+            "local_node",
+            node_indices.astype(np.int32)
+        ),
+
+        "original_ijk_index": (
+            "local_ijk",
+            ijk_indices.astype(np.int32)
+        ),
+
+        "original_node_id": (
+            "local_ijk",
+            node_mapping[ijk_indices].astype(np.int32)
+        ),
+
+        "original_layer_id": (
+            "local_ijk",
+            layer_mapping[ijk_indices].astype(np.int32)
+        ),
+    },
+
+    attrs={
+        "description": "Ecology/WQM regional box extraction",
+        "year": 2014,
+        "bbox": f"{lon0}, {lon1}, {lat0}, {lat1}",
+        "vertical_depth_convention": "Negative downward",
+        "flattened_mapping": "Node-major, layer-fast",
+    },
+)
+
+# ============================================================
+# VALIDATE NETCDF DIMENSIONS
+# ============================================================
+
+n_times = len(nc.dimensions["Time"])
+
+assert len(nc.dimensions["IJK"]) == n_flat
+
+for name, var in ecology_var_objects.items():
+
+    assert var.shape == (n_times, n_flat), (
+        f"{name}: unexpected shape {var.shape}"
+    )
+
+print("\nNetCDF dimensions verified.")
+print("Time steps:", n_times)
+print("Flattened entries:", n_flat)
+
+# ============================================================
+# VALIDATE HOURLY TIMELINE
 # ============================================================
 
 model_times = pd.date_range(
-    start=f"{year}-01-01 00:00:00",
-    periods=8760,
+    start=f"2014-01-01 00:00:00",
+    periods=n_times,
     freq="h"
 )
 
-obs_times = pd.DatetimeIndex(obs["time"])
-
-# Convert timestamps to hours relative to January 1.
-hours_from_start = (
-    (obs_times - model_times[0])
-    / pd.Timedelta(hours=1)
-).to_numpy(dtype=float)
-
-# Nearest hourly record.
-time_idx = np.rint(hours_from_start).astype(int)
-
-if np.any((time_idx < 0) | (time_idx >= len(model_times))):
-    raise ValueError("Some observations fall outside the model timeline.")
-
-matched_model_times = model_times.take(time_idx)
-
-time_difference_min = np.abs(
-    (matched_model_times - obs_times)
-    / pd.Timedelta(minutes=1)
-)
-
-obs["_model_time_idx"] = time_idx
-obs["_model_time"] = matched_model_times
-obs["_model_time_difference_min"] = time_difference_min
-
-print("\nTime matching:")
-print(f"Mean |time difference|: " f"{np.mean(np.abs(time_difference_min)):.2f} min")
-print(f"Max |time difference|:  {time_difference_min.max():.2f} min")
-
+print("First model time:", model_times[0])
+print("Last model time:", model_times[-1])
 
 # ============================================================
-# OPEN ANNUAL NETCDF
+# LOOP THROUGH HOURLY DATA, DAILY AVERAGE
 # ============================================================
 
-try:
-    print("NetCDF dimensions:")
-    for name, dim in nc.dimensions.items():
-        print(f"  {name}: {dim}")
+daily_datasets = []
 
-        n_times, n_flat = nc.variables["Var_10"].shape
+for day in range(1, 366):
 
-    assert n_flat == n_nodes * n_layers, (
-        f"Flattened NetCDF dimension {n_flat} does not match "
-        f"{n_nodes} nodes x {n_layers} layers"
-    )
+    start_idx = (day - 1) * 24
+    stop_idx = day * 24
 
-    print("\nNetCDF time steps:", n_times)
-    print("Flattened node-layer dimension:", n_flat)
+    if stop_idx > n_times:
+        break
 
-    # Check that each requested variable has the expected layout.
+    print(f"Processing day {day}/365")
+
+    data_vars = {}
+
     for name, var in ecology_var_objects.items():
-        assert var.shape == (n_times, n_flat), (
-            f"{name} has shape {var.shape}; "
-            f"expected {(n_times, n_flat)}"
+
+        # Read selected nodes and all their vertical layers.
+        # Shape: (24, selected_nodes * n_layers)
+
+        arr = np.ma.filled(
+            var[start_idx:stop_idx, :][:, ijk_indices],
+            np.nan
+        ).astype(float)
+
+        # Daily mean, independently for each node/layer.
+        arr_daily = np.nanmean(
+            arr,
+            axis=0
         )
 
-    # --------------------------------------------------------
-    # Cache each requested (time, node) profile.
-    #
-    # Each profile has 10 layer depths and 10 DO values.
-    # Copies ensure the cache does not depend on the NetCDF
-    # variable's underlying memory map after the read.
-    # --------------------------------------------------------
+        # Restore node/layer dimensions.
+        arr_daily = arr_daily.reshape(
+            len(node_indices),
+            n_layers
+        )
 
-    @lru_cache(maxsize=20000)
-    def get_profile(t_idx, node_row):
-        start = node_row * n_layers
-        stop = start + n_layers
-        
-        depths = reconstructed_depths[node_row]
+        data_vars[name] = (
+            ("local_node", "layer"),
+            arr_daily
+        )
 
-        profiles = {
-            name: np.asarray(
-                var[t_idx, start:stop],
-                dtype=float
-            ).copy()
-            for name, var in ecology_var_objects.items()
-        }
-
-        return depths, profiles
-
-    # ========================================================
-    # EXTRACT EACH OBSERVATION
-    # ========================================================
-
-    print("\nExtracting Ecology/WQM values...")
-
-    n_obs = len(obs)
-
-    ssm_z = np.full(n_obs, np.nan)
-    ssm_layer = np.full(n_obs, -1, dtype=int)
-    
-    ssm_vars = {
-        name: np.full(n_obs, np.nan)
-        for name in ecology_vars
-    }
-
-    for row in range(n_obs):
-        t_idx = int(time_idx[row])
-        node_row = int(nearest_node[row])
-
-        depths, profiles = get_profile(t_idx, node_row)
-
-        obs_z = float(obs.iloc[row]["z"])
-
-        valid_depth = np.isfinite(depths)
-
-        if not valid_depth.any():
-            continue
-
-        # Choose the layer whose center is closest to the
-        # observation depth. Both are assumed positive downward.
-        depth_difference = np.where(
-            valid_depth,
-            np.abs(depths - obs_z),
-            np.inf
+    day_timestamp = np.datetime64(
+        pd.Timestamp(2014, 1, 1) +
+        pd.Timedelta(days=day - 1),
+        "ns"
     )
 
-        layer_idx = int(np.argmin(depth_difference))
+    daily_ds = xr.Dataset(
+        data_vars={
+            name: (
+                ("time", "local_node", "layer"),
+                values[np.newaxis, :, :]
+            )
+            for name, (_, values) in data_vars.items()
+        },
 
-        ssm_layer[row] = layer_idx + 1  # 1-based layer number
-        ssm_z[row] = depths[layer_idx]
-
-        for name, profile in profiles.items():
-            if np.isfinite(profile[layer_idx]):
-                ssm_vars[name][row] = profile[layer_idx]
-
-        if (row + 1) % 500 == 0 or row + 1 == n_obs:
-            print(f"Processed {row + 1}/{n_obs} observations")
-
-
-    # ========================================================
-    # BUILD OUTPUT DATAFRAME
-    # ========================================================
-
-    ecology = pd.DataFrame({
-        "_obs_index": obs["_obs_index"].to_numpy(),
-
-        # Original observation identifiers and targets
-        "cid": obs["cid"].to_numpy(),
-        "lon": obs["lon"].to_numpy(),
-        "lat": obs["lat"].to_numpy(),
-        "time": obs["time"].to_numpy(),
-        "z": obs["z"].to_numpy(),
-
-        # Model match information
-        "ssm_time": matched_model_times,
-        "ssm_z": ssm_z,
-        "ssm_node": nearest_node + 1,  # Convert to 1-based ID
-        "ssm_layer": ssm_layer,
-        "ssm_lon": lon_model[nearest_node],
-        "ssm_lat": lat_model[nearest_node],
-        "horizontal_distance_km": horizontal_distance_km,
-        "vertical_difference_m": ssm_z - obs["z"].to_numpy(dtype=float),
-        "time_difference_min": time_difference_min,
-
-        **ssm_vars
-    })
-
-finally:
-    nc.close()
-
-    
-# ============================================================
-# RESTORE AND VERIFY EXACT OBSERVATION ORDER
-# ============================================================
-
-ecology = (
-    ecology
-    .sort_values("_obs_index")
-    .reset_index(drop=True)
-)
-
-assert len(ecology) == len(obs)
-assert ecology["_obs_index"].is_unique
-assert np.array_equal(
-    ecology["_obs_index"].to_numpy(),
-    np.arange(len(obs))
-)
-
-assert np.array_equal(
-    ecology["cid"].to_numpy(),
-    obs["cid"].to_numpy()
-)
-
-assert np.array_equal(
-    pd.to_datetime(ecology["time"]).to_numpy(),
-    pd.to_datetime(obs["time"]).to_numpy()
-)
-
-assert np.allclose(
-    ecology["z"].to_numpy(dtype=float),
-    obs["z"].to_numpy(dtype=float),
-    equal_nan=True
-)
-
-print("\nObservation alignment checks passed.")
-
-
-# ============================================================
-# EXTRACTION SUMMARY
-# ============================================================
-
-print("\n" + "=" * 60)
-print("ECOLOGY/WQM EXTRACTION SUMMARY")
-print("=" * 60)
-
-print("Observations:", len(obs))
-print("Extracted rows:", len(ecology))
-print("Finite DO values:", np.isfinite(ecology["DO"]).sum())
-print("Missing DO values:", ecology["DO"].isna().sum())
-
-print(
-    "Mean horizontal distance: "
-    f"{ecology['horizontal_distance_km'].mean():.3f} km"
-)
-print(
-    "Maximum horizontal distance: "
-    f"{ecology['horizontal_distance_km'].max():.3f} km"
-)
-
-print(
-    "Mean |vertical difference|: "
-    f"{np.nanmean(np.abs(ecology['vertical_difference_m'])):.3f} m"
-)
-print(
-    "Maximum |vertical difference|: "
-    f"{np.nanmax(np.abs(ecology['vertical_difference_m'])):.3f} m"
-)
-
-print(
-    "Mean |time difference|: "
-    f"{ecology['time_difference_min'].mean():.2f} min"
-)
-print(
-    "Maximum |time difference|: "
-    f"{ecology['time_difference_min'].max():.2f} min"
-)
-
-print("\nDO range (mg/L):")
-print(ecology["DO"].describe())
-
-
-# ============================================================
-# ADD TO DATA DICTIONARY AND SAVE
-# ============================================================
-
-# Remove the internal row-index column from the final model table.
-ecology = ecology.drop(columns="_obs_index")
-
-# ------------------------------------------------------------
-# CONVERT ECOLOGY CONCENTRATIONS FROM mg/L TO uM to match 
-# conventions in other models
-# ------------------------------------------------------------
-
-# DO: O2 molecular weight = 31.998 g/mol
-ecology["DO"] *= 1000 / 31.998
-
-# NO3: nitrate molecular weight = 62.004 g/mol
-# use just molecular weight of N = 14.007 g/mol
-# ecology["NO3"] *= 1000 / 62.004
-ecology["NO3"] *= 1000 / 14.007
-
-# NH3: ammonia molecular weight = 17.031 g/mol
-# use just molecular weight of N = 14.007 g/mol
-# ecology["NH3"] *= 1000 / 17.031
-ecology["NH3"] *= 1000 / 14.007
-
-# Preserve existing LO, SSC, or SSM entries if present.
-data["ecology"] = ecology
-
-# Restore the original observation table without temporary columns.
-temporary_columns = [
-    "_obs_index",
-    "_model_node",
-    "_model_lon",
-    "_model_lat",
-    "_model_horizontal_distance_km",
-    "_model_time_idx",
-    "_model_time",
-    "_model_time_difference_min",
-]
-
-data["obs"] = obs.drop(
-    columns=temporary_columns,
-    errors="ignore"
-).reset_index(drop=True)
-
-# Final alignment checks
-assert len(data["obs"]) == len(data["ecology"])
-assert np.array_equal(
-    data["obs"]["cid"].to_numpy(),
-    data["ecology"]["cid"].to_numpy()
-)
-assert np.array_equal(
-    pd.to_datetime(data["obs"]["time"]).to_numpy(),
-    pd.to_datetime(data["ecology"]["time"]).to_numpy()
-)
-assert np.allclose(
-    data["obs"]["z"].to_numpy(dtype=float),
-    data["ecology"]["z"].to_numpy(dtype=float),
-    equal_nan=True
-)
-
-print("\nSaving combined pickle...")
-
-with open(out_pkl_path, "wb") as f:
-    pickle.dump(
-        data,
-        f,
-        protocol=pickle.HIGHEST_PROTOCOL
+        coords={
+            "time": [day_timestamp],
+            "local_node": np.arange(len(node_indices)),
+            "layer": np.arange(n_layers),
+        },
     )
 
-print(f"Saved to:\n{out_pkl_path}")
+    daily_datasets.append(daily_ds)
+
+# ============================================================
+# COMBINE DAILY DATA
+# ============================================================
+
+annual_ds = xr.concat(
+    daily_datasets,
+    dim="time"
+)
+
+annual_ds = xr.merge(
+    [annual_ds, mesh_ds],
+    compat="override"
+)
+
+annual_ds.attrs.update(mesh_ds.attrs)
+
+# ============================================================
+# VALIDATE OUTPUT
+# ============================================================
+
+print("\nOutput dimensions:")
+print(dict(annual_ds.sizes))
+
+print("\nVariable shapes:")
+
+for name in ecology_vars:
+    print(f"{name}: {annual_ds[name].shape}")
+
+print("\nFinite values:")
+
+for name in ecology_vars:
+    print(
+        f"{name}: "
+        f"{np.isfinite(annual_ds[name].values).sum():,}"
+    )
+
+# ============================================================
+# SAVE
+# ============================================================
+
+annual_ds.to_netcdf(
+    output_file,
+    engine="netcdf4"
+)
+
+print("\nExtraction complete.")
+print(f"Output: {output_file}")
+
+print(annual_ds)
