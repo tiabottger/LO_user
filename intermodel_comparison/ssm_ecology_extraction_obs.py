@@ -1,23 +1,22 @@
 
-# ============================================================
-# Ecology/WQM extraction at observation locations, times, depths
-#
-# Adds Ecology/WQM DO values to an existing LO + SSC
-# observation pickle.
-#
-# Strategy:
-#   1. Load existing observation targets
-#   2. Load horizontal coordinates from the MAT grid
-#   3. Build a nearest-node KDTree
-#   4. Match observations to the nearest hourly timestamp
-#   5. Find the nearest vertical layer using Var_9
-#   6. Extract Var_10 (DO, mg/L) at the matching node/layer/time
-#   7. Preserve exactly one row per observation and original order
-#   8. Save the result under data["ecology"]
-#
-# The annual NetCDF is accessed locally using memory mapping.
-# Only requested node/layer profiles are read.
-# ============================================================
+'''
+Ecology SSM WQM extraction at observation locations, times, depths
+
+Adds Ecology/WQM DO values to an existing LO + SSC
+observation pickle.
+
+Strategy:
+  1. Load existing observation targets
+  2. Load horizontal coordinates from the MAT grid
+  3. Build a nearest-node KDTree
+  4. Match observations to the nearest hourly timestamp
+  5. Find the nearest vertical layer using bathymetry to reconstruct sigma layer depths
+  6. Extract Var_10 (DO, mg/L) at the matching node/layer/time
+  7. Preserve exactly one row per observation and original order
+  8. Save the result under data["ecology"]
+
+The annual NetCDF is accessed locally using memory mapping.
+'''
 
 import pickle
 from pathlib import Path
@@ -81,6 +80,7 @@ nc = Dataset(
 # Var_31 TAlk mmol/m3
 
 ecology_vars = {
+    "zeta": "Var_5",
     "DO": "Var_10",
     "NH3": "Var_14",
     "NO3": "Var_15",
@@ -94,11 +94,6 @@ ecology_var_objects = {
     name: nc.variables[varname]
     for name, varname in ecology_vars.items()
 }
-
-depth_varname = "Var_9"
-# Var_9 has incomplete depth information, and is zero for all but 230 nodes
-# (16012 total). Instead we will use the depth bathymetry from the .mat file to reconstruct 
-# layer depths
 
 # ============================================================
 # LOAD OBSERVATIONS
@@ -173,11 +168,12 @@ layer_top = np.asarray(
 # Assumes elev_top is negative-down and thickness is positive.
 layer_fraction = -(layer_top - layer_thickness / 2)
 
-# Shape: (n_nodes, n_layers)
-# Negative-down reconstructed layer-center depths in metres.
-reconstructed_depths = -(
-    bottom_depth[:, None] * layer_fraction[None, :]
-)
+# constructed later using sea surface height
+# # Shape: (n_nodes, n_layers)
+# # Negative-down reconstructed layer-center depths in metres.
+# reconstructed_depths = -(
+#     bottom_depth[:, None] * layer_fraction[None, :]
+# )
 
 
 horiz = mat["grd"].horiz
@@ -204,10 +200,6 @@ expected_layers = np.tile(
     n_nodes
 )
 
-assert reconstructed_depths.shape == (n_nodes, n_layers)
-assert np.all(np.isfinite(reconstructed_depths))
-assert np.all(reconstructed_depths < 0)
-
 assert np.array_equal(node_mapping, expected_nodes)
 assert np.array_equal(layer_mapping, expected_layers)
 
@@ -216,7 +208,6 @@ print("Layers per node:", n_layers)
 print("Flattened entries:", n_flat)
 print("MAT node/layer mapping verified.")
 
-print("Reconstructed layer-depth array:", reconstructed_depths.shape)
 print("Number of nodes:", n_nodes)
 print("Number of layers:", n_layers)
 print("Layer-center fractions:", layer_fraction)
@@ -355,7 +346,17 @@ try:
         start = node_row * n_layers
         stop = start + n_layers
         
-        depths = reconstructed_depths[node_row]
+        # Hourly sea surface elevation (m)
+        zeta = float(
+            ecology_var_objects["zeta"][t_idx, node_row * n_layers]
+        )
+
+        # Reconstruct layer-center depths accounting for zeta.
+        # Negative downward.
+        depths = -(
+            (bottom_depth[node_row] + zeta) *
+            layer_fraction
+        )
 
         profiles = {
             name: np.asarray(
@@ -381,13 +382,23 @@ try:
     ssm_vars = {
         name: np.full(n_obs, np.nan)
         for name in ecology_vars
+        if name != "zeta"
     }
+    
+    ssm_zeta = np.full(n_obs, np.nan)
 
     for row in range(n_obs):
         t_idx = int(time_idx[row])
         node_row = int(nearest_node[row])
 
         depths, profiles = get_profile(t_idx, node_row)
+        
+         # Save hourly surface elevation for this observation.
+        ssm_zeta[row] = float(
+            ecology_var_objects["zeta"][
+                t_idx, node_row * n_layers
+            ]
+        )
 
         obs_z = float(obs.iloc[row]["z"])
 
