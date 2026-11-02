@@ -28,7 +28,7 @@ input_fp = Path(
 )
 
 out_dir = Path(
-    f"/dat2/tbottger/SSM_ecology/bottom_DO/2014"
+    f"/dat2/tbottger/SSM_ecology/bottom_DO/"
 )
 out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -376,7 +376,7 @@ with xr.open_dataset(input_fp) as ds:
     ds_out.attrs["hypoxia_threshold_mgL"] = HYPOXIC_THRESHOLD
 
     output_fp = out_dir / (
-        f"Ecology_2014_bottom_DO_info.nc"
+        f"SSM_ecology_2014_bottom_DO_info.nc"
     )
 
     ds_out.to_netcdf(
