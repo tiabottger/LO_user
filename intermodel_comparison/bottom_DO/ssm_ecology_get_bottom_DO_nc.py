@@ -1,4 +1,3 @@
-
 """
 Calculate bottom dissolved oxygen and hypoxic-layer thickness
 from an SSM/FVCOM Ecology NetCDF box extraction.
@@ -119,7 +118,7 @@ with xr.open_dataset(input_fp) as ds:
 
     assert oxygen.shape == (Nt, Nnode, Nlay)
     assert zeta.shape == (Nt, Nnode, Nlay)
-    assert layer_thickness.shape == (Nnode, Nlay)
+    assert layer_thickness.shape == (Nlay,)
     
     assert lon.shape == (Nnode,)
     assert lat.shape == (Nnode,)
@@ -172,7 +171,7 @@ with xr.open_dataset(input_fp) as ds:
 
     dz = (
         water_depth[:, :, None]
-        * layer_thickness[None, :, :]
+        * layer_thickness[None, None, :]
     )
 
     assert dz.shape == oxygen.shape
