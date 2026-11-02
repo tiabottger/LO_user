@@ -23,15 +23,13 @@ import xarray as xr
 # USER INPUTS
 # ============================================================
 
-year = 2014
-
 input_fp = Path(
-    f"/dat2/tbottger/SSM_ecology/ecology_box/{year}/"
-    f"Ecology_{year}_box_subset.nc"
+    f"/dat2/tbottger/SSM_ecology/ecology_box/"
+    f"Ecology_2014_box_subset.nc"
 )
 
 out_dir = Path(
-    f"/dat2/tbottger/SSM_ecology/bottom_DO/{year}"
+    f"/dat2/tbottger/SSM_ecology/bottom_DO/2014"
 )
 out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -86,7 +84,7 @@ def add_metadata(ds):
         "thickness calculated from a regional box extraction."
     )
 
-    ds.attrs["year"] = year
+    ds.attrs["year"] = 2014
     ds.attrs["oxygen_units"] = "mg/L"
     ds.attrs["hypoxia_threshold_mgL"] = HYPOXIC_THRESHOLD
 
@@ -373,11 +371,11 @@ with xr.open_dataset(input_fp) as ds:
         "Ecology bottom dissolved oxygen calculated from "
         "daily box extraction."
     )
-    ds_out.attrs["year"] = year
+    ds_out.attrs["year"] = 2014
     ds_out.attrs["hypoxia_threshold_mgL"] = HYPOXIC_THRESHOLD
 
     output_fp = out_dir / (
-        f"Ecology_{year}_bottom_DO_info.nc"
+        f"Ecology_2014_bottom_DO_info.nc"
     )
 
     ds_out.to_netcdf(
