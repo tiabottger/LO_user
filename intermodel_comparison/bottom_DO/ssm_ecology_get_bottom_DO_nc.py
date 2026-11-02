@@ -25,7 +25,7 @@ import xarray as xr
 
 input_fp = Path(
     f"/dat2/tbottger/SSM_ecology/ecology_box/"
-    f"Ecology_2014_box_subset.nc"
+    f"SSM_ecology_2014_box_subset.nc"
 )
 
 out_dir = Path(
