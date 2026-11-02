@@ -108,7 +108,7 @@ with xr.open_dataset(input_fp) as ds:
     oxygen = ds["DO"].values.astype(float)
     
     layer_thickness_fraction = (
-        ds["layer_thickness_fraction"].values.astype(float))
+        ds["layer_fraction"].values.astype(float))
 
     lon = ds["lon"].values
     lat = ds["lat"].values
