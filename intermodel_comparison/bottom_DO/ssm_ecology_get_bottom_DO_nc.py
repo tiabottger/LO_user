@@ -107,8 +107,8 @@ with xr.open_dataset(input_fp) as ds:
     # Daily mean dissolved oxygen
     oxygen = ds["DO"].values.astype(float)
     
-    layer_thickness_fraction = (
-        ds["layer_fraction"].values.astype(float))
+    layer_thickness = (
+        ds["layer_thickness"].values.astype(float))
 
     lon = ds["lon"].values
     lat = ds["lat"].values
@@ -119,7 +119,7 @@ with xr.open_dataset(input_fp) as ds:
 
     assert oxygen.shape == (Nt, Nnode, Nlay)
     assert zeta.shape == (Nt, Nnode, Nlay)
-    assert layer_thickness_fraction.shape == (Nnode, Nlay)
+    assert layer_thickness.shape == (Nnode, Nlay)
     
     assert lon.shape == (Nnode,)
     assert lat.shape == (Nnode,)
@@ -129,7 +129,7 @@ with xr.open_dataset(input_fp) as ds:
     # --------------------------------------------------------
 
     fraction_sums = np.nansum(
-        layer_thickness_fraction,
+        layer_thickness,
         axis=1,
     )
 
@@ -143,7 +143,7 @@ with xr.open_dataset(input_fp) as ds:
             "for every node. Check grd.vert.thickness."
         )
 
-    if np.any(layer_thickness_fraction < 0):
+    if np.any(layer_thickness < 0):
         raise ValueError(
             "Negative layer-thickness fractions found."
         )
@@ -172,7 +172,7 @@ with xr.open_dataset(input_fp) as ds:
 
     dz = (
         water_depth[:, :, None]
-        * layer_thickness_fraction[None, :, :]
+        * layer_thickness[None, :, :]
     )
 
     assert dz.shape == oxygen.shape
