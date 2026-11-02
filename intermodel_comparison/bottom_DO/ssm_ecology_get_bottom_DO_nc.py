@@ -127,29 +127,35 @@ with xr.open_dataset(input_fp) as ds:
     # Validate layer thickness fractions
     # --------------------------------------------------------
 
-    fraction_sums = np.nansum(
-        layer_thickness,
-        axis=1,
-    )
+    # Sum the layer-thickness fractions
+    fraction_sum = np.nansum(layer_thickness)
 
-    if not np.allclose(
-        fraction_sums,
-        1.0,
-        atol=1e-5,
-    ):
-        raise ValueError(
-            "Layer-thickness fractions do not sum to 1 "
-            "for every node. Check grd.vert.thickness."
-        )
-
+    # Validate that fractions are positive
     if np.any(layer_thickness < 0):
         raise ValueError(
             "Negative layer-thickness fractions found."
         )
 
+    # Check for missing values
+    if not np.all(np.isfinite(layer_thickness)):
+        raise ValueError(
+            "Missing or non-finite layer-thickness fractions found."
+        )
+
+    # Check that fractions sum to 1
+    if not np.isclose(
+        fraction_sum,
+        1.0,
+        atol=1e-5,
+    ):
+        raise ValueError(
+            f"Layer-thickness fractions sum to {fraction_sum:.10f}, "
+            "not 1.0. Check grd.vert.thickness."
+        )
+
     print(
-        "Layer-thickness fractions validated: "
-        "sum to 1 at all nodes."
+        f"Layer-thickness fractions validated: "
+        f"sum = {fraction_sum:.10f}"
     )
     
     # --------------------------------------------------------
