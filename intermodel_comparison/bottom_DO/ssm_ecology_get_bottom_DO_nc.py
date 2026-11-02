@@ -1,7 +1,7 @@
 
 """
 Calculate bottom dissolved oxygen and hypoxic-layer thickness
-from an SSM/FVCOM box extraction.
+from an SSM/FVCOM Ecology NetCDF box extraction.
 
 Input dimensions:
     time, siglay, local_node
@@ -39,6 +39,58 @@ HYPOXIC_THRESHOLD = 2.0
 ONE_MGL_THRESHOLD = 1.0
 THREE_MGL_THRESHOLD = 3.0
 
+# ============================================================
+# HELPER FUNCTIONS
+# ============================================================
+
+def add_metadata(ds):
+    """Add descriptive metadata to the output dataset."""
+
+    metadata = {
+        "depth_bot": (
+            "water column depth at mean sea level",
+            "m",
+        ),
+        "DO_bot": (
+            "dissolved oxygen concentration in bottom sigma layer",
+            "mg/L",
+        ),
+        "thick_bot": (
+            "thickness of bottom sigma layer",
+            "m",
+        ),
+        "hyp_thick": (
+            "water column thickness with DO <= 2 mg/L",
+            "m",
+        ),
+        "one_mgL_thick": (
+            "water column thickness with DO <= 1 mg/L",
+            "m",
+        ),
+        "three_mgL_thick": (
+            "water column thickness with DO <= 3 mg/L",
+            "m",
+        ),
+    }
+    
+    for var_name, (long_name, units) in metadata.items():
+        ds[var_name].attrs["long_name"] = long_name
+        ds[var_name].attrs["units"] = units
+
+    ds["depth_bot"].attrs["comment"] = (
+        "Static bathymetric depth; positive downward."
+    )
+
+    ds.attrs["description"] = (
+        "Ecology bottom dissolved oxygen and hypoxic "
+        "thickness calculated from a regional box extraction."
+    )
+
+    ds.attrs["year"] = year
+    ds.attrs["oxygen_units"] = "mg/L"
+    ds.attrs["hypoxia_threshold_mgL"] = HYPOXIC_THRESHOLD
+
+    return ds
 
 # ============================================================
 # PROCESS DATA
@@ -59,25 +111,82 @@ with xr.open_dataset(input_fp) as ds:
 
     # Reconstructed layer-center depths, negative downward
     layer_depth = ds["layer_depth"].values.astype(float)
+    
+    layer_thickness_fraction = (
+        ds["layer_thickness_fraction"].values.astype(float))
 
     lon = ds["lon"].values
     lat = ds["lat"].values
 
-    Nt, Nnode, Nlay = oxygen.shape
+    Nt = len(time)
+    Nnode = len(h)
+    Nlay = oxygen.shape[2]
 
+    assert oxygen.shape == (Nt, Nnode, Nlay)
     assert zeta.shape == (Nt, Nnode, Nlay)
     assert layer_depth.shape == (Nt, Nnode, Nlay)
+    assert layer_thickness_fraction.shape == (Nnode, Nlay)
+    
+    assert lon.shape == (Nnode,)
+    assert lat.shape == (Nnode,)
+    
+    # --------------------------------------------------------
+    # Validate layer thickness fractions
+    # --------------------------------------------------------
+
+    fraction_sums = np.nansum(
+        layer_thickness_fraction,
+        axis=1,
+    )
+
+    if not np.allclose(
+        fraction_sums,
+        1.0,
+        atol=1e-5,
+    ):
+        raise ValueError(
+            "Layer-thickness fractions do not sum to 1 "
+            "for every node. Check grd.vert.thickness."
+        )
+
+    if np.any(layer_thickness_fraction < 0):
+        raise ValueError(
+            "Negative layer-thickness fractions found."
+        )
+
+    print(
+        "Layer-thickness fractions validated: "
+        "sum to 1 at all nodes."
+    )
+    
+    # --------------------------------------------------------
+    # Extract node-level variables
+    # --------------------------------------------------------
 
     # zeta is repeated across layers in the current extraction.
     zeta_node = zeta[:, :, 0]
 
     # Bottom layer is the last layer.
     DO_bot = oxygen[:, :, -1].copy()
-
-    # Physical water-column depth
+    
+        # Total water-column depth, positive downward.
     water_depth = h[None, :] + zeta_node
 
-    # Mask invalid columns
+    # Physical thickness of each layer:
+    # dz = layer-thickness fraction * total water depth
+    # Shape: (time, local_node, layer)
+
+    dz = (
+        water_depth[:, :, None]
+        * layer_thickness_fraction[None, :, :]
+    )
+
+    assert dz.shape == oxygen.shape
+    
+    # --------------------------------------------------------
+    # Validate water-column geometry
+    # --------------------------------------------------------
+
     valid_column = (
         np.isfinite(h)[None, :]
         & np.isfinite(zeta_node)
@@ -85,20 +194,121 @@ with xr.open_dataset(input_fp) as ds:
         & (water_depth > 0)
     )
 
-    DO_bot[~valid_column] = np.nan
+    # Set invalid layer thicknesses to NaN.
+    dz = np.where(
+        valid_column[:, :, None],
+        dz,
+        np.nan,
+    )
 
     # --------------------------------------------------------
-    # Bottom-layer thickness
+    # Allocate output arrays
     # --------------------------------------------------------
-    #
-    # The layer-center depths alone do not provide exact
-    # layer interfaces. Do not calculate exact thicknesses
-    # from center-depth differences.
-    #
-    # Add layer_thickness_fraction to the extraction from
-    # the Ecology MAT grid metadata before calculating this.
-    #
+
+    DO_bot = np.full(
+        (Nt, Nnode),
+        np.nan,
+    )
+
+    thick_bot = np.full(
+        (Nt, Nnode),
+        np.nan,
+    )
+
+    hyp_thick = np.full(
+        (Nt, Nnode),
+        np.nan,
+    )
+
+    one_mgL_thick = np.full(
+        (Nt, Nnode),
+        np.nan,
+    )
+
+    three_mgL_thick = np.full(
+        (Nt, Nnode),
+        np.nan,
+    )
+
     # --------------------------------------------------------
+    # Calculate bottom DO and hypoxic thickness
+    # --------------------------------------------------------
+
+    print("Calculating bottom DO and hypoxic thickness...")
+
+    for t in range(Nt):
+
+        if t % 30 == 0:
+            print(
+                f"  Processing day {t + 1}/{Nt}"
+            )
+
+        oxy = oxygen[t, :, :]
+        layer_dz = dz[t, :, :]
+
+        valid_oxygen = np.isfinite(oxy)
+
+        # A column is valid if geometry is valid and at least
+        # one oxygen layer contains valid data.
+        valid = (
+            valid_column[t, :]
+            & np.any(valid_oxygen, axis=1)
+        )
+
+        # ----------------------------------------------------
+        # Bottom-layer oxygen and thickness
+        # ----------------------------------------------------
+
+        DO_bot[t, :] = oxy[:, -1]
+        thick_bot[t, :] = layer_dz[:, -1]
+
+        # ----------------------------------------------------
+        # Hypoxic and low-oxygen thickness
+        # ----------------------------------------------------
+
+        hyp_thick[t, :] = np.sum(
+            np.where(
+                valid_oxygen
+                & (oxy <= HYPOXIC_THRESHOLD),
+                layer_dz,
+                0.0,
+            ),
+            axis=1,
+        )
+
+        one_mgL_thick[t, :] = np.sum(
+            np.where(
+                valid_oxygen
+                & (oxy <= ONE_MGL_THRESHOLD),
+                layer_dz,
+                0.0,
+            ),
+            axis=1,
+        )
+
+        three_mgL_thick[t, :] = np.sum(
+            np.where(
+                valid_oxygen
+                & (oxy <= THREE_MGL_THRESHOLD),
+                layer_dz,
+                0.0,
+            ),
+            axis=1,
+        )
+
+        # ----------------------------------------------------
+        # Mask invalid columns
+        # ----------------------------------------------------
+
+        for arr in (
+            DO_bot,
+            thick_bot,
+            hyp_thick,
+            one_mgL_thick,
+            three_mgL_thick,
+        ):
+            arr[t, ~valid] = np.nan
+
 
     # --------------------------------------------------------
     # Assemble output
@@ -114,6 +324,22 @@ with xr.open_dataset(input_fp) as ds:
                 ("time", "local_node"),
                 DO_bot,
             ),
+            "thick_bot": (
+                ("time", "local_node"),
+                thick_bot,
+            ),
+            "hyp_thick": (
+                ("time", "local_node"),
+                hyp_thick,
+            ),
+            "one_mgL_thick": (
+                ("time", "local_node"),
+                one_mgL_thick,
+            ),
+            "three_mgL_thick": (
+                ("time", "local_node"),
+                three_mgL_thick,
+            ),
             "lon": (
                 ("local_node",),
                 lon,
@@ -121,6 +347,10 @@ with xr.open_dataset(input_fp) as ds:
             "lat": (
                 ("local_node",),
                 lat,
+            ),
+             "original_node_index": (
+                ("local_node",),
+                ds["original_node_index"].values,
             ),
         },
         coords={
