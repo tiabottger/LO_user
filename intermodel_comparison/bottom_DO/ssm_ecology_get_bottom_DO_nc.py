@@ -106,9 +106,6 @@ with xr.open_dataset(input_fp) as ds:
 
     # Daily mean dissolved oxygen
     oxygen = ds["DO"].values.astype(float)
-
-    # Reconstructed layer-center depths, negative downward
-    layer_depth = ds["layer_depth"].values.astype(float)
     
     layer_thickness_fraction = (
         ds["layer_thickness_fraction"].values.astype(float))
@@ -122,7 +119,6 @@ with xr.open_dataset(input_fp) as ds:
 
     assert oxygen.shape == (Nt, Nnode, Nlay)
     assert zeta.shape == (Nt, Nnode, Nlay)
-    assert layer_depth.shape == (Nt, Nnode, Nlay)
     assert layer_thickness_fraction.shape == (Nnode, Nlay)
     
     assert lon.shape == (Nnode,)
