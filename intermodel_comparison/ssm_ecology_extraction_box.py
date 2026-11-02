@@ -252,6 +252,11 @@ mesh_ds = xr.Dataset(
             "layer",
             layer_fraction
         ),
+        
+        "layer_thickness": (
+            "layer",
+            layer_thickness
+        ),
 
         "original_node_index": (
             "local_node",
