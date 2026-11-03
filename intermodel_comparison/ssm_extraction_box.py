@@ -38,7 +38,9 @@ year = 2014
 # [-123.29, -122.1, 46.95, 48.93] pugetsoundDO from job_definitions in LO_user/extract/box
 lon0, lon1 = -123.29, -122.1
 lat0, lat1 = 46.95, 48.93
-# note: triangular elements selected by their centroids, then includes all nodes belonging to 
+# to match the Ecology data, method changed to select nodes directly on whether coordinates
+# fall inside bounding box
+# previous version: triangular elements selected by their centroids, then includes all nodes belonging to 
 # those elements, so the actual extent of the extracted data is slightly larger than the box defined above.
 
 ssm_base_url = f"https://s3.kopah.uw.edu/ssm/wqm/{year}/"
@@ -124,35 +126,33 @@ with ssm_fs.open(grid_url, "rb") as remote_file:
         )
 
         lon, lat = transformer.transform(x, y)
+        
+        # Convert 1-based FVCOM node indices to 0-based indices
+        nv0 = nv.astype(np.int64) - 1
 
         # Identify nodes inside the requested box.
         node_inside = (
             (lon >= lon0) & (lon <= lon1) &
             (lat >= lat0) & (lat <= lat1)
         )
-
-        # FVCOM connectivity is normally 1-based.
-        nv0 = nv.astype(np.int64) - 1
-
-        # Select elements whose centroids fall in the box.
-        elem_lon = lon[nv0].mean(axis=1)
-        elem_lat = lat[nv0].mean(axis=1)
-
-        elem_inside = (
-            (elem_lon >= lon0) & (elem_lon <= lon1) &
-            (elem_lat >= lat0) & (elem_lat <= lat1)
+        
+        node_indices = np.flatnonzero(node_inside)
+        
+        elem_inside = np.all(
+            node_inside[nv0],
+            axis=1
         )
 
         elem_indices = np.flatnonzero(elem_inside)
-
-        # Include all nodes required by selected elements.
-        node_indices = np.unique(nv0[elem_inside].ravel())
 
         # Remap original node indices to local subset indices.
         old_to_new = np.full(len(x), -1, dtype=np.int64)
         old_to_new[node_indices] = np.arange(len(node_indices))
 
         nv_subset = old_to_new[nv0[elem_indices]]
+        
+        assert np.all(nv_subset >= 0)
+        assert nv_subset.max() < len(node_indices)
 
         print(f"Nodes inside geographic box: {node_inside.sum():,}")
         print(f"Nodes required by selected elements: {len(node_indices):,}")
