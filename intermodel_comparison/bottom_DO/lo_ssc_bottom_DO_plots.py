@@ -442,7 +442,7 @@ hypoxic_LO = DO_LO <= 2.0
 hyp_count_LO = np.sum(hypoxic_LO, axis=0)
 
 hyp_count_LO_plot = np.where(
-    mask_ps_SSC,
+    mask_ps,
     hyp_count_LO,
     np.nan
 )
