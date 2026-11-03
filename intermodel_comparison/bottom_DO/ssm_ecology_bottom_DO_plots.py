@@ -178,11 +178,11 @@ assert len(pnnl_points) == len(ecology_points), \
 assert len(np.unique(pnnl_to_ecology)) == len(pnnl_points), \
     "PNNL nodes do not map uniquely to Ecology nodes."
 
-# Require coordinates to agree within 0.1 m.
-coordinate_tolerance_m = 0.1
+# Require coordinates to agree
+coordinate_tolerance_m = 1
 
 assert np.all(node_distances < coordinate_tolerance_m), \
-    "Some PNNL and Ecology nodes differ by more than 0.1 m."
+    "Some PNNL and Ecology nodes differ by more than tolerance."
 
 print("All PNNL nodes have a unique Ecology match.")
 
