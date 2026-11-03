@@ -244,10 +244,6 @@ print(
 # MAP PUGET SOUND MASK ONTO SSM NODES
 # ============================================================
 
-mask_ps = basin_mask_ds['mask_pugetsound'].values
-mask_lon = basin_mask_ds['lon_rho'].values
-mask_lat = basin_mask_ds['lat_rho'].values
-
 mask_points = np.column_stack((
     mask_lon.ravel(),
     mask_lat.ravel()
