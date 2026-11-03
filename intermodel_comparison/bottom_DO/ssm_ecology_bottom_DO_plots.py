@@ -706,7 +706,7 @@ hyp_count_SSM = np.sum(
 )
 
 hyp_count_SSM_plot = np.where(
-    mask_elem_ecology,
+    mask_elem,
     hyp_count_SSM,
     np.nan
 )
@@ -817,7 +817,8 @@ lat_pad = 0.02
 # Color map
 # cmap = "jet"
 cmap= plt.cm.jet.copy()
-cmap.set_under('white'),
+cmap.set_under('white')
+cmap.set_bad('white')
 
 # ------------------------------------------------------------
 # Plot
@@ -851,7 +852,7 @@ pcm2 = axes[1].tripcolor(
     facecolors=hyp_count_ecology_plot,
     shading='flat',
     cmap=cmap,
-    vmin=0,
+    vmin=0.001,
     vmax=140
 )
 
