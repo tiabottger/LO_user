@@ -704,6 +704,13 @@ hyp_count_SSM = np.sum(
     (DO_elem_SSM <= 2.0) & np.isfinite(DO_elem_SSM),
     axis=0
 )
+
+hyp_count_SSM_plot = np.where(
+    mask_elem_ecology,
+    hyp_count_SSM,
+    np.nan
+)
+
 valid_count_SSM = np.sum(
     np.isfinite(DO_elem_SSM),
     axis=0
@@ -783,7 +790,12 @@ triang_ecology = mtri.Triangulation(
     triangles=triangles_ecology
 )
 
-triang_ecology.set_mask(~mask_elem_ecology)
+invalid_ecology = (
+    ~mask_elem_ecology
+    | ~np.isfinite(hyp_occurrence_ecology_plot)
+)
+
+triang_ecology.set_mask(invalid_ecology)
 
 # ------------------------------------------------------------
 # Common map extent
@@ -814,8 +826,12 @@ cmap.set_under('white'),
 fig, axes = plt.subplots(
     1, 2,
     figsize=(20, 7),
-    constrained_layout=True
+    constrained_layout=True,
+    facecolor = 'white'
 )
+
+for ax in axes:
+    ax.set_facecolor('white')
 
 # ------------------------------------------------------------
 # SSM
@@ -823,7 +839,7 @@ fig, axes = plt.subplots(
 
 pcm1 = axes[0].tripcolor(
     triang_SSM,
-    facecolors=hyp_count_ecology_plot,
+    facecolors=hyp_count_SSM_plot,
     shading='flat',
     cmap=cmap,
     vmin=0.001,
@@ -872,55 +888,7 @@ plt.savefig(
 )
 
 # ============================================================
-# COMMON MAP EXTENT
-# ============================================================
-
-# for ax in axes.flat:
-#     ax.set_xlim(
-#         np.nanmin(mask_lon),
-#         np.nanmax(mask_lon)
-#     )
-#     ax.set_ylim(
-#         np.nanmin(mask_lat),
-#         np.nanmax(mask_lat)
-#     )
-    
-# ============================================================
-# MAP EXTENT — PUGET SOUND ONLY
-# ============================================================
-
-ps_lon = mask_lon[mask_ps == 1]
-ps_lat = mask_lat[mask_ps == 1]
-
-lon_min = np.nanmin(ps_lon)
-lon_max = np.nanmax(ps_lon)
-lat_min = np.nanmin(ps_lat)
-lat_max = np.nanmax(ps_lat)
-
-# Add small padding
-lon_pad = 0.02
-lat_pad = 0.02
-
-for ax in axes.flat:
-    ax.set_xlim(
-        lon_min - lon_pad,
-        lon_max + lon_pad
-    )
-    ax.set_ylim(
-        lat_min - lat_pad,
-        lat_max + lat_pad
-    )
-
-
-plt.savefig(
-    out_dir / 'hypoxic_occurrence_comparison.png',
-    dpi=300,
-    bbox_inches='tight'
-)
-plt.show()
-
-# ============================================================
-# Average DO concentration in bottom 14.6%
+# Average DO concentration in bottom cell
 # ============================================================
 
 mean_DO_SSM = np.nanmean(DO_elem_SSM, axis=0)
@@ -1210,7 +1178,6 @@ ax_ts.plot(
     time,
     hyp_area_SSM_ecology_ts,
     color='purple',
-    linewidth=2,
     label='SSM Ecology'
 )
 
