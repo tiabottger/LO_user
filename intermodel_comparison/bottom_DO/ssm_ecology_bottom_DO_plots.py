@@ -407,6 +407,22 @@ if thick_bot_elem_ecology.ndim == 1:
     thick_bot_elem_ecology[~mask_elem_ecology] = np.nan
 else:
     thick_bot_elem_ecology[:, ~mask_elem_ecology] = np.nan
+    
+print('\nARRAY DIMENSIONS:')
+for name, arr in [
+    ('DO_elem_SSM', DO_elem_SSM),
+    ('hyp_thick_elem_SSM', hyp_thick_elem_SSM),
+    ('depth_elem_SSM', depth_elem_SSM),
+    ('thick_bot_elem_SSM', thick_bot_elem_SSM),
+    ('DO_elem_ecology', DO_elem_ecology),
+    ('hyp_thick_elem_ecology', hyp_thick_elem_ecology),
+    ('depth_elem_ecology', depth_elem_ecology),
+    ('thick_bot_elem_ecology', thick_bot_elem_ecology),
+]:
+    print(f'{name}: shape={arr.shape}, ndim={arr.ndim}')
+
+print('mask_elem:', mask_elem.shape)
+print('mask_elem_ecology:', mask_elem_ecology.shape)
 
 # ============================================================
 # PNNL SALISH SEA MODEL
