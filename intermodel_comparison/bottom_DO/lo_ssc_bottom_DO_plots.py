@@ -441,6 +441,12 @@ hypoxic_LO = DO_LO <= 2.0
 # Count hypoxic occurrences
 hyp_count_LO = np.sum(hypoxic_LO, axis=0)
 
+hyp_count_LO_plot = np.where(
+    mask_ps_SSC,
+    hyp_count_LO,
+    np.nan
+)
+
 # Count valid model output times
 valid_count_LO = np.sum(np.isfinite(DO_LO), axis=0)
 
@@ -469,6 +475,12 @@ hypoxic_SSC = DO_SSC <= 2.0
 # hypoxic_SSC = DO_SSC <= 3.0
 
 hyp_count_SSC = np.sum(hypoxic_SSC, axis=0)
+
+hyp_count_SSC_plot = np.where(
+    mask_ps_SSC,
+    hyp_count_SSC,
+    np.nan
+)
 
 valid_count_SSC = np.sum(np.isfinite(DO_SSC), axis=0)
 
@@ -527,8 +539,8 @@ cmap.set_under('white'),
 pcm1 = axes[0].pcolormesh(
     lon_LO,
     lat_LO,
-    # hyp_occurrence_LO, # as percentage
-    hyp_occurrence_LO_plot,
+    # hyp_occurrence_LO_plot, # as percentage
+    hyp_count_LO_plot,
     shading='auto',
     cmap = cmap,
     vmin=0.001,
@@ -562,8 +574,8 @@ cbar.set_label(
 pcm2 = axes[1].pcolormesh(
     lon_SSC,
     lat_SSC,
-    # hyp_occurrence_SSC,
-    hyp_occurrence_SSC_plot,
+    # hyp_occurrence_SSC_plot,
+    hyp_count_SSC_plot,
     shading='auto',
     cmap= cmap,
     vmin=0.001,
