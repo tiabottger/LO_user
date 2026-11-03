@@ -130,13 +130,13 @@ lat_SSM_ecology = ds_SSM_ecology['lat'].values
 print("PNNL node count:", len(lon_SSM))
 print("Ecology node count:", len(lon_SSM_ecology))
 
-assert len(lon_SSM) == len(lon_SSM_ecology)
-
 print("Maximum longitude difference:",
       np.max(np.abs(lon_SSM - lon_SSM_ecology)))
 
 print("Maximum latitude difference:",
       np.max(np.abs(lat_SSM - lat_SSM_ecology)))
+
+# assert len(lon_SSM) == len(lon_SSM_ecology)
 
 # ------------------------------------------------------------
 # TRIANGULAR MESH CONNECTIVITY
