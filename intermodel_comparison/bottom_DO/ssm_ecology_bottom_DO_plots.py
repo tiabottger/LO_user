@@ -559,7 +559,7 @@ ax.tick_params(
 ax.tick_params(
     axis='both', labelsize=11)
 
-ax.set_title('Hypoxic Area — Bottom Cell%', fontsize=13)
+ax.set_title('Hypoxic Area — Bottom Cell', fontsize=13)
 
 plt.savefig(
     out_dir / 'ssm_ecology_hypoxic_area_comparison.png',
@@ -616,97 +616,96 @@ plt.savefig(
 )
 plt.show()
 
-# ============================================================
-# PLOT HYPOXIC VOLUME (% OF TOTAL VOLUME)
-# ============================================================
+# # ============================================================
+# # PLOT HYPOXIC VOLUME (% OF TOTAL VOLUME)
+# # ============================================================
 
-hyp_volume_pct_SSM = (
-    hyp_volume_SSM_ts / total_volume_SSM
-) * 100
+# hyp_volume_pct_SSM = (
+#     hyp_volume_SSM_ts / total_volume_SSM
+# ) * 100
 
-hyp_volume_pct_SSM_ecology = (
-    hyp_volume_SSM_ecology_ts / total_volume_SSM_ecology
-) * 100
+# hyp_volume_pct_SSM_ecology = (
+#     hyp_volume_SSM_ecology_ts / total_volume_SSM_ecology
+# ) * 100
 
-print('Plotting hypoxic volume as percent of total volume')
+# print('Plotting hypoxic volume as percent of total volume')
 
-fig, ax = plt.subplots(figsize=(11, 4.5))
+# fig, ax = plt.subplots(figsize=(11, 4.5))
 
-ax.plot(
-    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
-    hyp_volume_pct_SSM,
-    linewidth=2,
-    color='green',
-    label='Salish Sea Model'
-)
+# ax.plot(
+#     pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+#     hyp_volume_pct_SSM,
+#     linewidth=2,
+#     color='green',
+#     label='Salish Sea Model'
+# )
 
-ax.plot(
-    time_SSM_ecology,
-    hyp_volume_pct_SSM_ecology,
-    linewidth=2,
-    color='purple',
-    label='SSM Ecology'
-)
+# ax.plot(
+#     time_SSM_ecology,
+#     hyp_volume_pct_SSM_ecology,
+#     linewidth=2,
+#     color='purple',
+#     label='SSM Ecology'
+# )
 
-ax.set_ylabel(
-    'Hypoxic Volume (% of Total Volume)',
-    fontsize=12
-)
+# ax.set_ylabel(
+#     'Hypoxic Volume (% of Total Volume)',
+#     fontsize=12
+# )
 
-ax.set_xlabel('Date', fontsize=12)
+# ax.set_xlabel('Date', fontsize=12)
 
-ax.grid(
-    visible=True,
-    axis='both',
-    color='silver',
-    linestyle='--'
-)
+# ax.grid(
+#     visible=True,
+#     axis='both',
+#     color='silver',
+#     linestyle='--'
+# )
 
-ax.legend(loc='upper right')
+# ax.legend(loc='upper right')
 
-ax.xaxis.set_major_formatter(
-    mdates.DateFormatter('%Y-%m')
-)
+# ax.xaxis.set_major_formatter(
+#     mdates.DateFormatter('%Y-%m')
+# )
 
-ax.tick_params(
-    axis='x',
-    rotation=30
-)
+# ax.tick_params(
+#     axis='x',
+#     rotation=30
+# )
 
-ax.tick_params(
-    axis='both',
-    labelsize=11
-)
+# ax.tick_params(
+#     axis='both',
+#     labelsize=11
+# )
 
-ax.set_title(
-    'Hypoxic Volume (% of Total Volume)',
-    fontsize=13
-)
+# ax.set_title(
+#     'Hypoxic Volume (% of Total Volume)',
+#     fontsize=13
+# )
 
-plt.savefig(
-    out_dir / 'ssm_ecology_hypoxic_volume_percent_comparison.png',
-    dpi=300,
-    bbox_inches='tight'
-)
+# plt.savefig(
+#     out_dir / 'ssm_ecology_hypoxic_volume_percent_comparison.png',
+#     dpi=300,
+#     bbox_inches='tight'
+# )
 
-plt.show()
+# plt.show()
 
 # ============================================================
 # HYPOXIA OCCURRENCE
 # ============================================================
 
 # ------------------------------------------------------------
-# SSM
+# SSM PNNL
 # ------------------------------------------------------------
 
 # Percentage of valid daily time steps with hypoxic bottom DO.
 hyp_count_SSM = np.sum(
-    hypoxic_elem & np.isfinite(DO_elem),
+    (DO_elem_SSM <= 2.0) & np.isfinite(DO_elem_SSM),
     axis=0
 )
-
 valid_count_SSM = np.sum(
-    np.isfinite(DO_elem),
+    np.isfinite(DO_elem_SSM),
     axis=0
 )
 
@@ -719,21 +718,85 @@ np.divide(
     where=valid_count_SSM > 0
 )
 
+hyp_occurrence_SSM_plot = np.where(
+    mask_elem,
+    hyp_occurrence_SSM,
+    np.nan
+)
+
+# ------------------------------------------------------------
+# Ecology
+# ------------------------------------------------------------
+
+hyp_count_ecology = np.sum(
+    (DO_elem_ecology <= 2.0) & np.isfinite(DO_elem_ecology),
+    axis=0
+)
+
+hyp_count_ecology_plot = np.where(
+    mask_elem_ecology,
+    hyp_count_ecology,
+    np.nan
+)
+
+valid_count_ecology = np.sum(
+    np.isfinite(DO_elem_ecology),
+    axis=0
+)
+
+hyp_occurrence_ecology = np.full(n_elem, np.nan)
+
+np.divide(
+    100 * hyp_count_ecology,
+    valid_count_ecology,
+    out=hyp_occurrence_ecology,
+    where=valid_count_ecology > 0
+)
+
+hyp_occurrence_ecology_plot = np.where(
+    mask_elem_ecology,
+    hyp_occurrence_ecology,
+    np.nan
+)
+
 # ============================================================
 # PLOT HYPOXIA OCCURRENCE
 # ============================================================
 
 print('Plotting hypoxic ocurrence in bottom 14.6% of water column')
 
-occurrence_max = np.nanmax([
-    np.nanmax(hyp_occurrence_SSM)
-])
+# ------------------------------------------------------------
+# Triangular meshes
+# ------------------------------------------------------------
 
-hyp_occurrence_SSM_plot = np.where(
-    mask_elem,
-    hyp_occurrence_SSM,
-    np.nan
+triang_SSM = mtri.Triangulation(
+    lon_SSM,
+    lat_SSM,
+    triangles=triangles
 )
+
+triang_SSM.set_mask(~mask_elem)
+
+triang_ecology = mtri.Triangulation(
+    lon_SSM_ecology,
+    lat_SSM_ecology,
+    triangles=triangles_ecology
+)
+
+triang_ecology.set_mask(~mask_elem_ecology)
+
+# ------------------------------------------------------------
+# Common map extent
+# ------------------------------------------------------------
+
+ps_lon = mask_lon[mask_ps == 1]
+ps_lat = mask_lat[mask_ps == 1]
+
+lon_min, lon_max = np.nanmin(ps_lon), np.nanmax(ps_lon)
+lat_min, lat_max = np.nanmin(ps_lat), np.nanmax(ps_lat)
+
+lon_pad = 0.02
+lat_pad = 0.02
 
 # ------------------------------------------------------------
 # Color map
@@ -743,28 +806,6 @@ hyp_occurrence_SSM_plot = np.where(
 # cmap = "jet"
 cmap= plt.cm.jet.copy()
 cmap.set_under('white'),
-
-
-# ------------------------------------------------------------
-# SSM triangular mesh
-# ------------------------------------------------------------
-
-triang = mtri.Triangulation(
-    lon_SSM, lat_SSM, triangles=triangles
-)
-
-# Mask triangles outside Puget Sound
-triang.set_mask(~mask_elem)
-
-# Common spatial extent
-ps_lon = mask_lon[mask_ps == 1]
-ps_lat = mask_lat[mask_ps == 1]
-
-lon_min, lon_max = np.nanmin(ps_lon), np.nanmax(ps_lon)
-lat_min, lat_max = np.nanmin(ps_lat), np.nanmax(ps_lat)
-
-lon_pad = 0.02
-lat_pad = 0.02
 
 # ------------------------------------------------------------
 # Plot
@@ -781,32 +822,54 @@ fig, axes = plt.subplots(
 # ------------------------------------------------------------
 
 pcm1 = axes[0].tripcolor(
-    triang,
-    facecolors=hyp_occurrence_SSM_plot,
+    triang_SSM,
+    facecolors=hyp_count_ecology_plot,
     shading='flat',
     cmap=cmap,
     vmin=0.001,
     # vmax=occurrence_max
     vmax=140
 )
+pcm2 = axes[1].tripcolor(
+    triang_ecology,
+    facecolors=hyp_count_ecology_plot,
+    shading='flat',
+    cmap=cmap,
+    vmin=0,
+    vmax=140
+)
 
-axes[0].set_title('SSM: Bottom Hypoxia (DO ≤ 2.0 mg/L) Occurrence [Days]')
-axes[0].set_xlabel('Longitude')
-axes[0].set_xlim(lon_min - lon_pad, lon_max + lon_pad)
-axes[0].set_ylim(lat_min - lat_pad, lat_max + lat_pad)
+axes[0].set_title('SSM PNNL')
+axes[1].set_title('SSM Ecology')
 
-pfun.add_coast(axes[2], color='black', linewidth=0.8)
+for ax in axes:
+    pfun.add_coast(ax, color='black', linewidth=0.8)
+
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+
+    ax.set_xlim(lon_min - lon_pad, lon_max + lon_pad)
+    ax.set_ylim(lat_min - lat_pad, lat_max + lat_pad)
 
 cbar = fig.colorbar(
     pcm1,
-    ax=axes[0]
+    ax=axes,
+    shrink=0.85,
+    pad=0.02
 )
 
-cbar.set_label(
-    #'Hypoxic occurrence (%)'
-    'Hypoxic days count'
+cbar.set_label('Hypoxic days count')
+
+fig.suptitle(
+    'Bottom Hypoxia (DO ≤ 2.0 mg/L) Occurrence',
+    fontsize=14
 )
 
+plt.savefig(
+    out_dir / 'ssm_ecology_hypoxic_occurrence_comparison.png',
+    dpi=300,
+    bbox_inches='tight'
+)
 
 # ============================================================
 # COMMON MAP EXTENT
@@ -860,18 +923,31 @@ plt.show()
 # Average DO concentration in bottom 14.6%
 # ============================================================
 
-mean_DO_SSM = np.nanmean(DO_elem, axis=0)
+mean_DO_SSM = np.nanmean(DO_elem_SSM, axis=0)
+mean_DO_ecology = np.nanmean(DO_elem_ecology, axis=0)
 
 # Apply Puget Sound mask
-mean_DO_SSM_plot = np.where(mask_elem, mean_DO_SSM, np.nan)
+mean_DO_SSM_plot = np.where(
+    mask_elem,
+    mean_DO_SSM,
+    np.nan
+)
+
+mean_DO_ecology_plot = np.where(
+    mask_elem_ecology,
+    mean_DO_ecology,
+    np.nan
+)
 
 # Common color scale for both models
 DO_min = np.nanmin([
-    np.nanmin(mean_DO_SSM_plot)
+    np.nanmin(mean_DO_SSM_plot),
+    np.nanmin(mean_DO_ecology_plot)
 ])
 
 DO_max = np.nanmax([
-    np.nanmax(mean_DO_SSM_plot)
+    np.nanmax(mean_DO_SSM_plot),
+    np.nanmax(mean_DO_ecology_plot)
 ])
 
 print("Mean bottom 14.6% DO range:")
@@ -891,11 +967,11 @@ fig, axes = plt.subplots(
 )
 
 # ------------------------------------------------------------
-# Salish Sea Model
+# PNNL Salish Sea Model
 # ------------------------------------------------------------
 
 pcm1 = axes[0].tripcolor(
-    triang,
+    triang_SSM,
     facecolors= mean_DO_SSM_plot,
     shading='flat',
     cmap='viridis_r',
@@ -903,14 +979,32 @@ pcm1 = axes[0].tripcolor(
     vmax=DO_max
 )
 
-axes[0].set_title('Salish Sea Model')
-axes[0].set_xlabel('Longitude')
-axes[0].set_ylabel('Latitude')
+axes[0].set_title('SSM PNNL')
 
-pfun.add_coast(axes[0], color='black', linewidth=0.8)
 # ------------------------------------------------------------
-# Same colorbar for all
+# Ecology
 # ------------------------------------------------------------
+
+pcm2 = axes[1].tripcolor(
+    triang_ecology,
+    facecolors=mean_DO_ecology_plot,
+    shading='flat',
+    cmap='viridis_r',
+    vmin=DO_min,
+    vmax=DO_max
+)
+
+axes[1].set_title('SSM Ecology')
+
+for ax in axes:
+    pfun.add_coast(ax, color='black', linewidth=0.8)
+
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+
+    ax.set_xlim(lon_min, lon_max)
+    ax.set_ylim(lat_min, lat_max)
+
 
 cbar = fig.colorbar(
     pcm1,
@@ -919,15 +1013,10 @@ cbar = fig.colorbar(
     pad=0.02
 )
 
-cbar.set_label('Mean DO in bottom 14.6% (mg/L)')
-
-# limits from map extent above
-for ax in axes:
-    ax.set_xlim(lon_min, lon_max)
-    ax.set_ylim(lat_min, lat_max)
+cbar.set_label('Mean DO in bottom cell (mg/L)')
 
 plt.savefig(
-    out_dir / 'mean_DO_bottom146_comparison.png',
+    out_dir / 'ssm_ecology_mean_DO_bottomcell_comparison.png',
     dpi=300,
     bbox_inches='tight'
 )
@@ -1030,47 +1119,57 @@ norm = FuncNorm(
 # Time
 # ------------------------------------------------------------
 
-time_SSM = pd.to_datetime(ds_SSM['time'].values)
+time = pd.to_datetime(ds_SSM['time'].values)
+
+assert len(time) == DO_elem_SSM.shape[0]
+assert len(time) == DO_elem_ecology.shape[0]
 
 # ------------------------------------------------------------
 # Create figure
 # ------------------------------------------------------------
 
-fig = plt.figure(figsize=(22, 10))
+fig = plt.figure(figsize=(18, 10))
 
 gs = fig.add_gridspec(
-    2, 4,
-    width_ratios=[1, 1, 1, 0.045],
+    2, 3,
+    width_ratios=[1, 1, 0.045],
     height_ratios=[1, 3],
     hspace=0.25,
-    wspace=0.05
+    wspace=0.12
 )
 
 # Time series spans all three columns
-ax_ts = fig.add_subplot(gs[0, :])
+ax_ts = fig.add_subplot(gs[0, :2])
 
 # Map panels
-axes = [
-    fig.add_subplot(gs[1, 0]),
-    fig.add_subplot(gs[1, 1]),
-    fig.add_subplot(gs[1, 2])
-]
+ax_SSM = fig.add_subplot(gs[1, 0])
+ax_ecology = fig.add_subplot(gs[1, 1])
+
+axes = [ax_SSM, ax_ecology]
 
 # Dedicated colorbar axis
-cax = fig.add_subplot(gs[1, 3])
+cax = fig.add_subplot(gs[1, 2])
 # ------------------------------------------------------------
 # Initial frame
 # ------------------------------------------------------------
 
 pcm1 = axes[0].tripcolor(
-    triang,
-    facecolors= DO_elem[0, :],
+    triang_SSM,
+    facecolors= DO_elem_SSM[0, :],
     shading='flat',
     # cmap='viridis_r',
     # vmin=DO_min,
     # vmax=DO_max,
     cmap=cmap_oxy,
     norm=norm,
+)
+
+pcm2 = ax_ecology.tripcolor(
+    triang_ecology,
+    facecolors=DO_elem_ecology[0, :],
+    shading='flat',
+    cmap=cmap_oxy,
+    norm=norm
 )
 
 pfun.add_coast(axes[0], color='black', linewidth=0.8)
@@ -1080,9 +1179,17 @@ pfun.add_coast(axes[0], color='black', linewidth=0.8)
 # Titles and labels
 # ------------------------------------------------------------
 
-axes[0].set_title('Salish Sea Model: PNNL')
+ax_SSM.set_title('SSM PNNL')
+ax_ecology.set_title('SSM Ecology')
+
 for ax in axes:
     ax.set_facecolor('white')
+    
+    pfun.add_coast(
+        ax,
+        color='black',
+        linewidth=0.8
+    )
     
     ax.set_xlabel('Longitude')
     ax.set_ylabel('Latitude')
@@ -1094,17 +1201,22 @@ for ax in axes:
 # Plot hypoxic area time series
 # ------------------------------------------------------------
 
-# Use the same dates as the animation frames
-time = pd.to_datetime(time_SSM)
-
 ax_ts.plot(
     time, hyp_area_SSM_ts,
-    color='green', label='SSM'
+    color='green', label='SSM PNNL'
+)
+
+ax_ts.plot(
+    time,
+    hyp_area_SSM_ecology_ts,
+    color='purple',
+    linewidth=2,
+    label='SSM Ecology'
 )
 
 ax_ts.set_ylabel('Hypoxic area (km²)')
 ax_ts.set_title('Daily hypoxic area (DO ≤ 2 mg/L)')
-ax_ts.legend(loc='upper right', ncol=3)
+ax_ts.legend(loc='upper right', ncol=2)
 ax_ts.grid(True, alpha=0.3)
 
 ax_ts.xaxis.set_major_locator(mdates.MonthLocator())
@@ -1136,7 +1248,7 @@ cbar = fig.colorbar(
     cax=cax
 )
 
-cbar.set_label('DO in bottom 14.6% (mg/L)')
+cbar.set_label('DO in bottom cell (mg/L)')
 
 # Keep latitude labels only on the leftmost map
 for ax in axes[1:]:
@@ -1148,30 +1260,37 @@ for ax in axes[1:]:
 # ============================================================
 
 def update(frame):
-    global pcm1
+    global pcm1, pcm2
 
     # Remove the previous SSM collection
     pcm1.remove()
+    pcm2.remove()
 
-    # Recreate the SSM plot for this frame
-    pcm1 = axes[0].tripcolor(
-        triang,
-        facecolors=DO_elem[frame, :],
+    # PNNL
+    pcm1 = ax_SSM.tripcolor(
+        triang_SSM,
+        facecolors=DO_elem_SSM[frame, :],
         shading='flat',
-        # cmap='viridis_r',
-        # vmin=DO_min,
-        # vmax=DO_max
         cmap=cmap_oxy,
-        norm=norm,
+        norm=norm
     )
-    
+
+    # Ecology
+    pcm2 = ax_ecology.tripcolor(
+        triang_ecology,
+        facecolors=DO_elem_ecology[frame, :],
+        shading='flat',
+        cmap=cmap_oxy,
+        norm=norm
+    )
+
     # Move the time-series marker to the current animation date
     current_time = time[frame]
 
     time_marker.set_xdata([current_time, current_time])
     date_label.set_text(current_time.strftime('%Y-%m-%d'))
 
-    return pcm1, time_marker, date_label
+    return pcm1, pcm2, time_marker, date_label
 
 
 # ============================================================
@@ -1200,7 +1319,7 @@ ani = FuncAnimation(
 
 
 ani.save(
-    out_dir / 'daily_DO_bottom146_comparison.mp4',
+    out_dir / 'ssm_ecology_daily_DO_bottom146_comparison.mp4',
     writer='ffmpeg',
     fps=6,
     dpi=200
