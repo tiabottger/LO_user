@@ -386,6 +386,28 @@ hyp_thick_elem_ecology[:, ~mask_elem_ecology] = np.nan
 depth_elem_SSM[:, ~mask_elem] = np.nan
 depth_elem_ecology[:, ~mask_elem_ecology] = np.nan
 
+# Depth and bottom thickness may be either time-dependent
+# or static, so handle both possibilities.
+if depth_elem_SSM.ndim == 1:
+    depth_elem_SSM[~mask_elem] = np.nan
+else:
+    depth_elem_SSM[:, ~mask_elem] = np.nan
+
+if depth_elem_ecology.ndim == 1:
+    depth_elem_ecology[~mask_elem_ecology] = np.nan
+else:
+    depth_elem_ecology[:, ~mask_elem_ecology] = np.nan
+
+if thick_bot_elem_SSM.ndim == 1:
+    thick_bot_elem_SSM[~mask_elem] = np.nan
+else:
+    thick_bot_elem_SSM[:, ~mask_elem] = np.nan
+
+if thick_bot_elem_ecology.ndim == 1:
+    thick_bot_elem_ecology[~mask_elem_ecology] = np.nan
+else:
+    thick_bot_elem_ecology[:, ~mask_elem_ecology] = np.nan
+
 # ============================================================
 # PNNL SALISH SEA MODEL
 # HYPOXIC AREA AND VOLUME
@@ -464,9 +486,13 @@ hyp_volume_SSM_ecology_ts = np.nansum(
 # ------------------------------------------------------------
 # PNNL SALISH SEA MODEL
 # ------------------------------------------------------------
+depth_for_volume_SSM = (
+    depth_elem_SSM if depth_elem_SSM.ndim == 1
+    else depth_elem_SSM[0]
+)
 
 total_volume_SSM = np.nansum(
-    depth_elem_SSM[0] * element_area_km2
+    depth_for_volume_SSM * element_area_km2
 ) / 1e3
 
 print(f'Salish Sea Model PNNL total volume: {total_volume_SSM:.2f} km3')
@@ -474,9 +500,13 @@ print(f'Salish Sea Model PNNL total volume: {total_volume_SSM:.2f} km3')
 # ------------------------------------------------------------
 # Ecology
 # ------------------------------------------------------------
+depth_for_volume_ecology = (
+    depth_elem_ecology if depth_elem_ecology.ndim == 1
+    else depth_elem_ecology[0]
+)
 
 total_volume_SSM_ecology = np.nansum(
-    depth_elem_ecology[0] * element_area_km2
+    depth_for_volume_ecology * element_area_km2
 ) / 1e3
 
 print(
