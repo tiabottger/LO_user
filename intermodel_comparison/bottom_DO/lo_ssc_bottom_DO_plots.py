@@ -44,7 +44,7 @@ out_dir.mkdir(parents=True, exist_ok=True)
 
 # READ MODEL OUTPUT
 ds_LO = xr.open_dataset(
-    in_dir / 'cas7_t1y14_x11ab_pugetsound_2014_bottom_DO_info.nc'
+    in_dir / 'cas7_t1_x11ab_pugetsound_2014_bottom_DO_info.nc'
 )
 ds_SSC = xr.open_dataset(
     in_dir / 'SSC_2014_pugetsound_bottom_DO_info.nc'
