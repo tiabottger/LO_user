@@ -27,7 +27,7 @@ import xarray as xr
 year = 2014
 
 input_fp = Path(
-    f"/dat2/tbottger/SSM_pnnl/ssm_pugetsound/{year}/SSM_{year}_box_subset.nc"
+    f"/dat2/tbottger/SSM_pnnl/ssm_box/{year}/SSM_{year}_box_subset.nc"
 )
 
 out_dir = Path(
