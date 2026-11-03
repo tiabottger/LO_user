@@ -103,7 +103,7 @@ DA = DA * mask_rho
 DA_ps = DA * mask_ps  # mask out non-Puget Sound areas
 
 # ============================================================
-# SSM CELL AREA
+# SSM PNNL CELL AREA
 # ============================================================
 DO_SSM = ds_SSM['DO_bot'].values
 hyp_thick_SSM = ds_SSM['hyp_thick'].values
@@ -115,6 +115,28 @@ n_elem = ds_SSM.sizes['elem']
 
 lon_SSM = ds_SSM['lon'].values
 lat_SSM = ds_SSM['lat'].values
+
+# ============================================================
+# SSM ECOLOGY CELL AREA
+# ============================================================
+DO_SSM_ecology = ds_SSM_ecology['DO_bot'].values
+hyp_thick_SSM_ecology = ds_SSM_ecology['hyp_thick'].values
+thick_bot_SSM_ecology = ds_SSM_ecology['thick_bot'].values
+depth_bot_SSM_ecology = ds_SSM_ecology['depth_bot'].values
+
+lon_SSM_ecology = ds_SSM_ecology['lon'].values
+lat_SSM_ecology = ds_SSM_ecology['lat'].values
+
+print("PNNL node count:", len(lon_SSM))
+print("Ecology node count:", len(lon_SSM_ecology))
+
+assert len(lon_SSM) == len(lon_SSM_ecology)
+
+print("Maximum longitude difference:",
+      np.max(np.abs(lon_SSM - lon_SSM_ecology)))
+
+print("Maximum latitude difference:",
+      np.max(np.abs(lat_SSM - lat_SSM_ecology)))
 
 # ------------------------------------------------------------
 # TRIANGULAR MESH CONNECTIVITY

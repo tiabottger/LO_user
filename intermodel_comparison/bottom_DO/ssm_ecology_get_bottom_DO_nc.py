@@ -386,7 +386,7 @@ with xr.open_dataset(input_fp) as ds:
     ds_out.attrs["hypoxia_threshold_mgL"] = HYPOXIC_THRESHOLD
 
     output_fp = out_dir / (
-        f"SSM_ecology_2014_bottom_DO_info.nc"
+        f"SSM_ecology_2014_pugetsound_bottom_DO_info.nc"
     )
 
     ds_out.to_netcdf(
