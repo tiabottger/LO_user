@@ -377,30 +377,16 @@ thick_bot_elem_ecology = node_to_element(
 # Exclude elements outside Puget Sound
 # ------------------------------------------------------------
 
-print('\nARRAY DIMENSIONS:')
-for name, arr in [
-    ('DO_elem_SSM', DO_elem_SSM),
-    ('hyp_thick_elem_SSM', hyp_thick_elem_SSM),
-    ('depth_elem_SSM', depth_elem_SSM),
-    ('thick_bot_elem_SSM', thick_bot_elem_SSM),
-    ('DO_elem_ecology', DO_elem_ecology),
-    ('hyp_thick_elem_ecology', hyp_thick_elem_ecology),
-    ('depth_elem_ecology', depth_elem_ecology),
-    ('thick_bot_elem_ecology', thick_bot_elem_ecology),
-]:
-    print(f'{name}: shape={arr.shape}, ndim={arr.ndim}')
-
-print('mask_elem:', mask_elem.shape)
-print('mask_elem_ecology:', mask_elem_ecology.shape)
-
+# Time-dependent variables
 DO_elem_SSM[:, ~mask_elem] = np.nan
 hyp_thick_elem_SSM[:, ~mask_elem] = np.nan
 
 DO_elem_ecology[:, ~mask_elem_ecology] = np.nan
 hyp_thick_elem_ecology[:, ~mask_elem_ecology] = np.nan
 
-depth_elem_SSM[:, ~mask_elem] = np.nan
-depth_elem_ecology[:, ~mask_elem_ecology] = np.nan
+# Static depth variables (one value per element)
+depth_elem_SSM[~mask_elem] = np.nan
+depth_elem_ecology[~mask_elem_ecology] = np.nan
 
 # Depth and bottom thickness may be either time-dependent
 # or static, so handle both possibilities.
