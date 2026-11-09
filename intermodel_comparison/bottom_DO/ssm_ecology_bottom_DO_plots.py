@@ -931,7 +931,7 @@ print('Plotting average DO in bottom 14.6% of water column')
 
 fig, axes = plt.subplots(
     1, 2,
-    figsize=(18, 6),
+    figsize=(12, 6),
     constrained_layout=True
 )
 
