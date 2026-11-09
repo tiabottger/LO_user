@@ -423,7 +423,9 @@ def node_to_element(values, triangles):
 DO_elem = node_to_element(DO_SSM, triangles)
 hyp_thick_elem = node_to_element(hyp_thick_SSM, triangles)
 depth_elem = node_to_element(depth_bot_SSM, triangles)
+depth_elem_SSM = node_to_element(depth_bot_SSM, triangles)
 thick_bot_elem = node_to_element(thick_bot_SSM, triangles)
+thick_bot_elem_SSM = node_to_element(thick_bot_SSM, triangles)
 
 # ------------------------------------------------------------
 # Ecology element values
@@ -459,10 +461,20 @@ hyp_thick_elem_ecology[:, ~mask_elem_ecology] = np.nan
 # Depth and bottom thickness may be either time-dependent
 # or static, so handle both possibilities.
 
+if depth_elem_SSM.ndim == 1:
+    depth_elem_SSM[~mask_elem] = np.nan
+else:
+    depth_elem_SSM[:, ~mask_elem] = np.nan
+
 if depth_elem_ecology.ndim == 1:
     depth_elem_ecology[~mask_elem_ecology] = np.nan
 else:
     depth_elem_ecology[:, ~mask_elem_ecology] = np.nan
+
+if thick_bot_elem_SSM.ndim == 1:
+    thick_bot_elem_SSM[~mask_elem] = np.nan
+else:
+    thick_bot_elem_SSM[:, ~mask_elem] = np.nan
 
 if thick_bot_elem_ecology.ndim == 1:
     thick_bot_elem_ecology[~mask_elem_ecology] = np.nan
@@ -625,8 +637,13 @@ total_volume_SSC = np.nansum(
 # SALISH SEA MODEL
 # ------------------------------------------------------------
 
+depth_for_volume_SSM = (
+    depth_elem_SSM if depth_elem_SSM.ndim == 1
+    else depth_elem_SSM[0]
+)
+
 total_volume_SSM = np.nansum(
-    depth_elem[0] * area_km2
+    depth_for_volume_SSM * element_area_km2
 ) / 1e3
 
 depth_for_volume_ecology = (
@@ -682,7 +699,7 @@ ax.set_ylabel(
     'Hypoxic Area (km$^2$)', fontsize=12)
 ax.set_xlabel('Date', fontsize=12)
 ax.grid(visible=True, axis='both', color='silver', linestyle='--')
-ax.legend(loc='upper right')
+ax.legend(loc='upper left')
 
 ax.xaxis.set_major_formatter(
     mdates.DateFormatter('%Y-%m')
