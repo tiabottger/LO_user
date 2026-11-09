@@ -548,7 +548,7 @@ ax.set_ylabel(
     'Hypoxic Area (km$^2$)', fontsize=12)
 ax.set_xlabel('Date', fontsize=12)
 ax.grid(visible=True, axis='both', color='silver', linestyle='--')
-ax.legend(loc='upper right')
+ax.legend(loc='upper left')
 
 ax.xaxis.set_major_formatter(
     mdates.DateFormatter('%Y-%m')
