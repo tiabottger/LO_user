@@ -94,6 +94,12 @@ DA_ps = DA * mask_ps  # mask out non-Puget Sound areas
 # ============================================================
 # EXTRACT SSM PNNL 
 # ============================================================
+CT_bot_SSM = ds_SSM['CT_bot'].values
+CT_surf_SSM = ds_SSM['CT_surf'].values
+
+SA_bot_SSM = ds_SSM['SA_bot'].values
+SA_surf_SSM = ds_SSM['SA_surf'].values
+
 DO_SSM = ds_SSM['DO_bot'].values
 hyp_thick_SSM = ds_SSM['hyp_thick'].values
 thick_bot_SSM = ds_SSM['thick_bot'].values
@@ -110,6 +116,12 @@ lat_SSM = ds_SSM['lat'].values
 # ============================================================
 # EXTRACT SSM ECOLOGY
 # ============================================================
+CT_bot_SSM_ecology = ds_SSM_ecology['CT_bot'].values
+CT_surf_SSM_ecology = ds_SSM_ecology['CT_surf'].values
+
+SA_bot_SSM_ecology = ds_SSM_ecology['SA_bot'].values
+SA_surf_SSM_ecology = ds_SSM_ecology['SA_surf'].values
+
 DO_SSM_ecology = ds_SSM_ecology['DO_bot'].values
 hyp_thick_SSM_ecology = ds_SSM_ecology['hyp_thick'].values
 thick_bot_SSM_ecology = ds_SSM_ecology['thick_bot'].values
@@ -345,6 +357,8 @@ hyp_thick_elem_SSM = node_to_element(hyp_thick_SSM, triangles)
 depth_elem_SSM = node_to_element(depth_bot_SSM, triangles)
 thick_bot_elem_SSM = node_to_element(thick_bot_SSM, triangles)
 
+SA_surf_elem_SSM = node_to_element(SA_surf_SSM, triangles)
+
 # ------------------------------------------------------------
 # Ecology element values
 # ------------------------------------------------------------
@@ -369,6 +383,11 @@ thick_bot_elem_ecology = node_to_element(
     triangles_ecology
 )
 
+SA_surf_elem_ecology = node_to_element(
+    SA_surf_SSM_ecology,
+    triangles_ecology
+)
+
 # ------------------------------------------------------------
 # Exclude elements outside Puget Sound
 # ------------------------------------------------------------
@@ -379,6 +398,9 @@ hyp_thick_elem_SSM[:, ~mask_elem] = np.nan
 
 DO_elem_ecology[:, ~mask_elem_ecology] = np.nan
 hyp_thick_elem_ecology[:, ~mask_elem_ecology] = np.nan
+
+SA_surf_elem_SSM[:, ~mask_elem] = np.nan
+SA_surf_elem_ecology[:, ~mask_elem_ecology] = np.nan
 
 # Static depth variables (one value per element)
 depth_elem_SSM[~mask_elem] = np.nan
@@ -990,95 +1012,15 @@ plt.show()
 
 
 # ============================================================
-# Daily DO concentration in bottom 14.6% animation
-# with hypoxic area time series
+# Daily surface salinity animation
 # ============================================================
 
 # ------------------------------------------------------------
 # Common color scale for both models and all days
 # ------------------------------------------------------------
 
-# DO_min = np.nanmin([
-#     np.nanmin(DO_elem)
-# ])
-
-# DO_max = np.nanmax([
-#     np.nanmax(DO_elem)
-# ])
-
-# Original oxygen colormap
-cmap = cmocean.cm.oxy
-
-# Crop the upper 20% of the colormap (supersaturated colors)
-cmap_oxy = cmocean.tools.crop_by_percent(
-    cmap,
-    20,
-    which='max',
-    N=None
-).copy()
-
-# Missing/invalid cells should not be colored as low oxygen
-cmap_oxy.set_bad('white')
-
-# Common oxygen limits
-DO_min = 0.0
-DO_max = 15.0  
-DO_threshold = 2.0  # mg/L
-
-# Map DO = 2 mg/L to 20% of the colormap
-# Since we cropped the top 20% of the colormap, this becomes 25% of cropped colormap
-hypoxic_fraction = 0.2 / 0.8 # 0.25
-
-# explicitly preserve invalid values (NaN) 
-def forward(x):
-    x = np.asarray(x, dtype=float)
-    out = np.full_like(x, np.nan)
-
-    valid = np.isfinite(x)
-    hypoxic = valid & (x <= DO_threshold)
-    oxic = valid & (x > DO_threshold)
-
-    out[hypoxic] = (
-        hypoxic_fraction * x[hypoxic] / DO_threshold
-    )
-
-    out[oxic] = (
-        hypoxic_fraction
-        + (1 - hypoxic_fraction)
-        * (x[oxic] - DO_threshold)
-        / (DO_max - DO_threshold)
-    )
-
-    return out
-
-
-def inverse(y):
-    y = np.asarray(y, dtype=float)
-    out = np.full_like(y, np.nan)
-
-    valid = np.isfinite(y)
-    hypoxic = valid & (y <= hypoxic_fraction)
-    oxic = valid & (y > hypoxic_fraction)
-
-    out[hypoxic] = (
-        DO_threshold * y[hypoxic] / hypoxic_fraction
-    )
-
-    out[oxic] = (
-        DO_threshold
-        + (DO_max - DO_threshold)
-        * (y[oxic] - hypoxic_fraction)
-        / (1 - hypoxic_fraction)
-    )
-
-    return out
-
-norm = FuncNorm(
-    (forward, inverse),
-    vmin=DO_min,
-    vmax=DO_max,
-    clip=True
-)
+SA_surf_min = np.nanmin([SA_surf_elem_SSM, SA_surf_elem_ecology])
+SA_surf_max = np.nanmax([SA_surf_elem_SSM, SA_surf_elem_ecology])
 
 # ------------------------------------------------------------
 # Time
@@ -1120,21 +1062,20 @@ cax = fig.add_subplot(gs[1, 2])
 
 pcm1 = axes[0].tripcolor(
     triang_SSM,
-    facecolors= DO_elem_SSM[0, :],
+    facecolors= SA_surf_elem_SSM[0, :],
     shading='flat',
-    # cmap='viridis_r',
-    # vmin=DO_min,
-    # vmax=DO_max,
-    cmap=cmap_oxy,
-    norm=norm,
+    cmap='viridis_r',
+    vmin=SA_surf_min,
+    vmax=SA_surf_max,
 )
 
 pcm2 = ax_ecology.tripcolor(
     triang_ecology,
-    facecolors=DO_elem_ecology[0, :],
+    facecolors=SA_surf_elem_ecology[0, :],
     shading='flat',
-    cmap=cmap_oxy,
-    norm=norm
+    cmap='viridis_r',
+    vmin=SA_surf_min,
+    vmax=SA_surf_max,
 )
 
 pfun.add_coast(axes[0], color='black', linewidth=0.8)
@@ -1212,7 +1153,7 @@ cbar = fig.colorbar(
     cax=cax
 )
 
-cbar.set_label('DO in bottom cell (mg/L)')
+cbar.set_label('Surface salinity (PSU)')
 
 # Keep latitude labels only on the leftmost map
 for ax in axes[1:]:
@@ -1233,19 +1174,21 @@ def update(frame):
     # PNNL
     pcm1 = ax_SSM.tripcolor(
         triang_SSM,
-        facecolors=DO_elem_SSM[frame, :],
+        facecolors=SA_surf_elem_SSM[frame, :],
         shading='flat',
-        cmap=cmap_oxy,
-        norm=norm
+        cmap='viridis_r',
+        vmin=SA_surf_min,
+        vmax=SA_surf_max,
     )
 
     # Ecology
     pcm2 = ax_ecology.tripcolor(
         triang_ecology,
-        facecolors=DO_elem_ecology[frame, :],
+        facecolors=SA_surf_elem_ecology[frame, :],
         shading='flat',
-        cmap=cmap_oxy,
-        norm=norm
+        cmap='viridis_r',
+        vmin=SA_surf_min,
+        vmax=SA_surf_max,
     )
 
     # Move the time-series marker to the current animation date
@@ -1283,7 +1226,7 @@ ani = FuncAnimation(
 
 
 ani.save(
-    out_dir / 'ssm_ecology_daily_DO_bottom146_comparison.mp4',
+    out_dir / 'ssm_ecology_daily_surf_SA_comparison.mp4',
     writer='ffmpeg',
     fps=6,
     dpi=200
