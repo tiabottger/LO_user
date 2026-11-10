@@ -106,6 +106,9 @@ with xr.open_dataset(input_fp) as ds:
     # Daily mean dissolved oxygen
     oxygen = ds["DO"].values.astype(float)
     
+    salinity = ds["SA"].values.astype(float)
+    temperature = ds["CT"].values.astype(float)
+    
     layer_thickness = (
         ds["layer_thickness"].values.astype(float))
 
@@ -119,6 +122,9 @@ with xr.open_dataset(input_fp) as ds:
     assert oxygen.shape == (Nt, Nnode, Nlay)
     assert zeta.shape == (Nt, Nnode, Nlay)
     assert layer_thickness.shape == (Nlay,)
+    
+    assert salinity.shape == (Nt, Nnode, Nlay)
+    assert temperature.shape == (Nt, Nnode, Nlay)
     
     assert lon.shape == (Nnode,)
     assert lat.shape == (Nnode,)
@@ -228,6 +234,9 @@ with xr.open_dataset(input_fp) as ds:
         (Nt, Nnode),
         np.nan,
     )
+    
+    SA_bot = np.full((Nt, Nnode), np.nan)
+    CT_bot = np.full((Nt, Nnode), np.nan)
 
     # --------------------------------------------------------
     # Calculate bottom DO and hypoxic thickness
@@ -244,6 +253,9 @@ with xr.open_dataset(input_fp) as ds:
 
         oxy = oxygen[t, :, :]
         layer_dz = dz[t, :, :]
+        
+        sal = salinity[t, :, :]
+        temp = temperature[t, :, :]
 
         valid_oxygen = np.isfinite(oxy)
 
@@ -301,6 +313,8 @@ with xr.open_dataset(input_fp) as ds:
 
         for arr in (
             DO_bot,
+            SA_bot,
+            CT_bot,
             thick_bot,
             hyp_thick,
             one_mgL_thick,
@@ -322,6 +336,14 @@ with xr.open_dataset(input_fp) as ds:
             "DO_bot": (
                 ("time", "local_node"),
                 DO_bot,
+            ),
+            "SA_bot": (
+                ("time", "local_node"),
+                SA_bot,
+            ),
+            "CT_bot": (
+                ("time", "local_node"),
+                CT_bot,
             ),
             "thick_bot": (
                 ("time", "local_node"),

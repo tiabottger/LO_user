@@ -111,8 +111,8 @@ with xr.open_dataset(input_fp) as ds_raw:
     h = ds_raw["h"].values.astype(float)
     zeta_all = ds_raw["zeta"].values.astype(float)
     oxygen_all = ds_raw["DOXG"].values.astype(float)
-    salinity_all = ds_raw["SA"].values.astype(float)
-    temperature_all = ds_raw["CT"].values.astype(float)
+    salinity_all = ds_raw["salinity"].values.astype(float)
+    temperature_all = ds_raw["temp"].values.astype(float)
 
     siglay = ds_raw["siglay"].values.astype(float)
     siglev = ds_raw["siglev"].values.astype(float)
