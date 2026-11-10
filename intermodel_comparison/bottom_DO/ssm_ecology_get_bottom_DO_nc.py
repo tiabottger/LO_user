@@ -237,6 +237,9 @@ with xr.open_dataset(input_fp) as ds:
     
     SA_bot = np.full((Nt, Nnode), np.nan)
     CT_bot = np.full((Nt, Nnode), np.nan)
+    
+    SA_surf = np.full((Nt, Nnode), np.nan)
+    CT_surf = np.full((Nt, Nnode), np.nan)
 
     # --------------------------------------------------------
     # Calculate bottom DO and hypoxic thickness
@@ -272,6 +275,12 @@ with xr.open_dataset(input_fp) as ds:
 
         DO_bot[t, :] = oxy[:, -1]
         thick_bot[t, :] = layer_dz[:, -1]
+        
+        SA_bot[t, :] = sal[:, -1]
+        CT_bot[t, :] = temp[:, -1]
+
+        SA_surf[t, :] = sal[:, 0]
+        CT_surf[t, :] = temp[:, 0]
 
         # ----------------------------------------------------
         # Hypoxic and low-oxygen thickness
@@ -315,6 +324,8 @@ with xr.open_dataset(input_fp) as ds:
             DO_bot,
             SA_bot,
             CT_bot,
+            SA_surf,
+            CT_surf,
             thick_bot,
             hyp_thick,
             one_mgL_thick,
@@ -344,6 +355,14 @@ with xr.open_dataset(input_fp) as ds:
             "CT_bot": (
                 ("time", "local_node"),
                 CT_bot,
+            ),
+            "SA_surf": (
+                ("time", "local_node"),
+                SA_surf,
+            ),
+            "CT_surf": (
+                ("time", "local_node"),
+                CT_surf,
             ),
             "thick_bot": (
                 ("time", "local_node"),
