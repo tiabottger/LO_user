@@ -111,6 +111,8 @@ with xr.open_dataset(input_fp) as ds_raw:
     h = ds_raw["h"].values.astype(float)
     zeta_all = ds_raw["zeta"].values.astype(float)
     oxygen_all = ds_raw["DOXG"].values.astype(float)
+    salinity_all = ds_raw["SA"].values.astype(float)
+    temperature_all = ds_raw["CT"].values.astype(float)
 
     siglay = ds_raw["siglay"].values.astype(float)
     siglev = ds_raw["siglev"].values.astype(float)
@@ -160,6 +162,9 @@ with xr.open_dataset(input_fp) as ds_raw:
     hyp_thick = np.full((Nt, Nnode), np.nan)
     one_mgL_thick = np.full((Nt, Nnode), np.nan)
     three_mgL_thick = np.full((Nt, Nnode), np.nan)
+    
+    SA_bot = np.full((Nt, Nnode), np.nan)
+    CT_bot = np.full((Nt, Nnode), np.nan)
 
     # --------------------------------------------------------
     # Calculate physical interfaces and oxygen metrics
@@ -174,6 +179,9 @@ with xr.open_dataset(input_fp) as ds_raw:
 
         zeta = zeta_all[t, :]
         oxy = oxygen_all[t, :, :]
+        
+        sal = salinity_all[t, :, :]
+        temp = temperature_all[t, :, :]
 
         # Physical elevation of FVCOM vertical interfaces:
         #
@@ -207,6 +215,8 @@ with xr.open_dataset(input_fp) as ds_raw:
 
         # Last sigma layer is nearest the seabed.
         DO_bot[t, :] = oxy[-1, :]
+        SA_bot[t, :] = sal[-1, :]
+        CT_bot[t, :] = temp[-1, :]
 
         thick_bot[t, :] = dz[-1, :]
 
@@ -259,6 +269,9 @@ with xr.open_dataset(input_fp) as ds_raw:
 
         DO_bot[t, ~valid_column] = np.nan
         thick_bot[t, ~valid_column] = np.nan
+        
+        SA_bot[t, ~valid_column] = np.nan
+        CT_bot[t, ~valid_column] = np.nan
 
     # --------------------------------------------------------
     # Assemble output dataset
@@ -280,6 +293,14 @@ with xr.open_dataset(input_fp) as ds_raw:
             "DO_bot": (
                 ("time", "local_node"),
                 DO_bot,
+            ),
+            "SA_bot": (
+                ("time", "local_node"),
+                SA_bot,
+            ),
+            "CT_bot": (
+                ("time", "local_node"),
+                CT_bot,
             ),
             "thick_bot": (
                 ("time", "local_node"),
