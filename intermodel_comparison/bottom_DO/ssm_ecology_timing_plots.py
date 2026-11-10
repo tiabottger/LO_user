@@ -776,7 +776,7 @@ assert len(time) == DO_elem_ecology.shape[0]
 # Create figure
 # ------------------------------------------------------------
 
-fig = plt.figure(figsize=(18, 10))
+fig = plt.figure(figsize=(12, 10))
 
 gs = fig.add_gridspec(
     2, 3,
