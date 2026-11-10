@@ -373,10 +373,6 @@ with xr.open_dataset(input_fp) as ds:
                 ("local_node",),
                 ds["original_node_index"].values,
             ),
-             "nv": (
-                ("elem", "three"),
-                ds["nv"].values,
-            ),
             "original_elem_index": (
                 ("elem",),
                 ds["original_elem_index"].values,
