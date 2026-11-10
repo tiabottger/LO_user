@@ -372,13 +372,7 @@ with xr.open_dataset(input_fp) as ds:
              "original_node_index": (
                 ("local_node",),
                 ds["original_node_index"].values,
-            ),
-            "original_elem_index": (
-                ("elem",),
-                ds["original_elem_index"].values,
-            ),
-            "elem": ds["elem"].values,
-            "three": ds["three"].values,
+            )
         },
         coords={
             "time": time,
