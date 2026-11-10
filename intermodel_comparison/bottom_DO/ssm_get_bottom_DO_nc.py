@@ -165,6 +165,9 @@ with xr.open_dataset(input_fp) as ds_raw:
     
     SA_bot = np.full((Nt, Nnode), np.nan)
     CT_bot = np.full((Nt, Nnode), np.nan)
+    
+    SA_surf = np.full((Nt, Nnode), np.nan)
+    CT_surf = np.full((Nt, Nnode), np.nan)
 
     # --------------------------------------------------------
     # Calculate physical interfaces and oxygen metrics
@@ -219,6 +222,13 @@ with xr.open_dataset(input_fp) as ds_raw:
         CT_bot[t, :] = temp[-1, :]
 
         thick_bot[t, :] = dz[-1, :]
+        
+        # ----------------------------------------------------
+        # Surface-layer
+        # ----------------------------------------------------
+
+        SA_surf[t, :] = sal[0, :]
+        CT_surf[t, :] = temp[0, :]
 
         # ----------------------------------------------------
         # Hypoxic and low-oxygen thickness
@@ -272,6 +282,9 @@ with xr.open_dataset(input_fp) as ds_raw:
         
         SA_bot[t, ~valid_column] = np.nan
         CT_bot[t, ~valid_column] = np.nan
+        
+        SA_surf[t, ~valid_column] = np.nan
+        CT_surf[t, ~valid_column] = np.nan
 
     # --------------------------------------------------------
     # Assemble output dataset
@@ -301,6 +314,14 @@ with xr.open_dataset(input_fp) as ds_raw:
             "CT_bot": (
                 ("time", "local_node"),
                 CT_bot,
+            ),
+            "SA_surf": (
+                ("time", "local_node"),
+                SA_surf,
+            ),
+            "CT_surf": (
+                ("time", "local_node"),
+                CT_surf,
             ),
             "thick_bot": (
                 ("time", "local_node"),
