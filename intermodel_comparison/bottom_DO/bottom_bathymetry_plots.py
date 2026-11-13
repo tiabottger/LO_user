@@ -320,21 +320,21 @@ depth_SSC_on_LO = (
     .reshape(depth_LO.shape)
 )
 
-# ------------------------------------------------------------
-# Identify LO cells outside SSC grid coverage
-# ------------------------------------------------------------
-
+# Identify LO cells outside SSC geographic footprint
 missing_SSC = (
-    distance_to_SSC.reshape(depth_LO.shape) > 0.01
+    (lon_LO < np.nanmin(lon_SSC)) |
+    (lon_LO > np.nanmax(lon_SSC)) |
+    (lat_LO < np.nanmin(lat_SSC)) |
+    (lat_LO > np.nanmax(lat_SSC))
 )
 
-print(
-    'LO cells outside SSC grid coverage:',
-    np.sum(missing_SSC)
-)
+# Restrict to Puget Sound study area
+missing_SSC = missing_SSC & (mask_ps == 1)
 
-# Assign zero bathymetry to missing SSC cells
+# Assign zero SSC bathymetry to missing cells
 depth_SSC_on_LO[missing_SSC] = 0
+
+print('LO cells outside SSC footprint:', np.sum(missing_SSC))
 
 # ============================================================
 # BATHYMETRY DIFFERENCE
@@ -383,8 +383,6 @@ print(
     np.sum(np.isfinite(depth_difference_plot[missing_SSC]))
 )
 
-print(ds_SSC.data_vars)
-print(ds_SSC.dims)
 
 # ============================================================
 # PLOT BATHYMETRY DIFFERENCE
