@@ -44,6 +44,11 @@ ds_LO = xr.open_dataset(
 ds_SSC = xr.open_dataset(
     in_dir / 'SSC_2014_pugetsound_bottom_DO_info.nc'
 )
+ds_SSM= xr.open_dataset(
+    in_dir / 'SSM_2014_pugetsound_bottom_DO_info.nc'
+)
+
+print(ds_SSM)
 
 # READ Puget Sound BASIN MASK
 basin_mask_ds = xr.open_dataset(
