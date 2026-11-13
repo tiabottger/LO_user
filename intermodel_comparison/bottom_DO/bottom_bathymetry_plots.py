@@ -291,29 +291,49 @@ nearest_flat_index = valid_flat_indices[nearest_index]
 # MAP SSC BATHYMETRY ONTO LIVE OCEAN GRID
 # ============================================================
 
-# Get SSC bathymetry at nearest cells
-depth_SSC_on_LO = depth_SSC.ravel()[nearest_flat_index]
-depth_SSC_on_LO = depth_SSC_on_LO.reshape(depth_LO.shape)
+ssc_points = np.column_stack((
+    lon_SSC.ravel(),
+    lat_SSC.ravel()
+))
+
+valid_ssc = (
+    np.isfinite(ssc_points[:, 0]) &
+    np.isfinite(ssc_points[:, 1])
+)
+
+tree_SSC = cKDTree(ssc_points[valid_ssc])
+
+lo_points = np.column_stack((
+    lon_LO.ravel(),
+    lat_LO.ravel()
+))
+
+# Find nearest SSC cell for every LO cell
+distance_to_SSC, nearest_index = tree_SSC.query(lo_points)
+
+valid_flat_indices = np.flatnonzero(valid_ssc)
+nearest_flat_index = valid_flat_indices[nearest_index]
+
+# Map SSC bathymetry onto LO grid
+depth_SSC_on_LO = (
+    depth_SSC.ravel()[nearest_flat_index]
+    .reshape(depth_LO.shape)
+)
 
 # ------------------------------------------------------------
-# Identify LO cells outside the SSC grid
+# Identify LO cells outside SSC grid coverage
 # ------------------------------------------------------------
 
-# Distance to nearest SSC grid cell
-distance_to_SSC, _ = tree_SSC.query(lo_points)
+missing_SSC = (
+    distance_to_SSC.reshape(depth_LO.shape) > 0.01
+)
 
-distance_to_SSC = distance_to_SSC.reshape(depth_LO.shape)
+print(
+    'LO cells outside SSC grid coverage:',
+    np.sum(missing_SSC)
+)
 
-# Identify cells that are not represented by SSC
-# Use a distance threshold appropriate for the grid spacing.
-# This should be checked against the actual LO/SSC grid spacing.
-
-missing_SSC = distance_to_SSC > 0.01
-
-# ------------------------------------------------------------
-# Assign zero bathymetry to cells absent from SSC
-# ------------------------------------------------------------
-
+# Assign zero bathymetry to missing SSC cells
 depth_SSC_on_LO[missing_SSC] = 0
 
 # ============================================================
@@ -322,11 +342,22 @@ depth_SSC_on_LO[missing_SSC] = 0
 
 depth_difference = depth_LO - depth_SSC_on_LO
 
-# Apply Puget Sound mask
 depth_difference_plot = np.where(
     mask_ps == 1,
     depth_difference,
     np.nan
+)
+
+print(
+    'LO bathymetry in missing SSC cells:',
+    np.nanmin(depth_LO[missing_SSC]),
+    np.nanmax(depth_LO[missing_SSC])
+)
+
+print(
+    'SSC bathymetry in missing SSC cells:',
+    np.nanmin(depth_SSC_on_LO[missing_SSC]),
+    np.nanmax(depth_SSC_on_LO[missing_SSC])
 )
 
 # ============================================================
