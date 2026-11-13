@@ -340,13 +340,13 @@ depth_SSC_on_LO[missing_SSC] = 0
 # BATHYMETRY DIFFERENCE
 # ============================================================
 
-depth_difference_plot = depth_LO - depth_SSC_on_LO
+depth_difference = depth_LO - depth_SSC_on_LO
 
-# depth_difference_plot = np.where(
-#     mask_ps == 1,
-#     depth_difference,
-#     np.nan
-# )
+depth_difference_plot = np.where(
+    mask_ps == 1,
+    depth_difference,
+    np.nan
+)
 
 print(
     'LO bathymetry in missing SSC cells:',
@@ -372,16 +372,19 @@ print(
     np.sum(missing_SSC & (mask_ps == 0))
 )
 
-# print(
-#     'Difference in missing SSC cells:',
-#     np.nanmin(depth_difference[missing_SSC]),
-#     np.nanmax(depth_difference[missing_SSC])
-# )
+print(
+    'Difference in missing SSC cells:',
+    np.nanmin(depth_difference[missing_SSC]),
+    np.nanmax(depth_difference[missing_SSC])
+)
 
 print(
     'Difference plot in missing SSC cells:',
     np.sum(np.isfinite(depth_difference_plot[missing_SSC]))
 )
+
+print(ds_SSC.data_vars)
+print(ds_SSC.dims)
 
 # ============================================================
 # PLOT BATHYMETRY DIFFERENCE
