@@ -372,11 +372,11 @@ print(
     np.sum(missing_SSC & (mask_ps == 0))
 )
 
-print(
-    'Difference in missing SSC cells:',
-    np.nanmin(depth_difference[missing_SSC]),
-    np.nanmax(depth_difference[missing_SSC])
-)
+# print(
+#     'Difference in missing SSC cells:',
+#     np.nanmin(depth_difference[missing_SSC]),
+#     np.nanmax(depth_difference[missing_SSC])
+# )
 
 print(
     'Difference plot in missing SSC cells:',
