@@ -313,6 +313,15 @@ axes[1].set_ylabel('Latitude')
 # Salish Sea Model
 # ------------------------------------------------------------
 
+print('depth_SSM shape:', depth_SSM.shape)
+print('lon_SSM shape:', lon_SSM.shape)
+print('lat_SSM shape:', lat_SSM.shape)
+print('triangles shape:', triangles.shape)
+print('Number of triangulation triangles:', triang.triangles.shape)
+print(ds_SSM['depth_bot'])
+print(ds_SSM['nv'])
+
+
 pcm3 = axes[2].tripcolor(
     triang,
     facecolors=depth_SSM_plot,
