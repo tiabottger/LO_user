@@ -149,6 +149,19 @@ SSM_footprint = unary_union(SSM_polygons)
 # Prepare geometry for efficient point-in-polygon testing
 SSM_footprint_prepared = prep(SSM_footprint)
 
+def node_to_element(values, triangles):
+    """
+    Convert node-based data to element averages.
+
+    Supports:
+        (node,) -> (element,)
+        (time, node) -> (time, element)
+    """
+    if values.ndim == 1:
+        return np.nanmean(values[triangles], axis=1)
+
+    return np.nanmean(values[:, triangles], axis=2)
+
 # ============================================================
 # MAP Puget Sound MASK ONTO SSC GRID
 # ============================================================
@@ -234,12 +247,22 @@ triang.set_mask(~mask_elem_SSM_ps)
 
 depth_LO = ds_LO['depth_bot'].values
 depth_SSC = ds_SSC['depth_bot'].values
+depth_SSM = ds_SSM['depth_bot'].values
 
-depth_SSM_plot = ds_SSM['depth_bot'].values # mask applied in triang
+depth_elem_SSM = node_to_element(
+    depth_SSM,
+    triangles
+)
 
 # Apply Puget Sound masks
 depth_LO_plot = np.where(mask_ps == 1, depth_LO, np.nan)
 depth_SSC_plot = np.where(mask_ps_SSC, depth_SSC, np.nan)
+
+depth_SSM_plot = np.where(
+    mask_elem_SSM_ps,
+    depth_elem_SSM,
+    np.nan
+)
 
 # Common color scale
 depth_min = np.nanmin([
@@ -316,7 +339,7 @@ axes[1].set_ylabel('Latitude')
 pcm3 = axes[2].tripcolor(
     triang,
     facecolors=depth_SSM_plot,
-    shading='gouraud', # use gouraud for depth stored at nodes
+    shading='flat',
     cmap=cmocean.cm.deep,
     vmin=depth_min,
     vmax=depth_max
