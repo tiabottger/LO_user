@@ -48,8 +48,6 @@ ds_SSM= xr.open_dataset(
     in_dir / 'SSM_2014_pugetsound_bottom_DO_info.nc'
 )
 
-print(ds_SSM)
-
 # READ Puget Sound BASIN MASK
 basin_mask_ds = xr.open_dataset(
     Ldir['LOu'] /
@@ -98,6 +96,12 @@ lat_LO = box_ds['lat_rho'].values
 lon_SSC = ds_SSC['nav_lon'].values
 lat_SSC = ds_SSC['nav_lat'].values
 
+# ============================================================
+# SSM GRID
+# ============================================================
+
+lon_SSM = ds_SSM['lon'].values
+lat_SSM = ds_SSM['lat'].values
 
 # ============================================================
 # MAP Puget Sound MASK ONTO SSC GRID
@@ -144,6 +148,7 @@ mask_ps_SSC = (
 
 depth_LO = ds_LO['depth_bot'].values
 depth_SSC = ds_SSC['depth_bot'].values
+depth_SSM = ds_SSM['depth_bot'].values
 
 # Apply Puget Sound masks
 depth_LO_plot = np.where(mask_ps == 1, depth_LO, np.nan)
@@ -326,6 +331,40 @@ depth_SSC_on_LO = (
 )
 
 # ============================================================
+# MAP SSM BATHYMETRY ONTO LIVE OCEAN GRID
+# ============================================================
+
+ssm_points = np.column_stack((
+    lon_SSM,
+    lat_SSM
+))
+
+valid_ssm = (
+    np.isfinite(lon_SSM) &
+    np.isfinite(lat_SSM) &
+    np.isfinite(depth_SSM)
+)
+
+tree_SSM = cKDTree(ssm_points[valid_ssm])
+
+lo_points = np.column_stack((
+    lon_LO.ravel(),
+    lat_LO.ravel()
+))
+
+# Find nearest SSM cell for every LO cell
+distance_to_SSM, nearest_index = tree_SSM.query(lo_points)
+
+valid_flat_indices_ssm = np.flatnonzero(valid_ssm)
+nearest_flat_index_ssm = valid_flat_indices_ssm[nearest_index]
+
+# Map SSM bathymetry onto LO grid
+depth_SSM_on_LO = (
+    depth_SSM[nearest_flat_index_ssm]
+    .reshape(depth_LO.shape)
+)
+
+# ============================================================
 # IDENTIFY LO CELLS WITHOUT SSC BATHYMETRY
 # ============================================================
 
@@ -356,7 +395,13 @@ depth_difference_plot = np.where(
     np.nan
 )
 
-print('LO cells outside SSC footprint:', np.sum(missing_SSC))
+depth_difference_LO_SSM = depth_LO - depth_SSM_on_LO
+
+depth_difference_LO_SSM_plot = np.where(
+    mask_ps == 1,
+    depth_difference_LO_SSM,
+    np.nan
+)
 
 # ============================================================
 # BATHYMETRY DIFFERENCE
@@ -410,6 +455,7 @@ print(
 # PLOT BATHYMETRY DIFFERENCE
 # ============================================================
 
+# LO - SSC
 fig, ax = plt.subplots(
     figsize=(8, 7),
     constrained_layout=True
@@ -487,6 +533,36 @@ plt.savefig(
 )
 
 print('Figure saved to:', Path('bathymetry_difference_LO_minus_SSC.png').resolve())
+
+# LO - SSM
+fig, ax = plt.subplots(figsize=(10, 8))
+
+pcm = ax.pcolormesh(
+    lon_LO,
+    lat_LO,
+    depth_difference_LO_SSM_plot,
+    cmap='RdBu_r',
+    shading='auto',
+    vmin=-20,
+    vmax=20
+)
+
+plt.colorbar(
+    pcm,
+    ax=ax,
+    label='LO - SSM bottom depth (m)'
+)
+
+ax.set_title('Bottom Bathymetry Difference: LO - SSM')
+ax.set_xlabel('Longitude')
+ax.set_ylabel('Latitude')
+
+plt.savefig(
+    'bathymetry_difference_LO_minus_SSM.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+plt.show()
 
 # ============================================================
 # BOTTOM 14.6% THICKNESS
