@@ -1314,8 +1314,8 @@ mean_hyp_area = {
 colors = {
     'LO': '#D55E00',
     'SSC': '#0072B2',
-    'SSM': '#009E73',
-    'Ecology': "#CC79A7"
+    'SSM PNNL': '#009E73',
+    'SSM Ecology': "#CC79A7"
 }
 
 fig, ax = plt.subplots(1, 5, figsize=(15, 5), sharey=True)
@@ -1375,13 +1375,13 @@ ax.plot(
 
 ax.plot(
     pd.to_datetime(ds_SSM['time'].values), 
-    hyp_area_SSM_ts_ps, linewidth=2, color=colors['SSM'], label='SSM PNNL')
+    hyp_area_SSM_ts_ps, linewidth=2, color=colors['SSM PNNL'], label='SSM PNNL')
 
 ax.plot(
     time_SSM_ecology,
     hyp_area_SSM_ecology_ts_ps,
     linewidth=2,
-    color=colors['Ecology'],
+    color=colors['SSM Ecology'],
     label='SSM Ecology'
 )
 
@@ -1425,13 +1425,13 @@ ax.plot(
 
 ax.plot(
     pd.to_datetime(ds_SSM['time'].values), 
-    hyp_area_SSM_ts_hc, linewidth=2, color=colors['SSM'], label='SSM PNNL')
+    hyp_area_SSM_ts_hc, linewidth=2, color=colors['SSM PNNL'], label='SSM PNNL')
 
 ax.plot(
     time_SSM_ecology,
     hyp_area_SSM_ecology_ts_hc,
     linewidth=2,
-    color=colors['Ecology'],
+    color=colors['SSM Ecology'],
     label='SSM Ecology'
 )
 
@@ -1475,13 +1475,13 @@ ax.plot(
 
 ax.plot(
     pd.to_datetime(ds_SSM['time'].values), 
-    hyp_area_SSM_ts_wb, linewidth=2, color=colors['SSM'], label='SSM PNNL')
+    hyp_area_SSM_ts_wb, linewidth=2, color=colors['SSM PNNL'], label='SSM PNNL')
 
 ax.plot(
     time_SSM_ecology,
     hyp_area_SSM_ecology_ts_wb,
     linewidth=2,
-    color=colors['Ecology'],
+    color=colors['SSM Ecology'],
     label='SSM Ecology'
 )
 
@@ -1525,13 +1525,13 @@ ax.plot(
 
 ax.plot(
     pd.to_datetime(ds_SSM['time'].values), 
-    hyp_area_SSM_ts_ss, linewidth=2, color=colors['SSM'], label='SSM PNNL')
+    hyp_area_SSM_ts_ss, linewidth=2, color=colors['SSM PNNL'], label='SSM PNNL')
 
 ax.plot(
     time_SSM_ecology,
     hyp_area_SSM_ecology_ts_ss,
     linewidth=2,
-    color=colors['Ecology'],
+    color=colors['SSM Ecology'],
     label='SSM Ecology'
 )
 
@@ -1575,13 +1575,13 @@ ax.plot(
 
 ax.plot(
     pd.to_datetime(ds_SSM['time'].values), 
-    hyp_area_SSM_ts_mb, linewidth=2, color=colors['SSM'], label='SSM PNNL')
+    hyp_area_SSM_ts_mb, linewidth=2, color=colors['SSM PNNL'], label='SSM PNNL')
 
 ax.plot(
     time_SSM_ecology,
     hyp_area_SSM_ecology_ts_mb,
     linewidth=2,
-    color=colors['Ecology'],
+    color=colors['SSM Ecology'],
     label='SSM Ecology'
 )
 
@@ -1629,12 +1629,12 @@ ax.plot(
 
 ax.plot(
     pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
-    hyp_volume_SSM_ts_ps, linewidth=2, color= colors['SSM'], label='SSM PNNL'
+    hyp_volume_SSM_ts_ps, linewidth=2, color= colors['SSM PNNL'], label='SSM PNNL'
 )
 
 ax.plot(
     time_SSM_ecology,
-    hyp_volume_SSM_ecology_ts_ps, linewidth=2, color=colors['Ecology'], label='SSM Ecology'
+    hyp_volume_SSM_ecology_ts_ps, linewidth=2, color=colors['SSM Ecology'], label='SSM Ecology'
 )
 
 ax.set_ylabel(
@@ -1677,12 +1677,12 @@ ax.plot(
 
 ax.plot(
     pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
-    hyp_volume_SSM_ts_hc, linewidth=2, color= colors['SSM'], label='SSM PNNL'
+    hyp_volume_SSM_ts_hc, linewidth=2, color= colors['SSM PNNL'], label='SSM PNNL'
 )
 
 ax.plot(
     time_SSM_ecology,
-    hyp_volume_SSM_ecology_ts_hc, linewidth=2, color=colors['Ecology'], label='SSM Ecology'
+    hyp_volume_SSM_ecology_ts_hc, linewidth=2, color=colors['SSM Ecology'], label='SSM Ecology'
 )
 
 ax.set_ylabel(
@@ -1725,12 +1725,12 @@ ax.plot(
 
 ax.plot(
     pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
-    hyp_volume_SSM_ts_wb, linewidth=2, color= colors['SSM'], label='SSM PNNL'
+    hyp_volume_SSM_ts_wb, linewidth=2, color= colors['SSM PNNL'], label='SSM PNNL'
 )
 
 ax.plot(
     time_SSM_ecology,
-    hyp_volume_SSM_ecology_ts_wb, linewidth=2, color=colors['Ecology'], label='SSM Ecology'
+    hyp_volume_SSM_ecology_ts_wb, linewidth=2, color=colors['SSM Ecology'], label='SSM Ecology'
 )
 
 ax.set_ylabel(
@@ -1773,12 +1773,12 @@ ax.plot(
 
 ax.plot(
     pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
-    hyp_volume_SSM_ts_ss, linewidth=2, color= colors['SSM'], label='SSM PNNL'
+    hyp_volume_SSM_ts_ss, linewidth=2, color= colors['SSM PNNL'], label='SSM PNNL'
 )
 
 ax.plot(
     time_SSM_ecology,
-    hyp_volume_SSM_ecology_ts_ss, linewidth=2, color=colors['Ecology'], label='SSM Ecology'
+    hyp_volume_SSM_ecology_ts_ss, linewidth=2, color=colors['SSM Ecology'], label='SSM Ecology'
 )
 
 ax.set_ylabel(
@@ -1821,12 +1821,12 @@ ax.plot(
 
 ax.plot(
     pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
-    hyp_volume_SSM_ts_mb, linewidth=2, color= colors['SSM'], label='SSM PNNL'
+    hyp_volume_SSM_ts_mb, linewidth=2, color= colors['SSM PNNL'], label='SSM PNNL'
 )
 
 ax.plot(
     time_SSM_ecology,
-    hyp_volume_SSM_ecology_ts_mb, linewidth=2, color=colors['Ecology'], label='SSM Ecology'
+    hyp_volume_SSM_ecology_ts_mb, linewidth=2, color=colors['SSM Ecology'], label='SSM Ecology'
 )
 
 ax.set_ylabel(
@@ -1877,7 +1877,7 @@ ax.plot(
     pd.to_datetime(ds_LO['ocean_time'].values),
     hyp_volume_pct_LO,
     linewidth=2,
-    color='red',
+    color=colors['LO'],
     label='LiveOcean'
 )
 
@@ -1885,7 +1885,7 @@ ax.plot(
     pd.to_datetime(ds_LO['ocean_time'].values),
     hyp_volume_pct_SSC,
     linewidth=2,
-    color='blue',
+    color=colors['SSC'],
     label='SalishSeaCast'
 )
 
@@ -1893,8 +1893,8 @@ ax.plot(
     pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
     hyp_volume_pct_SSM,
     linewidth=2,
-    color='green',
-    label='Salish Sea Model'
+    color=colors['SSM PNNL'],
+    label='SSM PNNL'
 )
 
 ax.set_ylabel(
