@@ -399,6 +399,8 @@ plt.savefig(
     bbox_inches='tight'
 )
 
+print('Figure saved to:', Path('bathymetry_difference_LO_minus_SSC.png').resolve())
+
 # ============================================================
 # BOTTOM 14.6% THICKNESS
 # ============================================================
@@ -429,10 +431,15 @@ lo_points = np.column_stack((
     lat_LO.ravel()
 ))
 
-_, nearest_index = tree_SSC.query(lo_points)
+distance_to_SSC, nearest_index = tree_SSC.query(lo_points)
 
 valid_flat_indices = np.flatnonzero(valid_ssc)
 nearest_flat_index = valid_flat_indices[nearest_index]
+
+# Identify LO cells not represented by SSC
+missing_SSC = (
+    distance_to_SSC.reshape(depth_LO.shape) > 0.01
+)
 
 # ------------------------------------------------------------
 # Map every SSC timestep onto LO grid
@@ -446,6 +453,17 @@ for t in range(thick_SSC.shape[0]):
         thick_SSC[t, :, :].ravel()[nearest_flat_index]
         .reshape(thick_LO.shape[1:])
     )
+
+# ------------------------------------------------------------
+# Assign zero thickness where SSC has no grid coverage
+# ------------------------------------------------------------
+
+thick_SSC_on_LO[:, missing_SSC] = 0
+
+print(
+    'LO cells absent from SSC:',
+    np.sum(missing_SSC)
+)
 
 # ============================================================
 # THICKNESS DIFFERENCE
