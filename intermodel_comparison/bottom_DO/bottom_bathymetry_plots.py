@@ -15,6 +15,12 @@ import matplotlib.pyplot as plt
 from scipy.spatial import cKDTree
 from lo_tools import Lfun
 
+from shapely.geometry import Polygon, Point
+from shapely.ops import unary_union
+from shapely.prepared import prep
+
+import cmocean
+
 import sys
 from pathlib import Path
 pth = Path(__file__).absolute().parent.parent.parent / 'LO' / 'pgrid'
@@ -104,6 +110,37 @@ lon_SSM = ds_SSM['lon'].values
 lat_SSM = ds_SSM['lat'].values
 
 # ============================================================
+# SSM MESH FOOTPRINT
+# ============================================================
+nv = ds_SSM['nv'].values
+
+# Check whether connectivity is zero-based or one-based
+if nv.min() >= 1 and nv.max() <= len(lon_SSM):
+    nv -= 1
+
+# Construct triangular elements
+triangles = []
+
+for nodes in nv:
+
+    triangle_lon = lon_SSM[nodes]
+    triangle_lat = lat_SSM[nodes]
+
+    if (
+        np.all(np.isfinite(triangle_lon)) and
+        np.all(np.isfinite(triangle_lat))
+    ):
+        triangles.append(
+            Polygon(zip(triangle_lon, triangle_lat))
+        )
+
+# Combine triangles into one mesh footprint
+SSM_footprint = unary_union(triangles)
+
+# Prepare geometry for efficient point-in-polygon testing
+SSM_footprint_prepared = prep(SSM_footprint)
+
+# ============================================================
 # MAP Puget Sound MASK ONTO SSC GRID
 # ============================================================
 
@@ -143,6 +180,33 @@ mask_ps_SSC = (
 ).reshape(lon_SSC.shape)
 
 # ============================================================
+# MAP Puget Sound MASK ONTO SSM GRID
+# ============================================================
+
+mask_points = np.column_stack((
+    mask_lon.ravel(),
+    mask_lat.ravel()
+))
+
+valid_mask_points = (
+    np.isfinite(mask_points).all(axis=1)
+)
+
+tree = cKDTree(mask_points[valid_mask_points])
+
+ssm_points = np.column_stack((lon_SSM, lat_SSM))
+_, nearest = tree.query(ssm_points)
+
+valid_flat = np.flatnonzero(valid_mask_points)
+nearest_flat = valid_flat[nearest]
+
+mask_j, mask_i = np.unravel_index(
+    nearest_flat, mask_lon.shape
+)
+
+mask_node_SSM_ps = mask_ps[mask_j, mask_i] == 1
+
+# ============================================================
 # BATHYMETRY — BOTTOM DEPTH
 # ============================================================
 
@@ -153,16 +217,19 @@ depth_SSM = ds_SSM['depth_bot'].values
 # Apply Puget Sound masks
 depth_LO_plot = np.where(mask_ps == 1, depth_LO, np.nan)
 depth_SSC_plot = np.where(mask_ps_SSC, depth_SSC, np.nan)
+depth_SSM_plot = np.where(mask_node_SSM_ps, depth_SSM, np.nan)
 
 # Common color scale
 depth_min = np.nanmin([
     np.nanmin(depth_LO_plot),
-    np.nanmin(depth_SSC_plot)
+    np.nanmin(depth_SSC_plot),
+    np.nanmin(depth_SSM_plot)
 ])
 
 depth_max = np.nanmax([
     np.nanmax(depth_LO_plot),
-    np.nanmax(depth_SSC_plot)
+    np.nanmax(depth_SSC_plot),
+    np.nanmax(depth_SSM_plot)
 ])
 
 print("LiveOcean depth range:", np.nanmin(depth_LO_plot),
@@ -171,13 +238,16 @@ print("LiveOcean depth range:", np.nanmin(depth_LO_plot),
 print("SalishSeaCast depth range:", np.nanmin(depth_SSC_plot),
       np.nanmax(depth_SSC_plot))
 
+print("Salish Sea Model depth range:", np.nanmin(depth_SSM_plot),
+      np.nanmax(depth_SSM_plot))
+
 # ============================================================
 # PLOT BATHYMETRY
 # ============================================================
 
 fig, axes = plt.subplots(
-    1, 2,
-    figsize=(12, 6),
+    1, 3,
+    figsize=(15, 6),
     constrained_layout=True
 )
 
@@ -190,7 +260,7 @@ pcm1 = axes[0].pcolormesh(
     lat_LO,
     depth_LO_plot,
     shading='auto',
-    cmap='viridis',
+    cmap=cmocean.cm.deep,
     vmin=depth_min,
     vmax=depth_max
 )
@@ -208,7 +278,7 @@ pcm2 = axes[1].pcolormesh(
     lat_SSC,
     depth_SSC_plot,
     shading='auto',
-    cmap='viridis',
+    cmap=cmocean.cm.deep,
     vmin=depth_min,
     vmax=depth_max
 )
@@ -218,11 +288,29 @@ axes[1].set_xlabel('Longitude')
 axes[1].set_ylabel('Latitude')
 
 # ------------------------------------------------------------
+# Salish Sea Model
+# ------------------------------------------------------------
+
+pcm3 = axes[2].pcolormesh(
+    lon_SSM,
+    lat_SSM,
+    depth_SSM_plot,
+    shading='auto',
+    cmap=cmocean.cm.deep,
+    vmin=depth_min,
+    vmax=depth_max
+)
+
+axes[2].set_title('Salish Sea Model')
+axes[2].set_xlabel('Longitude')
+axes[2].set_ylabel('Latitude')
+
+# ------------------------------------------------------------
 # Shared colorbar
 # ------------------------------------------------------------
 
 cbar = fig.colorbar(
-    pcm2,
+    pcm3,
     ax=axes,
     shrink=0.85,
     pad=0.02
@@ -543,8 +631,8 @@ pcm = ax.pcolormesh(
     depth_difference_LO_SSM_plot,
     cmap='RdBu_r',
     shading='auto',
-    vmin=-20,
-    vmax=20
+    vmin=-diff_max,
+    vmax=diff_max
 )
 
 plt.colorbar(
@@ -557,12 +645,23 @@ ax.set_title('Bottom Bathymetry Difference: LO - SSM')
 ax.set_xlabel('Longitude')
 ax.set_ylabel('Latitude')
 
+ax.set_xlim(
+    lon_min - lon_pad,
+    lon_max + lon_pad
+)
+
+ax.set_ylim(
+    lat_min - lat_pad,
+    lat_max + lat_pad
+)
+
 plt.savefig(
     'bathymetry_difference_LO_minus_SSM.png',
     dpi=300,
     bbox_inches='tight'
 )
 plt.show()
+print('Figure saved to:', Path('bathymetry_difference_LO_minus_SSM.png').resolve())
 
 # ============================================================
 # BOTTOM 14.6% THICKNESS
