@@ -8,6 +8,8 @@ region "pugetsoundDO"
 
 # import things
 import numpy as np
+from scipy.stats import triang
+from scipy.stats import triang
 import xarray as xr
 import pandas as pd
 import matplotlib.dates as mdates
@@ -291,11 +293,10 @@ axes[1].set_ylabel('Latitude')
 # Salish Sea Model
 # ------------------------------------------------------------
 
-pcm3 = axes[2].pcolormesh(
-    lon_SSM,
-    lat_SSM,
-    depth_SSM_plot,
-    shading='auto',
+pcm3 = axes[2].tripcolor(
+    triang,
+    facecolors=depth_SSM_plot,
+    shading='flat',
     cmap=cmocean.cm.deep,
     vmin=depth_min,
     vmax=depth_max
