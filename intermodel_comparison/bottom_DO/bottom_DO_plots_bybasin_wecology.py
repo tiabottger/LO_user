@@ -1095,8 +1095,220 @@ print(f'LiveOcean Main Basin volume: {mb_volume_LO:.2f} km3')
 print(f'SalishSeaCast Main Basin volume: {mb_volume_SSC:.2f} km3')
 print(f'Salish Sea Model Main Basin volume: {mb_volume_SSM:.2f} km3')
 print(f'Salish Sea Model Ecology Main Basin volume: {mb_volume_SSM_ecology:.2f} km3')
+
 # ============================================================
-# PLOT HYPOXIC AREA AND VOLUME TS
+# TIME-AVERAGED HYPOXIC AREA
+# ============================================================
+
+# Calculate hypoxic area under the curve
+hyp_area_auc_LO_ps = np.trapezoid(
+    hyp_area_LO_ts_ps,
+    dx=1
+)
+
+# Divide by the number of elapsed days
+mean_hyp_area_LO_ps = (
+    hyp_area_auc_LO_ps /
+    (len(hyp_area_LO_ts_ps) - 1)
+)
+
+hyp_area_auc_SSC_ps = np.trapezoid(
+    hyp_area_SSC_ts_ps,
+    dx=1
+)
+mean_hyp_area_SSC_ps = (
+    hyp_area_auc_SSC_ps /
+    (len(hyp_area_SSC_ts_ps) - 1)
+)
+hyp_area_auc_SSM_ps = np.trapezoid(
+    hyp_area_SSM_ts_ps,
+    dx=1
+)
+mean_hyp_area_SSM_ps = (
+    hyp_area_auc_SSM_ps /
+    (len(hyp_area_SSM_ts_ps) - 1)
+)
+hyp_area_auc_SSM_ecology_ps = np.trapezoid(
+    hyp_area_SSM_ecology_ts_ps,
+    dx=1
+)
+mean_hyp_area_SSM_ecology_ps = (
+    hyp_area_auc_SSM_ecology_ps /
+    (len(hyp_area_SSM_ecology_ts_ps) - 1)
+)
+
+# Hood Canal
+hyp_area_auc_LO_hc = np.trapezoid(
+    hyp_area_LO_ts_hc,
+    dx=1
+)
+mean_hyp_area_LO_hc = (
+    hyp_area_auc_LO_hc /
+    (len(hyp_area_LO_ts_hc) - 1)
+)
+hyp_area_auc_SSC_hc = np.trapezoid(
+    hyp_area_SSC_ts_hc,
+    dx=1
+)
+mean_hyp_area_SSC_hc = (
+    hyp_area_auc_SSC_hc /
+    (len(hyp_area_SSC_ts_hc) - 1)
+)
+hyp_area_auc_SSM_hc = np.trapezoid(
+    hyp_area_SSM_ts_hc,
+    dx=1
+)
+mean_hyp_area_SSM_hc = (
+    hyp_area_auc_SSM_hc /
+    (len(hyp_area_SSM_ts_hc) - 1)
+)
+hyp_area_auc_SSM_ecology_hc = np.trapezoid(
+    hyp_area_SSM_ecology_ts_hc,
+    dx=1
+)
+mean_hyp_area_SSM_ecology_hc = (
+    hyp_area_auc_SSM_ecology_hc /
+    (len(hyp_area_SSM_ecology_ts_hc) - 1)
+)
+
+# Whidbey Basin
+hyp_area_auc_LO_wb = np.trapezoid(
+    hyp_area_LO_ts_wb,
+    dx=1
+)
+mean_hyp_area_LO_wb = (
+    hyp_area_auc_LO_wb /
+    (len(hyp_area_LO_ts_wb) - 1)
+)
+hyp_area_auc_SSC_wb = np.trapezoid(
+    hyp_area_SSC_ts_wb,
+    dx=1
+)
+mean_hyp_area_SSC_wb = (
+    hyp_area_auc_SSC_wb /
+    (len(hyp_area_SSC_ts_wb) - 1)
+)
+hyp_area_auc_SSM_wb = np.trapezoid(
+    hyp_area_SSM_ts_wb,
+    dx=1
+)
+mean_hyp_area_SSM_wb = (
+    hyp_area_auc_SSM_wb /
+    (len(hyp_area_SSM_ts_wb) - 1)
+)
+hyp_area_auc_SSM_ecology_wb = np.trapezoid(
+    hyp_area_SSM_ecology_ts_wb,
+    dx=1
+)
+mean_hyp_area_SSM_ecology_wb = (
+    hyp_area_auc_SSM_ecology_wb /
+    (len(hyp_area_SSM_ecology_ts_wb) - 1)
+)
+
+# South Sound
+hyp_area_auc_LO_ss = np.trapezoid(
+    hyp_area_LO_ts_ss,
+    dx=1
+)
+mean_hyp_area_LO_ss = (
+    hyp_area_auc_LO_ss /
+    (len(hyp_area_LO_ts_ss) - 1)
+)
+hyp_area_auc_SSC_ss = np.trapezoid(
+    hyp_area_SSC_ts_ss,
+    dx=1
+)
+mean_hyp_area_SSC_ss = (
+    hyp_area_auc_SSC_ss /
+    (len(hyp_area_SSC_ts_ss) - 1)
+)
+hyp_area_auc_SSM_ss = np.trapezoid(
+    hyp_area_SSM_ts_ss,
+    dx=1
+)
+mean_hyp_area_SSM_ss = (
+    hyp_area_auc_SSM_ss /
+    (len(hyp_area_SSM_ts_ss) - 1)
+)
+hyp_area_auc_SSM_ecology_ss = np.trapezoid(
+    hyp_area_SSM_ecology_ts_ss,
+    dx=1
+)
+mean_hyp_area_SSM_ecology_ss = (
+    hyp_area_auc_SSM_ecology_ss /
+    (len(hyp_area_SSM_ecology_ts_ss) - 1)
+)
+
+# Main Basin
+hyp_area_auc_LO_mb = np.trapezoid(
+    hyp_area_LO_ts_mb,
+    dx=1
+)
+mean_hyp_area_LO_mb = (
+    hyp_area_auc_LO_mb /
+    (len(hyp_area_LO_ts_mb) - 1)
+)
+hyp_area_auc_SSC_mb = np.trapezoid(
+    hyp_area_SSC_ts_mb,
+    dx=1
+)
+mean_hyp_area_SSC_mb = (
+    hyp_area_auc_SSC_mb /
+    (len(hyp_area_SSC_ts_mb) - 1)
+)
+hyp_area_auc_SSM_mb = np.trapezoid(
+    hyp_area_SSM_ts_mb,
+    dx=1
+)
+mean_hyp_area_SSM_mb = (
+    hyp_area_auc_SSM_mb /
+    (len(hyp_area_SSM_ts_mb) - 1)
+)
+hyp_area_auc_SSM_ecology_mb = np.trapezoid(
+    hyp_area_SSM_ecology_ts_mb,
+    dx=1
+)
+mean_hyp_area_SSM_ecology_mb = (
+    hyp_area_auc_SSM_ecology_mb /
+    (len(hyp_area_SSM_ecology_ts_mb) - 1)
+)
+
+# Organize mean hypoxic areas
+mean_hyp_area = {
+    'Puget Sound': {
+        'LO': mean_hyp_area_LO_ps,
+        'SSC': mean_hyp_area_SSC_ps,
+        'SSM': mean_hyp_area_SSM_ps,
+        'Ecology': mean_hyp_area_SSM_ecology_ps
+    },
+    'Hood Canal': {
+        'LO': mean_hyp_area_LO_hc,
+        'SSC': mean_hyp_area_SSC_hc,
+        'SSM': mean_hyp_area_SSM_hc,
+        'Ecology': mean_hyp_area_SSM_ecology_hc
+    },
+    'Whidbey Basin': {
+        'LO': mean_hyp_area_LO_wb,
+        'SSC': mean_hyp_area_SSC_wb,
+        'SSM': mean_hyp_area_SSM_wb,
+        'Ecology': mean_hyp_area_SSM_ecology_wb
+    },
+    'South Sound': {
+        'LO': mean_hyp_area_LO_ss,
+        'SSC': mean_hyp_area_SSC_ss,
+        'SSM': mean_hyp_area_SSM_ss,
+        'Ecology': mean_hyp_area_SSM_ecology_ss
+    },
+    'Main Basin': {
+        'LO': mean_hyp_area_LO_mb,
+        'SSC': mean_hyp_area_SSC_mb,
+        'SSM': mean_hyp_area_SSM_mb,
+        'Ecology': mean_hyp_area_SSM_ecology_mb
+    }
+}
+
+# ============================================================
+# PLOT TIME AVERAGED HYPOXIC AREA 
 # ============================================================
 
 colors = {
@@ -1105,6 +1317,43 @@ colors = {
     'SSM': '#009E73',
     'Ecology': "#CC79A7"
 }
+
+fig, ax = plt.subplots(1, 5, figsize=(15, 5), sharey=True)
+
+for i, (basin, values) in enumerate(mean_hyp_area.items()):
+
+    models = list(values.keys())
+    averages = list(values.values())
+
+    ax[i].bar(
+        models,
+        averages,
+        color=[colors[m] for m in models],
+        edgecolor='black',
+        linewidth=0.7
+    )
+
+    ax[i].set_title(basin)
+    ax[i].set_xlabel('Model')
+    ax[i].spines[['top', 'right']].set_visible(False)
+
+    ax[i].tick_params(axis='x', rotation=45)
+
+ax[0].set_ylabel('Time-averaged Hypoxic Area (km²)')
+
+fig.suptitle('Time-averaged Hypoxic Area by Basin', fontsize=14)
+
+plt.tight_layout()
+plt.savefig(
+    out_dir / 'timeavg_hypoxic_area_comparison.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+plt.show()
+
+# ============================================================
+# PLOT HYPOXIC AREA AND VOLUME TS
+# ============================================================
 
 # ------------------------------------------------------------
 # Hypoxic area
