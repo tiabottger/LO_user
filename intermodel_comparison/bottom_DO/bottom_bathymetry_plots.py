@@ -114,16 +114,23 @@ lat_SSM = ds_SSM['lat'].values
 # ============================================================
 # SSM MESH FOOTPRINT
 # ============================================================
-nv = ds_SSM['nv'].values
+
+nv = ds_SSM['nv'].values.copy()
 
 # Check whether connectivity is zero-based or one-based
-if nv.min() >= 1 and nv.max() <= len(lon_SSM):
-    nv -= 1
+if nv.min() == 0 and nv.max() < len(lon_SSM):
+    triangles = nv.copy()
 
-# Construct triangular elements
-triangles = []
+elif nv.min() >= 1 and nv.max() <= len(lon_SSM):
+    triangles = nv - 1
 
-for nodes in nv:
+else:
+    raise ValueError('Cannot safely infer connectivity indexing')
+
+# Construct triangular polygons separately
+SSM_polygons = []
+
+for nodes in triangles:
 
     triangle_lon = lon_SSM[nodes]
     triangle_lat = lat_SSM[nodes]
@@ -132,12 +139,12 @@ for nodes in nv:
         np.all(np.isfinite(triangle_lon)) and
         np.all(np.isfinite(triangle_lat))
     ):
-        triangles.append(
+        SSM_polygons.append(
             Polygon(zip(triangle_lon, triangle_lat))
         )
 
 # Combine triangles into one mesh footprint
-SSM_footprint = unary_union(triangles)
+SSM_footprint = unary_union(SSM_polygons)
 
 # Prepare geometry for efficient point-in-polygon testing
 SSM_footprint_prepared = prep(SSM_footprint)
