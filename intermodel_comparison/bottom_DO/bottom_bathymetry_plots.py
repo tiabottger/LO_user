@@ -316,7 +316,7 @@ axes[1].set_ylabel('Latitude')
 pcm3 = axes[2].tripcolor(
     triang,
     facecolors=depth_SSM_plot,
-    shading='flat',
+    shading='gouraud', # use gouraud for depth stored at nodes
     cmap=cmocean.cm.deep,
     vmin=depth_min,
     vmax=depth_max
