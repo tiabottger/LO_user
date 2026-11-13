@@ -539,3 +539,5 @@ plt.savefig(
 )
 
 plt.show()
+
+print('Figure saved to:', Path('thick_bot146_difference_LO_minus_SSC.png').resolve())
