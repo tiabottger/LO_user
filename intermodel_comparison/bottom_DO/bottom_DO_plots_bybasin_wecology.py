@@ -1278,32 +1278,32 @@ mean_hyp_area = {
     'Puget Sound': {
         'LO': mean_hyp_area_LO_ps,
         'SSC': mean_hyp_area_SSC_ps,
-        'SSM': mean_hyp_area_SSM_ps,
-        'Ecology': mean_hyp_area_SSM_ecology_ps
+        'SSM PNNL': mean_hyp_area_SSM_ps,
+        'SSM Ecology': mean_hyp_area_SSM_ecology_ps
     },
     'Hood Canal': {
         'LO': mean_hyp_area_LO_hc,
         'SSC': mean_hyp_area_SSC_hc,
-        'SSM': mean_hyp_area_SSM_hc,
-        'Ecology': mean_hyp_area_SSM_ecology_hc
+        'SSM PNNL': mean_hyp_area_SSM_hc,
+        'SSM Ecology': mean_hyp_area_SSM_ecology_hc
     },
     'Whidbey Basin': {
         'LO': mean_hyp_area_LO_wb,
         'SSC': mean_hyp_area_SSC_wb,
-        'SSM': mean_hyp_area_SSM_wb,
-        'Ecology': mean_hyp_area_SSM_ecology_wb
+        'SSM PNNL': mean_hyp_area_SSM_wb,
+        'SSM Ecology': mean_hyp_area_SSM_ecology_wb
     },
     'South Sound': {
         'LO': mean_hyp_area_LO_ss,
         'SSC': mean_hyp_area_SSC_ss,
-        'SSM': mean_hyp_area_SSM_ss,
-        'Ecology': mean_hyp_area_SSM_ecology_ss
+        'SSM PNNL': mean_hyp_area_SSM_ss,
+        'SSM Ecology': mean_hyp_area_SSM_ecology_ss
     },
     'Main Basin': {
         'LO': mean_hyp_area_LO_mb,
         'SSC': mean_hyp_area_SSC_mb,
-        'SSM': mean_hyp_area_SSM_mb,
-        'Ecology': mean_hyp_area_SSM_ecology_mb
+        'SSM PNNL': mean_hyp_area_SSM_mb,
+        'SSM Ecology': mean_hyp_area_SSM_ecology_mb
     }
 }
 
