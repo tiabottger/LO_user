@@ -1,0 +1,2518 @@
+"""
+This script calculates hypoxic area and volume for LiveOcean SSC and SSM output,
+reading netCDF files from LO_output/intermodel_comparison/bottom_DO
+
+This script searches for yearly box extractions in LO_output, for the
+region "pugetsoundDO". It uses the file created by get_bottom_DO_nc.py.
+"""
+
+# import things
+import numpy as np
+import xarray as xr
+import pandas as pd
+import matplotlib.dates as mdates
+import matplotlib.tri as mtri
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from matplotlib.colors import FuncNorm, ListedColormap
+from scipy.spatial import cKDTree
+from pyproj import Transformer
+from lo_tools import Lfun
+from lo_tools import plotting_functions as pfun
+import cmocean
+import cmocean.tools
+
+import sys
+from pathlib import Path
+pth = Path(__file__).absolute().parent.parent.parent / 'LO' / 'pgrid'
+if str(pth) not in sys.path:
+    sys.path.append(str(pth))
+
+Ldir = Lfun.Lstart()
+
+# ============================================================
+# USER INPUTS
+# ============================================================
+
+region = 'pugetsoundDO'
+year = '2014'
+
+in_dir = Ldir['LOo'] / 'intermodel_comparison' / 'bottom_DO'
+
+out_dir = Ldir['LOo'] / 'intermodel_comparison' / 'bottom_DO_plots'
+out_dir.mkdir(parents=True, exist_ok=True)
+
+# ============================================================
+# LOAD DATA
+# ============================================================
+
+# READ MODEL OUTPUT
+ds_LO = xr.open_dataset(
+    in_dir / 'cas7_t1_x11ab_pugetsound_2014_bottom_DO_info.nc'
+)
+ds_SSC = xr.open_dataset(
+    in_dir / 'SSC_2014_pugetsound_bottom_DO_info.nc'
+)
+
+ds_SSM= xr.open_dataset(
+    in_dir / 'SSM_2014_pugetsound_bottom_DO_info.nc'
+)
+
+ds_SSM_ecology= xr.open_dataset(
+    in_dir / 'SSM_ecology_2014_pugetsound_bottom_DO_info.nc'
+)
+
+# READ Puget Sound BASIN MASKS
+basin_mask_ds = xr.open_dataset(
+    Ldir['LOu'] /
+    'obsmod' /
+    'basin_masks_from_pugetsoundDObox.nc'
+)
+mask_ps = basin_mask_ds['mask_pugetsound'].values
+mask_hc = basin_mask_ds['mask_hoodcanal'].values
+mask_wb = basin_mask_ds['mask_whidbeybasin'].values
+mask_ss = basin_mask_ds['mask_southsound'].values
+mask_mb = basin_mask_ds['mask_mainbasin'].values
+
+# LIVE OCEAN GRID
+grid_fn = Path('../../../LO_data/grids/cas7/grid.nc')
+grid_ds = xr.open_dataset(grid_fn)
+
+lon_LO = grid_ds['lon_rho'].values
+lat_LO = grid_ds['lat_rho'].values
+mask_rho = grid_ds['mask_rho'].values
+
+# ============================================================
+# GET CELL AREA FROM ORIGINAL LIVE OCEAN BOX FILE
+# ============================================================
+
+# get grid cell area from one of the original box files
+fp_grid = Ldir['LOo'] / 'extract' / 'cas7_t1_x11ab' / 'box' / (region + '_2014.01.01_2014.12.31.nc')
+box_ds = xr.open_dataset(fp_grid)
+
+DX = box_ds.pm.values ** -1
+DY = box_ds.pn.values ** -1
+DA = DX * DY * 1e-6  # m2 to km2
+
+# optional: mask out land if mask_rho exists
+if 'mask_rho' in box_ds:
+    mask_rho = box_ds['mask_rho'].values
+else:
+    mask_rho = np.ones_like(DA)
+
+DA = DA * mask_rho
+DA_ps = DA * mask_ps  # mask out non-Puget Sound areas
+
+DA_hc = DA * mask_hc
+DA_wb = DA * mask_wb
+DA_ss = DA * mask_ss
+DA_mb = DA * mask_mb
+
+# ============================================================
+# SSC GRID
+# ============================================================
+
+lon_SSC = ds_SSC['nav_lon'].values
+lat_SSC = ds_SSC['nav_lat'].values
+
+
+# ============================================================
+# MAP Puget Sound MASK ONTO SSC GRID
+# ============================================================
+
+mask_lon = basin_mask_ds['lon_rho'].values
+mask_lat = basin_mask_ds['lat_rho'].values
+
+grid_points = np.column_stack((
+    mask_lon.ravel(),
+    mask_lat.ravel()
+))
+
+valid_grid = (
+    np.isfinite(grid_points[:, 0]) &
+    np.isfinite(grid_points[:, 1])
+)
+
+tree = cKDTree(grid_points[valid_grid])
+
+ssc_points = np.column_stack((
+    lon_SSC.ravel(),
+    lat_SSC.ravel()
+))
+
+_, nearest_index = tree.query(ssc_points)
+
+valid_flat_indices = np.flatnonzero(valid_grid)
+
+nearest_flat_index = valid_flat_indices[nearest_index]
+
+eta_index, xi_index = np.unravel_index(
+    nearest_flat_index,
+    mask_lon.shape
+)
+
+mask_ps_SSC = (
+    mask_ps[eta_index, xi_index] == 1
+).reshape(lon_SSC.shape)
+
+mask_hc_SSC = (
+    mask_hc[eta_index, xi_index] == 1
+).reshape(lon_SSC.shape)
+
+mask_wb_SSC = (
+    mask_wb[eta_index, xi_index] == 1
+).reshape(lon_SSC.shape)
+
+mask_ss_SSC = (
+    mask_ss[eta_index, xi_index] == 1
+).reshape(lon_SSC.shape)
+
+mask_mb_SSC = (
+    mask_mb[eta_index, xi_index] == 1
+).reshape(lon_SSC.shape)
+
+# ============================================================
+# SSC CELL AREA
+#
+# so estimate horizontal area from lon/lat.
+# ============================================================
+
+R = 6371000.0
+
+lat_rad = np.deg2rad(lat_SSC)
+lon_rad = np.deg2rad(lon_SSC)
+
+dlat = np.gradient(lat_rad, axis=0)
+dlon = np.gradient(lon_rad, axis=1)
+
+DY_SSC = R * np.abs(dlat)
+DX_SSC = (
+    R *
+    np.abs(dlon) *
+    np.cos(lat_rad)
+)
+
+DA_SSC = DX_SSC * DY_SSC * 1e-6  # m2 to km2
+
+DA_SSC_ps = DA_SSC * mask_ps_SSC 
+
+DA_SSC_hc = DA_SSC * mask_hc_SSC
+DA_SSC_wb = DA_SSC * mask_wb_SSC
+DA_SSC_ss = DA_SSC * mask_ss_SSC
+DA_SSC_mb = DA_SSC * mask_mb_SSC
+
+# ============================================================
+# SSM PNNL
+# ============================================================
+DO_SSM = ds_SSM['DO_bot'].values
+hyp_thick_SSM = ds_SSM['hyp_thick'].values
+thick_bot_SSM = ds_SSM['thick_bot'].values
+depth_bot_SSM = ds_SSM['depth_bot'].values
+
+n_time, n_node = DO_SSM.shape
+n_elem = ds_SSM.sizes['elem']
+
+lon_SSM = ds_SSM['lon'].values
+lat_SSM = ds_SSM['lat'].values
+
+# ============================================================
+# EXTRACT SSM ECOLOGY
+# ============================================================
+DO_SSM_ecology = ds_SSM_ecology['DO_bot'].values
+hyp_thick_SSM_ecology = ds_SSM_ecology['hyp_thick'].values
+thick_bot_SSM_ecology = ds_SSM_ecology['thick_bot'].values
+depth_bot_SSM_ecology = ds_SSM_ecology['depth_bot'].values
+
+lon_SSM_ecology = ds_SSM_ecology['lon'].values
+lat_SSM_ecology = ds_SSM_ecology['lat'].values
+
+time_SSM_ecology = pd.to_datetime(
+    ds_SSM_ecology['time'].values
+)
+
+print("PNNL node count:", len(lon_SSM))
+print("Ecology node count:", len(lon_SSM_ecology))
+
+assert len(lon_SSM) == len(lon_SSM_ecology)
+
+# ============================================================
+# MATCH PNNL AND ECOLOGY NODES
+# ============================================================
+
+# Project coordinates to UTM zone 10N so distances are in meters.
+transformer = Transformer.from_crs(
+    'EPSG:4326',
+    'EPSG:26910',
+    always_xy=True
+)
+
+x_SSM, y_SSM = transformer.transform(
+    lon_SSM, lat_SSM
+)
+
+x_ecology, y_ecology = transformer.transform(
+    lon_SSM_ecology, lat_SSM_ecology
+)
+
+pnnl_points = np.column_stack((x_SSM, y_SSM))
+ecology_points = np.column_stack((x_ecology, y_ecology))
+
+# Find the nearest Ecology node for each PNNL node.
+tree_ecology = cKDTree(ecology_points)
+
+node_distances, pnnl_to_ecology = tree_ecology.query(
+    pnnl_points,
+    k=1
+)
+
+print(
+    "Maximum PNNL-Ecology node separation (m):",
+    node_distances.max()
+)
+
+print(
+    "Mean PNNL-Ecology node separation (m):",
+    node_distances.mean()
+)
+
+# Require a one-to-one node match.
+assert len(pnnl_points) == len(ecology_points), \
+    "PNNL and Ecology have different node counts."
+
+assert len(np.unique(pnnl_to_ecology)) == len(pnnl_points), \
+    "PNNL nodes do not map uniquely to Ecology nodes."
+
+# Require coordinates to agree
+coordinate_tolerance_m = 10
+
+assert np.all(node_distances < coordinate_tolerance_m), \
+    "Some PNNL and Ecology nodes differ by more than tolerance."
+
+print("All PNNL nodes have a unique Ecology match.")
+
+# ------------------------------------------------------------
+# PNNL TRIANGULAR MESH CONNECTIVITY
+# ------------------------------------------------------------
+
+# nv should reference local_node indices.
+nv = ds_SSM['nv'].values.astype(int)
+
+print('nv minimum:', nv.min())
+print('nv maximum:', nv.max())
+
+if nv.min() == 0 and nv.max() < n_node:
+    # Zero-based connectivity
+    triangles = nv.copy()
+elif nv.min() >= 1 and nv.max() == n_node:
+    # One-based connectivity
+    triangles = nv - 1
+else:
+    raise ValueError(
+        'Cannot safely infer nv indexing. Inspect the extraction '
+        'script and confirm that nv references local_node indices.'
+    )
+
+assert triangles.shape == (n_elem, 3)
+assert triangles.min() >= 0
+assert triangles.max() < n_node
+
+# ============================================================
+# TRANSFER PNNL CONNECTIVITY TO ECOLOGY
+# ============================================================
+
+# pnnl_to_ecology maps each PNNL local node index to the
+# corresponding Ecology local node index.
+#
+# Translate all PNNL triangles into Ecology local node indices.
+triangles_ecology = pnnl_to_ecology[triangles]
+
+assert triangles_ecology.shape == triangles.shape
+assert triangles_ecology.min() >= 0
+assert triangles_ecology.max() < len(lon_SSM_ecology)
+
+# Add transferred connectivity to the Ecology dataset.
+ds_SSM_ecology = ds_SSM_ecology.assign(
+    nv=(
+        ('elem', 'three'),
+        triangles_ecology.astype(np.int32)
+    )
+)
+
+ds_SSM_ecology['nv'].attrs['description'] = (
+    'PNNL triangular connectivity remapped to Ecology local '
+    'node indices using coordinate-based node matching.'
+)
+
+print("Transferred PNNL connectivity to Ecology.")
+print("Ecology connectivity shape:", triangles_ecology.shape)
+
+# ------------------------------------------------------------
+# PROJECT COORDINATES TO METERS
+# ------------------------------------------------------------
+
+# Calculate the area of every triangular element.
+x_tri = x_SSM[triangles]
+y_tri = y_SSM[triangles]
+
+element_area_m2 = 0.5 * np.abs(
+    (x_tri[:, 1] - x_tri[:, 0]) *
+    (y_tri[:, 2] - y_tri[:, 0])
+    -
+    (x_tri[:, 2] - x_tri[:, 0]) *
+    (y_tri[:, 1] - y_tri[:, 0])
+)
+
+element_area_km2 = element_area_m2 / 1e6
+
+print(
+    'Element area range (km2):',
+    element_area_km2.min(),
+    element_area_km2.max()
+)
+
+# ============================================================
+# MAP PUGET SOUND MASK ONTO SSM NODES
+# ============================================================
+
+mask_points = np.column_stack((
+    mask_lon.ravel(),
+    mask_lat.ravel()
+))
+
+valid_mask_points = (
+    np.isfinite(mask_points).all(axis=1)
+)
+
+tree = cKDTree(mask_points[valid_mask_points])
+
+ssm_points = np.column_stack((lon_SSM, lat_SSM))
+_, nearest = tree.query(ssm_points)
+
+valid_flat = np.flatnonzero(valid_mask_points)
+nearest_flat = valid_flat[nearest]
+
+mask_j, mask_i = np.unravel_index(
+    nearest_flat, mask_lon.shape
+)
+
+mask_node_SSM_ps = mask_ps[mask_j, mask_i] == 1
+
+mask_node_SSM_hc = mask_hc[mask_j, mask_i] == 1
+mask_node_SSM_wb = mask_wb[mask_j, mask_i] == 1
+mask_node_SSM_ss = mask_ss[mask_j, mask_i] == 1
+mask_node_SSM_mb = mask_mb[mask_j, mask_i] == 1
+
+# Transfer the node mask to Ecology indexing.
+mask_node_ecology_ps = np.empty(
+    len(lon_SSM_ecology),
+    dtype=bool
+)
+
+mask_node_ecology_hc = np.empty(
+    len(lon_SSM_ecology),
+    dtype=bool
+)
+mask_node_ecology_wb = np.empty(
+    len(lon_SSM_ecology),
+    dtype=bool
+)
+mask_node_ecology_ss = np.empty(
+    len(lon_SSM_ecology),
+    dtype=bool
+)
+mask_node_ecology_mb = np.empty(
+    len(lon_SSM_ecology),
+    dtype=bool
+)
+
+mask_node_ecology_ps[pnnl_to_ecology] = mask_node_SSM_ps
+mask_node_ecology_hc[pnnl_to_ecology] = mask_node_SSM_hc
+mask_node_ecology_wb[pnnl_to_ecology] = mask_node_SSM_wb
+mask_node_ecology_ss[pnnl_to_ecology] = mask_node_SSM_ss
+mask_node_ecology_mb[pnnl_to_ecology] = mask_node_SSM_mb
+
+# Classify an element as Puget Sound if at least two of
+# its three vertices fall within the Puget Sound mask.
+mask_elem_SSM_ps = (
+    mask_node_SSM_ps[triangles].sum(axis=1) >= 2
+)
+
+mask_elem_SSM_hc = (
+    mask_node_SSM_hc[triangles].sum(axis=1) >= 2
+)
+mask_elem_SSM_wb = (
+    mask_node_SSM_wb[triangles].sum(axis=1) >= 2
+)
+mask_elem_SSM_ss = (
+    mask_node_SSM_ss[triangles].sum(axis=1) >= 2
+)
+mask_elem_SSM_mb = (
+    mask_node_SSM_mb[triangles].sum(axis=1) >= 2
+)
+
+
+mask_elem_ecology_ps = (
+    mask_node_ecology_ps[triangles_ecology].sum(axis=1) >= 2
+)
+
+mask_elem_ecology_hc = (
+    mask_node_ecology_hc[triangles_ecology].sum(axis=1) >= 2
+)
+mask_elem_ecology_wb = (
+    mask_node_ecology_wb[triangles_ecology].sum(axis=1) >= 2
+)
+mask_elem_ecology_ss = (
+    mask_node_ecology_ss[triangles_ecology].sum(axis=1) >= 2
+)
+mask_elem_ecology_mb = (
+    mask_node_ecology_mb[triangles_ecology].sum(axis=1) >= 2
+)
+
+print('SSM elements inside Puget Sound:', mask_elem_SSM_ps.sum())
+
+# Apply the basin mask to element areas.
+area_km2_SSM = element_area_km2 * mask_elem_SSM_ps
+
+area_km2_SSM_hc = element_area_km2 * mask_elem_SSM_hc
+area_km2_SSM_wb = element_area_km2 * mask_elem_SSM_wb
+area_km2_SSM_ss = element_area_km2 * mask_elem_SSM_ss
+area_km2_SSM_mb = element_area_km2 * mask_elem_SSM_mb
+
+# ============================================================
+# NODE VALUES TO ELEMENT VALUES
+# ============================================================
+
+# The SSM variables are node-based. Approximate element values
+# by averaging the three vertices of each triangular element.
+
+def node_to_element(values, triangles):
+    """
+    Convert node-based data to element averages.
+
+    Supports:
+        (node,) -> (element,)
+        (time, node) -> (time, element)
+    """
+    if values.ndim == 1:
+        return np.nanmean(values[triangles], axis=1)
+
+    return np.nanmean(values[:, triangles], axis=2)
+
+
+DO_elem_SSM_ps = node_to_element(DO_SSM, triangles)
+hyp_thick_elem_SSM_ps = node_to_element(hyp_thick_SSM, triangles)
+depth_elem_SSM_ps = node_to_element(depth_bot_SSM, triangles)
+thick_bot_elem_SSM_ps = node_to_element(thick_bot_SSM, triangles)
+
+DO_elem_SSM_hc = DO_elem_SSM_ps.copy()
+hyp_thick_elem_SSM_hc = hyp_thick_elem_SSM_ps.copy()
+depth_elem_SSM_hc = depth_elem_SSM_ps.copy()
+thick_bot_elem_SSM_hc = thick_bot_elem_SSM_ps.copy()
+
+DO_elem_SSM_wb = DO_elem_SSM_ps.copy()
+hyp_thick_elem_SSM_wb = hyp_thick_elem_SSM_ps.copy()
+depth_elem_SSM_wb = depth_elem_SSM_ps.copy()
+thick_bot_elem_SSM_wb = thick_bot_elem_SSM_ps.copy()
+
+DO_elem_SSM_ss = DO_elem_SSM_ps.copy()
+hyp_thick_elem_SSM_ss = hyp_thick_elem_SSM_ps.copy()
+depth_elem_SSM_ss = depth_elem_SSM_ps.copy()
+thick_bot_elem_SSM_ss = thick_bot_elem_SSM_ps.copy()
+
+DO_elem_SSM_mb = DO_elem_SSM_ps.copy()
+hyp_thick_elem_SSM_mb = hyp_thick_elem_SSM_ps.copy()
+depth_elem_SSM_mb = depth_elem_SSM_ps.copy()
+thick_bot_elem_SSM_mb = thick_bot_elem_SSM_ps.copy()
+
+# ------------------------------------------------------------
+# Ecology element values
+# ------------------------------------------------------------
+
+DO_elem_ecology_ps = node_to_element(
+    DO_SSM_ecology,
+    triangles_ecology
+)
+
+hyp_thick_elem_ecology_ps = node_to_element(
+    hyp_thick_SSM_ecology,
+    triangles_ecology
+)
+
+depth_elem_ecology_ps = node_to_element(
+    depth_bot_SSM_ecology,
+    triangles_ecology
+)
+
+thick_bot_elem_ecology_ps = node_to_element(
+    thick_bot_SSM_ecology,
+    triangles_ecology
+)
+
+DO_elem_ecology_hc = DO_elem_ecology_ps.copy()
+hyp_thick_elem_ecology_hc = hyp_thick_elem_ecology_ps.copy()
+depth_elem_ecology_hc = depth_elem_ecology_ps.copy()
+thick_bot_elem_ecology_hc = thick_bot_elem_ecology_ps.copy()
+
+DO_elem_ecology_wb = DO_elem_ecology_ps.copy()
+hyp_thick_elem_ecology_wb = hyp_thick_elem_ecology_ps.copy()
+depth_elem_ecology_wb = depth_elem_ecology_ps.copy()
+thick_bot_elem_ecology_wb = thick_bot_elem_ecology_ps.copy()
+
+DO_elem_ecology_ss = DO_elem_ecology_ps.copy()
+hyp_thick_elem_ecology_ss = hyp_thick_elem_ecology_ps.copy()
+depth_elem_ecology_ss = depth_elem_ecology_ps.copy()
+thick_bot_elem_ecology_ss = thick_bot_elem_ecology_ps.copy()
+
+DO_elem_ecology_mb = DO_elem_ecology_ps.copy()
+hyp_thick_elem_ecology_mb = hyp_thick_elem_ecology_ps.copy()
+depth_elem_ecology_mb = depth_elem_ecology_ps.copy()
+thick_bot_elem_ecology_mb = thick_bot_elem_ecology_ps.copy()
+
+
+# Exclude elements outside Puget Sound.
+DO_elem_SSM_ps[:, ~mask_elem_SSM_ps] = np.nan
+hyp_thick_elem_SSM_ps[:, ~mask_elem_SSM_ps] = np.nan
+
+DO_elem_SSM_hc[:, ~mask_elem_SSM_hc] = np.nan
+hyp_thick_elem_SSM_hc[:, ~mask_elem_SSM_hc] = np.nan
+DO_elem_SSM_wb[:, ~mask_elem_SSM_wb] = np.nan
+hyp_thick_elem_SSM_wb[:, ~mask_elem_SSM_wb] = np.nan
+DO_elem_SSM_ss[:, ~mask_elem_SSM_ss] = np.nan
+hyp_thick_elem_SSM_ss[:, ~mask_elem_SSM_ss] = np.nan
+DO_elem_SSM_mb[:, ~mask_elem_SSM_mb] = np.nan
+hyp_thick_elem_SSM_mb[:, ~mask_elem_SSM_mb] = np.nan
+
+DO_elem_ecology_ps[:, ~mask_elem_ecology_ps] = np.nan
+hyp_thick_elem_ecology_ps[:, ~mask_elem_ecology_ps] = np.nan
+
+DO_elem_ecology_hc[:, ~mask_elem_ecology_hc] = np.nan
+hyp_thick_elem_ecology_hc[:, ~mask_elem_ecology_hc] = np.nan
+DO_elem_ecology_wb[:, ~mask_elem_ecology_wb] = np.nan
+hyp_thick_elem_ecology_wb[:, ~mask_elem_ecology_wb] = np.nan
+DO_elem_ecology_ss[:, ~mask_elem_ecology_ss] = np.nan
+hyp_thick_elem_ecology_ss[:, ~mask_elem_ecology_ss] = np.nan
+DO_elem_ecology_mb[:, ~mask_elem_ecology_mb] = np.nan
+hyp_thick_elem_ecology_mb[:, ~mask_elem_ecology_mb] = np.nan
+
+# Depth and bottom thickness may be either time-dependent
+# or static, so handle both possibilities.
+
+if depth_elem_SSM_ps.ndim == 1:
+    depth_elem_SSM_ps[~mask_elem_SSM_ps] = np.nan
+else:
+    depth_elem_SSM_ps[:, ~mask_elem_SSM_ps] = np.nan
+
+if depth_elem_ecology_ps.ndim == 1:
+    depth_elem_ecology_ps[~mask_elem_ecology_ps] = np.nan
+else:
+    depth_elem_ecology_ps[:, ~mask_elem_ecology_ps] = np.nan
+
+if thick_bot_elem_SSM_ps.ndim == 1:
+    thick_bot_elem_SSM_ps[~mask_elem_SSM_ps] = np.nan
+else:
+    thick_bot_elem_SSM_ps[:, ~mask_elem_SSM_ps] = np.nan
+
+if thick_bot_elem_ecology_ps.ndim == 1:
+    thick_bot_elem_ecology_ps[~mask_elem_ecology_ps] = np.nan
+else:
+    thick_bot_elem_ecology_ps[:, ~mask_elem_ecology_ps] = np.nan
+
+
+# ============================================================
+# LIVE OCEAN
+# Bottom 14.6% of water column
+# ============================================================
+
+DO_LO = ds_LO['DO_bot146'].values
+hyp_thick_LO = ds_LO['hyp_thick'].values
+
+# Hypoxic cells
+hypoxic_LO = DO_LO <= 2.0
+
+# ------------------------------------------------------------
+# Hypoxic area
+# ------------------------------------------------------------
+
+# DA_ps is already masked to Puget Sound, so multiplying by DA applies mask
+hyp_area_LO_ts_ps = np.sum(
+    hypoxic_LO * DA_ps[None, :, :],
+    axis=(1, 2)
+)
+
+hyp_area_LO_ts_hc = np.sum(
+    hypoxic_LO * DA_hc[None, :, :],
+    axis=(1, 2)
+)
+hyp_area_LO_ts_wb = np.sum(
+    hypoxic_LO * DA_wb[None, :, :],
+    axis=(1, 2)
+)
+hyp_area_LO_ts_ss = np.sum(
+    hypoxic_LO * DA_ss[None, :, :],
+    axis=(1, 2)
+)
+hyp_area_LO_ts_mb = np.sum(
+    hypoxic_LO * DA_mb[None, :, :],
+    axis=(1, 2)
+)
+
+# ------------------------------------------------------------
+# Hypoxic volume
+# ------------------------------------------------------------
+
+# hyp_thick = m
+# DA_ps = km2
+hyp_volume_LO_ts_ps = np.nansum(
+        hypoxic_LO *
+    hyp_thick_LO *
+    DA_ps[None, :, :],
+    axis=(1, 2) 
+)/1e3
+
+hyp_volume_LO_ts_hc = np.nansum(
+    hypoxic_LO *
+    hyp_thick_LO *
+    DA_hc[None, :, :],
+    axis=(1, 2) 
+)/1e3
+hyp_volume_LO_ts_wb = np.nansum(
+    hypoxic_LO *
+    hyp_thick_LO *
+    DA_wb[None, :, :],
+    axis=(1, 2) 
+)/1e3
+hyp_volume_LO_ts_ss = np.nansum(
+    hypoxic_LO *
+    hyp_thick_LO *
+    DA_ss[None, :, :],
+    axis=(1, 2) 
+)/1e3
+hyp_volume_LO_ts_mb = np.nansum(
+    hypoxic_LO *
+    hyp_thick_LO *
+    DA_mb[None, :, :],
+    axis=(1, 2) 
+)/1e3
+
+
+# ============================================================
+# SALISHSEACAST
+# Bottom 14.6% of water column
+# ============================================================
+
+DO_SSC = ds_SSC['DO_bot146'].values
+hyp_thick_SSC = ds_SSC['hyp_thick'].values
+
+# Hypoxic cells
+hypoxic_SSC = DO_SSC <= 2.0
+
+# ------------------------------------------------------------
+# Hypoxic area
+# ------------------------------------------------------------
+
+# DA_SSC_ps is already masked to Puget Sound
+hyp_area_SSC_ts_ps = np.sum(
+    hypoxic_SSC *
+    DA_SSC_ps[None, :, :],
+    axis=(1, 2)
+)
+
+hyp_area_SSC_ts_hc = np.sum(
+    hypoxic_SSC *
+    DA_SSC_hc[None, :, :],
+    axis=(1, 2)
+)
+hyp_area_SSC_ts_wb = np.sum(
+    hypoxic_SSC *
+    DA_SSC_wb[None, :, :],
+    axis=(1, 2)
+)
+hyp_area_SSC_ts_ss = np.sum(
+    hypoxic_SSC *
+    DA_SSC_ss[None, :, :],
+    axis=(1, 2)
+)
+hyp_area_SSC_ts_mb = np.sum(
+    hypoxic_SSC *
+    DA_SSC_mb[None, :, :],
+    axis=(1, 2)
+)
+
+# ------------------------------------------------------------
+# Hypoxic volume
+# ------------------------------------------------------------
+
+# hyp_thick = m
+# DA_SSC = km2
+hyp_volume_SSC_ts_ps = np.nansum(
+    hypoxic_SSC *
+    hyp_thick_SSC *
+    DA_SSC_ps[None, :, :],
+    axis=(1, 2)
+)/ 1e3 # convert m hyp thick to km --> km3
+
+hyp_volume_SSC_ts_hc = np.nansum(
+    hypoxic_SSC *
+    hyp_thick_SSC *
+    DA_SSC_hc[None, :, :],
+    axis=(1, 2)
+)/ 1e3
+hyp_volume_SSC_ts_wb = np.nansum(
+    hypoxic_SSC *
+    hyp_thick_SSC *
+    DA_SSC_wb[None, :, :],
+    axis=(1, 2)
+)/ 1e3
+hyp_volume_SSC_ts_ss = np.nansum(
+    hypoxic_SSC *
+    hyp_thick_SSC *
+    DA_SSC_ss[None, :, :],
+    axis=(1, 2)
+)/ 1e3
+hyp_volume_SSC_ts_mb = np.nansum(
+    hypoxic_SSC *
+    hyp_thick_SSC *
+    DA_SSC_mb[None, :, :],
+    axis=(1, 2)
+)/ 1e3
+
+# ============================================================
+# SALISH SEA MODEL
+# Bottom cell
+# ============================================================
+
+# ------------------------------------------------------------
+# Hypoxic area
+# ------------------------------------------------------------
+
+hypoxic_elem_SSM_ps = DO_elem_SSM_ps <= 2.0
+hypoxic_elem_SSM_hc = DO_elem_SSM_hc <= 2.0
+hypoxic_elem_SSM_wb = DO_elem_SSM_wb <= 2.0
+hypoxic_elem_SSM_ss = DO_elem_SSM_ss <= 2.0
+hypoxic_elem_SSM_mb = DO_elem_SSM_mb <= 2.0
+
+# km2
+hyp_area_SSM_ts_ps = np.nansum(
+    np.where(
+        hypoxic_elem_SSM_ps,
+        area_km2_SSM[None, :], # adding None introduces time compatible dimension
+        0.0
+    ),
+    axis=1
+)
+
+hyp_area_SSM_ts_hc = np.nansum(
+    np.where(
+        hypoxic_elem_SSM_hc,
+        area_km2_SSM_hc[None, :], # adding None introduces time compatible dimension
+        0.0
+    ),
+    axis=1
+)
+hyp_area_SSM_ts_wb = np.nansum(
+    np.where(
+        hypoxic_elem_SSM_wb,
+        area_km2_SSM_wb[None, :], # adding None introduces time compatible dimension
+        0.0
+    ),
+    axis=1
+)
+hyp_area_SSM_ts_ss = np.nansum(
+    np.where(
+        hypoxic_elem_SSM_ss,
+        area_km2_SSM_ss[None, :], # adding None introduces time compatible dimension
+        0.0
+    ),
+    axis=1
+)
+hyp_area_SSM_ts_mb = np.nansum(
+    np.where(
+        hypoxic_elem_SSM_mb,
+        area_km2_SSM_mb[None, :], # adding None introduces time compatible dimension
+        0.0
+    ),
+    axis=1
+)
+
+hypoxic_elem_ecology_ps = DO_elem_ecology_ps <= 2.0
+hypoxic_elem_ecology_hc = DO_elem_ecology_hc <= 2.0
+hypoxic_elem_ecology_wb = DO_elem_ecology_wb <= 2.0
+hypoxic_elem_ecology_ss = DO_elem_ecology_ss <= 2.0
+hypoxic_elem_ecology_mb = DO_elem_ecology_mb <= 2.0
+
+hyp_area_SSM_ecology_ts_ps = np.nansum(
+    np.where(
+        hypoxic_elem_ecology_ps,
+        area_km2_SSM[None, :],
+        0.0
+    ),
+    axis=1
+)
+hyp_area_SSM_ecology_ts_hc = np.nansum(
+    np.where(
+        hypoxic_elem_ecology_hc,
+        area_km2_SSM_hc[None, :],
+        0.0
+    ),
+    axis=1
+)
+hyp_area_SSM_ecology_ts_wb = np.nansum(
+    np.where(
+        hypoxic_elem_ecology_wb,
+        area_km2_SSM_wb[None, :],
+        0.0
+    ),
+    axis=1
+)
+hyp_area_SSM_ecology_ts_ss = np.nansum(
+    np.where(
+        hypoxic_elem_ecology_ss,
+        area_km2_SSM_ss[None, :],
+        0.0
+    ),
+    axis=1
+)
+hyp_area_SSM_ecology_ts_mb = np.nansum(
+    np.where(
+        hypoxic_elem_ecology_mb,
+        area_km2_SSM_mb[None, :],
+        0.0
+    ),
+    axis=1
+)
+
+# ------------------------------------------------------------
+# Hypoxic volume
+# ------------------------------------------------------------
+
+# hyp_thick is the thickness of water with DO <= threshold.
+# Units: m * km2 / 1000 = km3.
+hyp_volume_SSM_ts_ps = np.nansum(
+    np.where(
+        np.isfinite(hyp_thick_elem_SSM_ps),
+        hyp_thick_elem_SSM_ps * area_km2_SSM[None, :],
+        0.0
+    ),
+    axis=1
+) / 1e3
+
+hyp_volume_SSM_ts_hc = np.nansum(
+    np.where(
+        np.isfinite(hyp_thick_elem_SSM_hc),
+        hyp_thick_elem_SSM_hc * area_km2_SSM_hc[None, :],
+        0.0
+    ),
+    axis=1
+) / 1e3
+hyp_volume_SSM_ts_wb = np.nansum(
+    np.where(
+        np.isfinite(hyp_thick_elem_SSM_wb),
+        hyp_thick_elem_SSM_wb * area_km2_SSM_wb[None, :],
+        0.0
+    ),
+    axis=1
+) / 1e3
+hyp_volume_SSM_ts_ss = np.nansum(
+    np.where(
+        np.isfinite(hyp_thick_elem_SSM_ss),
+        hyp_thick_elem_SSM_ss * area_km2_SSM_ss[None, :],
+        0.0
+    ),
+    axis=1
+) / 1e3
+hyp_volume_SSM_ts_mb = np.nansum(
+    np.where(
+        np.isfinite(hyp_thick_elem_SSM_mb),
+        hyp_thick_elem_SSM_mb * area_km2_SSM_mb[None, :],
+        0.0
+    ),
+    axis=1
+) / 1e3
+
+hyp_volume_SSM_ecology_ts_ps = np.nansum(
+    np.where(
+        np.isfinite(hyp_thick_elem_ecology_ps),
+        hyp_thick_elem_ecology_ps * area_km2_SSM[None, :],
+        0.0
+    ),
+    axis=1
+) / 1e3
+
+hyp_volume_SSM_ecology_ts_hc = np.nansum(
+    np.where(
+        np.isfinite(hyp_thick_elem_ecology_hc),
+        hyp_thick_elem_ecology_hc * area_km2_SSM_hc[None, :],
+        0.0
+    ),
+    axis=1
+) / 1e3
+hyp_volume_SSM_ecology_ts_wb = np.nansum(
+    np.where(
+        np.isfinite(hyp_thick_elem_ecology_wb),
+        hyp_thick_elem_ecology_wb * area_km2_SSM_wb[None, :],
+        0.0
+    ),
+    axis=1
+) / 1e3
+hyp_volume_SSM_ecology_ts_ss = np.nansum(
+    np.where(
+        np.isfinite(hyp_thick_elem_ecology_ss),
+        hyp_thick_elem_ecology_ss * area_km2_SSM_ss[None, :],
+        0.0
+    ),
+    axis=1
+) / 1e3
+hyp_volume_SSM_ecology_ts_mb = np.nansum(
+    np.where(
+        np.isfinite(hyp_thick_elem_ecology_mb),
+        hyp_thick_elem_ecology_mb * area_km2_SSM_mb[None, :],
+        0.0
+    ),
+    axis=1
+) / 1e3
+
+
+# ============================================================
+# TOTAL WATER VOLUME
+# ============================================================
+
+# ------------------------------------------------------------
+# LIVE OCEAN
+# ------------------------------------------------------------
+
+depth_bot_LO = ds_LO['depth_bot'].values
+
+total_volume_LO = np.nansum(
+    depth_bot_LO * DA_ps
+) / 1e3   # m * km2 -> km3
+
+hc_volume_LO = np.nansum(
+    depth_bot_LO * DA_hc
+) / 1e3   # m * km2 -> km3
+wb_volume_LO = np.nansum(
+    depth_bot_LO * DA_wb
+) / 1e3   # m * km2 -> km3
+ss_volume_LO = np.nansum(
+    depth_bot_LO * DA_ss
+) / 1e3   # m * km2 -> km3
+mb_volume_LO = np.nansum(
+    depth_bot_LO * DA_mb
+) / 1e3   # m * km2 -> km3
+
+# ------------------------------------------------------------
+# SALISHSEACAST
+# ------------------------------------------------------------
+
+depth_bot_SSC = ds_SSC['depth_bot'].values
+
+total_volume_SSC = np.nansum(
+    depth_bot_SSC * DA_SSC_ps
+) / 1e3   # m * km2 -> km3
+
+hc_volume_SSC = np.nansum(
+    depth_bot_SSC * DA_SSC_hc
+) / 1e3   # m * km2 -> km3
+wb_volume_SSC = np.nansum(
+    depth_bot_SSC * DA_SSC_wb
+) / 1e3   # m * km2 -> km3
+ss_volume_SSC = np.nansum(
+    depth_bot_SSC * DA_SSC_ss
+) / 1e3   # m * km2 -> km3
+mb_volume_SSC = np.nansum(
+    depth_bot_SSC * DA_SSC_mb
+) / 1e3   # m * km2 -> km3
+
+# ------------------------------------------------------------
+# SALISH SEA MODEL
+# ------------------------------------------------------------
+
+depth_for_volume_SSM = (
+    depth_elem_SSM_ps if depth_elem_SSM_ps.ndim == 1
+    else depth_elem_SSM_ps[0]
+)
+
+total_volume_SSM = np.nansum(
+    depth_for_volume_SSM * area_km2_SSM
+) / 1e3
+
+hc_volume_SSM = np.nansum(
+    depth_for_volume_SSM * area_km2_SSM_hc
+) / 1e3
+wb_volume_SSM = np.nansum(
+    depth_for_volume_SSM * area_km2_SSM_wb
+) / 1e3
+ss_volume_SSM = np.nansum(
+    depth_for_volume_SSM * area_km2_SSM_ss
+) / 1e3
+mb_volume_SSM = np.nansum(
+    depth_for_volume_SSM * area_km2_SSM_mb
+) / 1e3
+
+depth_for_volume_ecology = (
+    depth_elem_ecology_ps if depth_elem_ecology_ps.ndim == 1
+    else depth_elem_ecology_ps[0]
+)
+
+total_volume_SSM_ecology = np.nansum(
+    depth_for_volume_ecology * area_km2_SSM
+) / 1e3
+
+hc_volume_SSM_ecology = np.nansum(
+    depth_for_volume_ecology * area_km2_SSM_hc
+) / 1e3
+wb_volume_SSM_ecology = np.nansum(
+    depth_for_volume_ecology * area_km2_SSM_wb
+) / 1e3
+ss_volume_SSM_ecology = np.nansum(
+    depth_for_volume_ecology * area_km2_SSM_ss
+) / 1e3
+mb_volume_SSM_ecology = np.nansum(
+    depth_for_volume_ecology * area_km2_SSM_mb
+) / 1e3
+
+
+print(f'LiveOcean total volume: {total_volume_LO:.2f} km3')
+print(f'SalishSeaCast total volume: {total_volume_SSC:.2f} km3')
+print(f'Salish Sea Model total volume: {total_volume_SSM:.2f} km3')
+print(f'Salish Sea Model Ecology total volume: 'f'{total_volume_SSM_ecology:.2f} km3')
+
+print(f'LiveOcean Hood Canal volume: {hc_volume_LO:.2f} km3')
+print(f'SalishSeaCast Hood Canal volume: {hc_volume_SSC:.2f} km3')
+print(f'Salish Sea Model Hood Canal volume: {hc_volume_SSM:.2f} km3')
+print(f'Salish Sea Model Ecology Hood Canal volume: {hc_volume_SSM_ecology:.2f} km3')
+
+print(f'LiveOcean Whidbey Basin volume: {wb_volume_LO:.2f} km3')
+print(f'SalishSeaCast Whidbey Basin volume: {wb_volume_SSC:.2f} km3')
+print(f'Salish Sea Model Whidbey Basin volume: {wb_volume_SSM:.2f} km3')
+print(f'Salish Sea Model Ecology Whidbey Basin volume: {wb_volume_SSM_ecology:.2f} km3')
+
+print(f'LiveOcean South Sound volume: {ss_volume_LO:.2f} km3')
+print(f'SalishSeaCast South Sound volume: {ss_volume_SSC:.2f} km3')
+print(f'Salish Sea Model South Sound volume: {ss_volume_SSM:.2f} km3')
+print(f'Salish Sea Model Ecology South Sound volume: {ss_volume_SSM_ecology:.2f} km3')
+
+print(f'LiveOcean Main Basin volume: {mb_volume_LO:.2f} km3')
+print(f'SalishSeaCast Main Basin volume: {mb_volume_SSC:.2f} km3')
+print(f'Salish Sea Model Main Basin volume: {mb_volume_SSM:.2f} km3')
+print(f'Salish Sea Model Ecology Main Basin volume: {mb_volume_SSM_ecology:.2f} km3')
+# ============================================================
+# PLOT HYPOXIC AREA AND VOLUME TS
+# ============================================================
+
+colors = {
+    'LO': '#D55E00',
+    'SSC': '#0072B2',
+    'SSM': '#009E73',
+    'Ecology': "#CC79A7"
+}
+
+# ------------------------------------------------------------
+# Hypoxic area
+# ------------------------------------------------------------
+
+print('Plotting hypoxic area time series — Puget Sound')
+
+fig, ax = plt.subplots(figsize=(11, 4.5))
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_area_LO_ts_ps, linewidth=2, color= colors['LO'], label='LiveOcean'
+)
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_area_SSC_ts_ps, linewidth=2, color= colors['SSC'], label='SalishSeaCast'
+)
+
+ax.plot(
+    pd.to_datetime(ds_SSM['time'].values), 
+    hyp_area_SSM_ts_ps, linewidth=2, color=colors['SSM'], label='SSM PNNL')
+
+ax.plot(
+    time_SSM_ecology,
+    hyp_area_SSM_ecology_ts_ps,
+    linewidth=2,
+    color=colors['Ecology'],
+    label='SSM Ecology'
+)
+
+ax.set_ylabel(
+    'Hypoxic Area (km$^2$)', fontsize=12)
+ax.set_xlabel('Date', fontsize=12)
+ax.grid(visible=True, axis='both', color='silver', linestyle='--')
+ax.legend(loc='upper left')
+
+ax.xaxis.set_major_formatter(
+    mdates.DateFormatter('%Y-%m')
+)
+
+ax.tick_params(
+    axis='x', rotation=30)
+ax.tick_params(
+    axis='both', labelsize=11)
+
+ax.set_title('Hypoxic Area — Puget Sound', fontsize=13)
+
+plt.savefig(
+    out_dir / 'hypoxic_area_comparison_wecology.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+plt.show()
+
+print('Plotting hypoxic area time series — Hood Canal')
+
+fig, ax = plt.subplots(figsize=(11, 4.5))
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_area_LO_ts_hc, linewidth=2, color= colors['LO'], label='LiveOcean'
+)
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_area_SSC_ts_hc, linewidth=2, color= colors['SSC'], label='SalishSeaCast'
+)
+
+ax.plot(
+    pd.to_datetime(ds_SSM['time'].values), 
+    hyp_area_SSM_ts_hc, linewidth=2, color=colors['SSM'], label='SSM PNNL')
+
+ax.plot(
+    time_SSM_ecology,
+    hyp_area_SSM_ecology_ts_hc,
+    linewidth=2,
+    color=colors['Ecology'],
+    label='SSM Ecology'
+)
+
+ax.set_ylabel(
+    'Hypoxic Area (km$^2$)', fontsize=12)
+ax.set_xlabel('Date', fontsize=12)
+ax.grid(visible=True, axis='both', color='silver', linestyle='--')
+ax.legend(loc='upper left')
+
+ax.xaxis.set_major_formatter(
+    mdates.DateFormatter('%Y-%m')
+)
+
+ax.tick_params(
+    axis='x', rotation=30)
+ax.tick_params(
+    axis='both', labelsize=11)
+
+ax.set_title('Hypoxic Area — Hood Canal', fontsize=13)
+
+plt.savefig(
+    out_dir / 'hypoxic_area_comparison_hc_wecology.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+plt.show()
+
+print('Plotting hypoxic area time series — Whidbey Basin')
+
+fig, ax = plt.subplots(figsize=(11, 4.5))
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_area_LO_ts_wb, linewidth=2, color= colors['LO'], label='LiveOcean'
+)
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_area_SSC_ts_wb, linewidth=2, color= colors['SSC'], label='SalishSeaCast'
+)
+
+ax.plot(
+    pd.to_datetime(ds_SSM['time'].values), 
+    hyp_area_SSM_ts_wb, linewidth=2, color=colors['SSM'], label='SSM PNNL')
+
+ax.plot(
+    time_SSM_ecology,
+    hyp_area_SSM_ecology_ts_wb,
+    linewidth=2,
+    color=colors['Ecology'],
+    label='SSM Ecology'
+)
+
+ax.set_ylabel(
+    'Hypoxic Area (km$^2$)', fontsize=12)
+ax.set_xlabel('Date', fontsize=12)
+ax.grid(visible=True, axis='both', color='silver', linestyle='--')
+ax.legend(loc='upper left')
+
+ax.xaxis.set_major_formatter(
+    mdates.DateFormatter('%Y-%m')
+)
+
+ax.tick_params(
+    axis='x', rotation=30)
+ax.tick_params(
+    axis='both', labelsize=11)
+
+ax.set_title('Hypoxic Area — Whidbey Basin', fontsize=13)
+
+plt.savefig(
+    out_dir / 'hypoxic_area_comparison_wb_wecology.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+plt.show()
+
+print('Plotting hypoxic area time series — South Sound')
+
+fig, ax = plt.subplots(figsize=(11, 4.5))
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_area_LO_ts_ss, linewidth=2, color= colors['LO'], label='LiveOcean'
+)
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_area_SSC_ts_ss, linewidth=2, color= colors['SSC'], label='SalishSeaCast'
+)
+
+ax.plot(
+    pd.to_datetime(ds_SSM['time'].values), 
+    hyp_area_SSM_ts_ss, linewidth=2, color=colors['SSM'], label='SSM PNNL')
+
+ax.plot(
+    time_SSM_ecology,
+    hyp_area_SSM_ecology_ts_ss,
+    linewidth=2,
+    color=colors['Ecology'],
+    label='SSM Ecology'
+)
+
+ax.set_ylabel(
+    'Hypoxic Area (km$^2$)', fontsize=12)
+ax.set_xlabel('Date', fontsize=12)
+ax.grid(visible=True, axis='both', color='silver', linestyle='--')
+ax.legend(loc='upper left')
+
+ax.xaxis.set_major_formatter(
+    mdates.DateFormatter('%Y-%m')
+)
+
+ax.tick_params(
+    axis='x', rotation=30)
+ax.tick_params(
+    axis='both', labelsize=11)
+
+ax.set_title('Hypoxic Area — South Sound', fontsize=13)
+
+plt.savefig(
+    out_dir / 'hypoxic_area_comparison_ss_wecology.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+plt.show()
+
+print('Plotting hypoxic area time series — Main Basin')
+
+fig, ax = plt.subplots(figsize=(11, 4.5))
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_area_LO_ts_mb, linewidth=2, color= colors['LO'], label='LiveOcean'
+)
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_area_SSC_ts_mb, linewidth=2, color= colors['SSC'], label='SalishSeaCast'
+)
+
+ax.plot(
+    pd.to_datetime(ds_SSM['time'].values), 
+    hyp_area_SSM_ts_mb, linewidth=2, color=colors['SSM'], label='SSM PNNL')
+
+ax.plot(
+    time_SSM_ecology,
+    hyp_area_SSM_ecology_ts_mb,
+    linewidth=2,
+    color=colors['Ecology'],
+    label='SSM Ecology'
+)
+
+ax.set_ylabel(
+    'Hypoxic Area (km$^2$)', fontsize=12)
+ax.set_xlabel('Date', fontsize=12)
+ax.grid(visible=True, axis='both', color='silver', linestyle='--')
+ax.legend(loc='upper left')
+
+ax.xaxis.set_major_formatter(
+    mdates.DateFormatter('%Y-%m')
+)
+
+ax.tick_params(
+    axis='x', rotation=30)
+ax.tick_params(
+    axis='both', labelsize=11)
+
+ax.set_title('Hypoxic Area — Main Basin', fontsize=13)
+
+plt.savefig(
+    out_dir / 'hypoxic_area_comparison_mb_wecology.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+plt.show()
+
+# ------------------------------------------------------------
+# Hypoxic volume
+# ------------------------------------------------------------
+
+print('Plotting hypoxic volume time series — Puget Sound')
+
+fig, ax = plt.subplots(figsize=(11, 4.5))
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_LO_ts_ps, linewidth=2, color= colors['LO'], label='LiveOcean'
+)
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_SSC_ts_ps, linewidth=2, color= colors['SSC'], label='SalishSeaCast'
+)
+
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_SSM_ts_ps, linewidth=2, color= colors['SSM'], label='SSM PNNL'
+)
+
+ax.plot(
+    time_SSM_ecology,
+    hyp_volume_SSM_ecology_ts_ps, linewidth=2, color=colors['Ecology'], label='SSM Ecology'
+)
+
+ax.set_ylabel(
+    'Hypoxic Volume (km$^3$)', fontsize=12)
+ax.set_xlabel('Date', fontsize=12)
+ax.grid(visible=True, axis='both', color='silver', linestyle='--')
+ax.legend(loc='upper right')
+
+ax.xaxis.set_major_formatter(
+    mdates.DateFormatter('%Y-%m')
+)
+
+ax.tick_params(
+    axis='x', rotation=30)
+ax.tick_params(
+    axis='both', labelsize=11)
+
+ax.set_title('Hypoxic Volume — Puget Sound', fontsize=13)
+
+plt.savefig(
+    out_dir / 'hypoxic_volume_comparison_wecology.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+plt.show()
+
+print('Plotting hypoxic volume time series — Hood Canal')
+
+fig, ax = plt.subplots(figsize=(11, 4.5))
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_LO_ts_hc, linewidth=2, color= colors['LO'], label='LiveOcean'
+)
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_SSC_ts_hc, linewidth=2, color= colors['SSC'], label='SalishSeaCast'
+)
+
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_SSM_ts_hc, linewidth=2, color= colors['SSM'], label='SSM PNNL'
+)
+
+ax.plot(
+    time_SSM_ecology,
+    hyp_volume_SSM_ecology_ts_hc, linewidth=2, color=colors['Ecology'], label='SSM Ecology'
+)
+
+ax.set_ylabel(
+    'Hypoxic Volume (km$^3$)', fontsize=12)
+ax.set_xlabel('Date', fontsize=12)
+ax.grid(visible=True, axis='both', color='silver', linestyle='--')
+ax.legend(loc='upper right')
+
+ax.xaxis.set_major_formatter(
+    mdates.DateFormatter('%Y-%m')
+)
+
+ax.tick_params(
+    axis='x', rotation=30)
+ax.tick_params(
+    axis='both', labelsize=11)
+
+ax.set_title('Hypoxic Volume — Hood Canal', fontsize=13)
+
+plt.savefig(
+    out_dir / 'hypoxic_volume_comparison_hc_wecology.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+plt.show()
+
+print('Plotting hypoxic volume time series — Whidbey Basin')
+
+fig, ax = plt.subplots(figsize=(11, 4.5))
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_LO_ts_wb, linewidth=2, color= colors['LO'], label='LiveOcean'
+)
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_SSC_ts_wb, linewidth=2, color= colors['SSC'], label='SalishSeaCast'
+)
+
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_SSM_ts_wb, linewidth=2, color= colors['SSM'], label='SSM PNNL'
+)
+
+ax.plot(
+    time_SSM_ecology,
+    hyp_volume_SSM_ecology_ts_wb, linewidth=2, color=colors['Ecology'], label='SSM Ecology'
+)
+
+ax.set_ylabel(
+    'Hypoxic Volume (km$^3$)', fontsize=12)
+ax.set_xlabel('Date', fontsize=12)
+ax.grid(visible=True, axis='both', color='silver', linestyle='--')
+ax.legend(loc='upper right')
+
+ax.xaxis.set_major_formatter(
+    mdates.DateFormatter('%Y-%m')
+)
+
+ax.tick_params(
+    axis='x', rotation=30)
+ax.tick_params(
+    axis='both', labelsize=11)
+
+ax.set_title('Hypoxic Volume — Whidbey Basin', fontsize=13)
+
+plt.savefig(
+    out_dir / 'hypoxic_volume_comparison_wb_wecology.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+plt.show()
+
+print('Plotting hypoxic volume time series — South Sound')
+
+fig, ax = plt.subplots(figsize=(11, 4.5))
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_LO_ts_ss, linewidth=2, color= colors['LO'], label='LiveOcean'
+)
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_SSC_ts_ss, linewidth=2, color= colors['SSC'], label='SalishSeaCast'
+)
+
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_SSM_ts_ss, linewidth=2, color= colors['SSM'], label='SSM PNNL'
+)
+
+ax.plot(
+    time_SSM_ecology,
+    hyp_volume_SSM_ecology_ts_ss, linewidth=2, color=colors['Ecology'], label='SSM Ecology'
+)
+
+ax.set_ylabel(
+    'Hypoxic Volume (km$^3$)', fontsize=12)
+ax.set_xlabel('Date', fontsize=12)
+ax.grid(visible=True, axis='both', color='silver', linestyle='--')
+ax.legend(loc='upper right')
+
+ax.xaxis.set_major_formatter(
+    mdates.DateFormatter('%Y-%m')
+)
+
+ax.tick_params(
+    axis='x', rotation=30)
+ax.tick_params(
+    axis='both', labelsize=11)
+
+ax.set_title('Hypoxic Volume — South Sound', fontsize=13)
+
+plt.savefig(
+    out_dir / 'hypoxic_volume_comparison_ss_wecology.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+plt.show()
+
+print('Plotting hypoxic volume time series — Main Basin')
+
+fig, ax = plt.subplots(figsize=(11, 4.5))
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_LO_ts_mb, linewidth=2, color= colors['LO'], label='LiveOcean'
+)
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_SSC_ts_mb, linewidth=2, color= colors['SSC'], label='SalishSeaCast'
+)
+
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_SSM_ts_mb, linewidth=2, color= colors['SSM'], label='SSM PNNL'
+)
+
+ax.plot(
+    time_SSM_ecology,
+    hyp_volume_SSM_ecology_ts_mb, linewidth=2, color=colors['Ecology'], label='SSM Ecology'
+)
+
+ax.set_ylabel(
+    'Hypoxic Volume (km$^3$)', fontsize=12)
+ax.set_xlabel('Date', fontsize=12)
+ax.grid(visible=True, axis='both', color='silver', linestyle='--')
+ax.legend(loc='upper right')
+
+ax.xaxis.set_major_formatter(
+    mdates.DateFormatter('%Y-%m')
+)
+
+ax.tick_params(
+    axis='x', rotation=30)
+ax.tick_params(
+    axis='both', labelsize=11)
+
+ax.set_title('Hypoxic Volume — Main Basin', fontsize=13)
+
+plt.savefig(
+    out_dir / 'hypoxic_volume_comparison_mb_wecology.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+plt.show()
+
+# ============================================================
+# PLOT HYPOXIC VOLUME (% OF TOTAL VOLUME)
+# ============================================================
+
+hyp_volume_pct_LO = (
+    hyp_volume_LO_ts_ps / total_volume_LO
+) * 100
+
+hyp_volume_pct_SSC = (
+    hyp_volume_SSC_ts_ps / total_volume_SSC
+) * 100
+
+hyp_volume_pct_SSM = (
+    hyp_volume_SSM_ts_ps / total_volume_SSM
+) * 100
+
+print('Plotting hypoxic volume as percent of total volume')
+
+fig, ax = plt.subplots(figsize=(11, 4.5))
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_pct_LO,
+    linewidth=2,
+    color='red',
+    label='LiveOcean'
+)
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_pct_SSC,
+    linewidth=2,
+    color='blue',
+    label='SalishSeaCast'
+)
+
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_pct_SSM,
+    linewidth=2,
+    color='green',
+    label='Salish Sea Model'
+)
+
+ax.set_ylabel(
+    'Hypoxic Volume (% of Total Volume)',
+    fontsize=12
+)
+
+ax.set_xlabel('Date', fontsize=12)
+
+ax.grid(
+    visible=True,
+    axis='both',
+    color='silver',
+    linestyle='--'
+)
+
+ax.legend(loc='upper right')
+
+ax.xaxis.set_major_formatter(
+    mdates.DateFormatter('%Y-%m')
+)
+
+ax.tick_params(
+    axis='x',
+    rotation=30
+)
+
+ax.tick_params(
+    axis='both',
+    labelsize=11
+)
+
+ax.set_title(
+    'Hypoxic Volume (% of Total Volume)',
+    fontsize=13
+)
+
+plt.savefig(
+    out_dir / 'hypoxic_volume_percent_comparison.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+
+plt.show()
+
+# ============================================================
+# HYPOXIA OCCURRENCE
+# ============================================================
+
+# ------------------------------------------------------------
+# LiveOcean
+# ------------------------------------------------------------
+
+# Coordinates must match the bottom_DO / Puget Sound box grid
+lon_LO = box_ds['lon_rho'].values
+lat_LO = box_ds['lat_rho'].values
+
+DO_LO = ds_LO['DO_bot146'].values
+# DO_LO = ds_LO['DO_bot'].values
+
+# Hypoxic = DO <= 2 mg/L
+hypoxic_LO = DO_LO <= 2.0
+# hypoxic_LO = DO_LO <= 3.0
+
+# Count hypoxic occurrences
+hyp_count_LO = np.sum(hypoxic_LO, axis=0)
+
+hyp_count_LO_plot = np.where(
+    mask_ps == 1,
+    hyp_count_LO,
+    np.nan
+)
+
+# Count valid model output times
+valid_count_LO = np.sum(np.isfinite(DO_LO), axis=0)
+
+# Occurrence as percentage of valid time steps
+hyp_occurrence_LO = np.full_like(
+    valid_count_LO,
+    np.nan,
+    dtype=float
+)
+
+np.divide(
+    100 * hyp_count_LO,
+    valid_count_LO,
+    out=hyp_occurrence_LO,
+    where=valid_count_LO > 0
+)
+
+# ------------------------------------------------------------
+# SSC
+# ------------------------------------------------------------
+
+DO_SSC = ds_SSC['DO_bot146'].values
+# DO_SSC = ds_SSC['DO_bot'].values
+
+hypoxic_SSC = DO_SSC <= 2.0
+# hypoxic_SSC = DO_SSC <= 3.0
+
+hyp_count_SSC = np.sum(hypoxic_SSC, axis=0)
+
+hyp_count_SSC_plot = np.where(
+    mask_ps_SSC,
+    hyp_count_SSC,
+    np.nan
+)
+
+valid_count_SSC = np.sum(np.isfinite(DO_SSC), axis=0)
+
+hyp_occurrence_SSC = np.full_like(
+    valid_count_SSC,
+    np.nan,
+    dtype=float
+)
+
+np.divide(
+    100 * hyp_count_SSC,
+    valid_count_SSC,
+    out=hyp_occurrence_SSC,
+    where=valid_count_SSC > 0
+)
+
+# ------------------------------------------------------------
+# SSM
+# ------------------------------------------------------------
+
+# Percentage of valid daily time steps with hypoxic bottom DO.
+hyp_count_SSM = np.sum(
+    hypoxic_elem_SSM_ps & np.isfinite(DO_elem_SSM_ps),
+    axis=0
+)
+
+hyp_count_SSM_plot = np.where(
+    mask_elem_SSM_ps,
+    hyp_count_SSM,
+    np.nan
+)
+
+valid_count_SSM = np.sum(
+    np.isfinite(DO_elem_SSM_ps),
+    axis=0
+)
+
+hyp_occurrence_SSM = np.full(n_elem, np.nan)
+
+np.divide(
+    100 * hyp_count_SSM,
+    valid_count_SSM,
+    out=hyp_occurrence_SSM,
+    where=valid_count_SSM > 0
+)
+
+# ============================================================
+# PLOT HYPOXIA OCCURRENCE
+# ============================================================
+
+print('Plotting hypoxic ocurrence in bottom 14.6% of water column')
+
+occurrence_max = np.nanmax([
+    np.nanmax(hyp_occurrence_LO),
+    np.nanmax(hyp_occurrence_SSC),
+    np.nanmax(hyp_occurrence_SSM)
+])
+
+hyp_occurrence_LO_plot = np.where(
+    mask_ps == 1,
+    hyp_occurrence_LO,
+    np.nan
+)
+
+hyp_occurrence_SSC_plot = np.where(
+    mask_ps_SSC,
+    hyp_occurrence_SSC,
+    np.nan
+)
+
+hyp_occurrence_SSM_plot = np.where(
+    mask_elem_SSM_ps,
+    hyp_occurrence_SSM,
+    np.nan
+)
+
+# ------------------------------------------------------------
+# Color map
+# ------------------------------------------------------------
+
+# Color map
+# cmap = "jet"
+cmap= plt.cm.jet.copy()
+cmap.set_under('white'),
+
+
+# ------------------------------------------------------------
+# SSM triangular mesh
+# ------------------------------------------------------------
+
+triang = mtri.Triangulation(
+    lon_SSM, lat_SSM, triangles=triangles
+)
+
+# Mask triangles outside Puget Sound
+triang.set_mask(~mask_elem_SSM_ps)
+
+# Common spatial extent
+ps_lon = mask_lon[mask_ps == 1]
+ps_lat = mask_lat[mask_ps == 1]
+
+lon_min, lon_max = np.nanmin(ps_lon), np.nanmax(ps_lon)
+lat_min, lat_max = np.nanmin(ps_lat), np.nanmax(ps_lat)
+
+lon_pad = 0.02
+lat_pad = 0.02
+
+# ------------------------------------------------------------
+# Plot
+# ------------------------------------------------------------
+
+fig, axes = plt.subplots(
+    1, 3,
+    figsize=(20, 7),
+    constrained_layout=True
+)
+
+# ------------------------------------------------------------
+# LO
+# ------------------------------------------------------------
+
+pcm1 = axes[0].pcolormesh(
+    lon_LO,
+    lat_LO,
+    # hyp_occurrence_LO_plot, # as percentage
+    hyp_count_LO_plot,
+    shading='auto',
+    cmap = cmap,
+    vmin=0.001,
+    # vmax=occurrence_max
+    vmax= 140
+)
+
+axes[0].set_title('LO: Bottom Hypoxia (DO ≤ 2.0 mg/L) Occurrence [Days]')
+axes[0].set_xlabel('Longitude')
+axes[0].set_ylabel('Latitude')
+axes[0].set_xlim(lon_min - lon_pad, lon_max + lon_pad)
+axes[0].set_ylim(lat_min - lat_pad, lat_max + lat_pad)
+
+pfun.add_coast(axes[0], color='black', linewidth=0.8)
+
+cbar = fig.colorbar(
+    pcm1,
+    ax=axes[0]
+)
+
+cbar.set_label(
+    #'Hypoxic occurrence (%)'
+    'Hypoxic days count'
+)
+
+# ------------------------------------------------------------
+# SSC
+# ------------------------------------------------------------
+
+pcm2 = axes[1].pcolormesh(
+    lon_SSC,
+    lat_SSC,
+    # hyp_occurrence_SSC_plot,
+    hyp_count_SSC_plot,
+    shading='auto',
+    cmap= cmap,
+    vmin=0.001,
+    # vmax=occurrence_max
+    vmax = 140
+)
+
+axes[1].set_title('SSC: Bottom Hypoxia (DO ≤ 2.0 mg/L) Occurrence [Days]')
+axes[1].set_xlabel('Longitude')
+axes[1].set_xlim(lon_min - lon_pad, lon_max + lon_pad)
+axes[1].set_ylim(lat_min - lat_pad, lat_max + lat_pad)
+
+pfun.add_coast(axes[1], color='black', linewidth=0.8)
+
+cbar = fig.colorbar(
+    pcm2,
+    ax=axes[1]
+)
+
+cbar.set_label(
+    #'Hypoxic occurrence (%)'
+    'Hypoxic days count'
+)
+
+# ------------------------------------------------------------
+# SSM
+# ------------------------------------------------------------
+
+pcm3 = axes[2].tripcolor(
+    triang,
+    facecolors=hyp_count_SSM_plot,
+    shading='flat',
+    cmap=cmap,
+    vmin=0.001,
+    # vmax=occurrence_max
+    vmax=140
+)
+
+axes[2].set_title('SSM: Bottom Hypoxia (DO ≤ 2.0 mg/L) Occurrence [Days]')
+axes[2].set_xlabel('Longitude')
+axes[2].set_xlim(lon_min - lon_pad, lon_max + lon_pad)
+axes[2].set_ylim(lat_min - lat_pad, lat_max + lat_pad)
+
+pfun.add_coast(axes[2], color='black', linewidth=0.8)
+
+cbar = fig.colorbar(
+    pcm3,
+    ax=axes[2]
+)
+
+cbar.set_label(
+    #'Hypoxic occurrence (%)'
+    'Hypoxic days count'
+)
+
+
+# ============================================================
+# COMMON MAP EXTENT
+# ============================================================
+
+# for ax in axes.flat:
+#     ax.set_xlim(
+#         np.nanmin(mask_lon),
+#         np.nanmax(mask_lon)
+#     )
+#     ax.set_ylim(
+#         np.nanmin(mask_lat),
+#         np.nanmax(mask_lat)
+#     )
+    
+# ============================================================
+# MAP EXTENT — PUGET SOUND ONLY
+# ============================================================
+
+ps_lon = mask_lon[mask_ps == 1]
+ps_lat = mask_lat[mask_ps == 1]
+
+lon_min = np.nanmin(ps_lon)
+lon_max = np.nanmax(ps_lon)
+lat_min = np.nanmin(ps_lat)
+lat_max = np.nanmax(ps_lat)
+
+# Add small padding
+lon_pad = 0.02
+lat_pad = 0.02
+
+for ax in axes.flat:
+    ax.set_xlim(
+        lon_min - lon_pad,
+        lon_max + lon_pad
+    )
+    ax.set_ylim(
+        lat_min - lat_pad,
+        lat_max + lat_pad
+    )
+
+
+plt.savefig(
+    out_dir / 'hypoxic_occurrence_comparison.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+plt.show()
+
+# ============================================================
+# Average DO concentration in bottom 14.6%
+# ============================================================
+
+mean_DO_LO = np.nanmean(ds_LO['DO_bot146'].values, axis=0)
+mean_DO_SSC = np.nanmean(ds_SSC['DO_bot146'].values, axis=0)
+mean_DO_SSM = np.nanmean(DO_elem_SSM_ps, axis=0)
+
+# Apply Puget Sound mask
+mean_DO_LO_plot = np.where(mask_ps == 1, mean_DO_LO, np.nan)
+mean_DO_SSC_plot = np.where(mask_ps_SSC, mean_DO_SSC, np.nan)
+mean_DO_SSM_plot = np.where(mask_elem_SSM_ps, mean_DO_SSM, np.nan)
+
+# Common color scale for both models
+DO_min = np.nanmin([
+    np.nanmin(mean_DO_LO_plot),
+    np.nanmin(mean_DO_SSC_plot),
+    np.nanmin(mean_DO_SSM_plot)
+])
+
+DO_max = np.nanmax([
+    np.nanmax(mean_DO_LO_plot),
+    np.nanmax(mean_DO_SSC_plot),
+    np.nanmax(mean_DO_SSM_plot)
+])
+
+print("Mean bottom 14.6% DO range:")
+print("Minimum:", DO_min)
+print("Maximum:", DO_max)
+
+# ============================================================
+# Plot spatially averaged bottom 14.6% DO
+# ============================================================
+
+print('Plotting average DO in bottom 14.6% of water column')
+
+fig, axes = plt.subplots(
+    1, 3,
+    figsize=(18, 6),
+    constrained_layout=True
+)
+
+# ------------------------------------------------------------
+# LiveOcean
+# ------------------------------------------------------------
+
+pcm1 = axes[0].pcolormesh(
+    lon_LO,
+    lat_LO,
+    mean_DO_LO_plot,
+    shading='auto',
+    cmap='viridis_r',
+    vmin=DO_min,
+    vmax=DO_max
+)
+
+axes[0].set_title('LiveOcean')
+axes[0].set_xlabel('Longitude')
+axes[0].set_ylabel('Latitude')
+
+pfun.add_coast(axes[0], color='black', linewidth=0.8)
+
+# ------------------------------------------------------------
+# SalishSeaCast
+# ------------------------------------------------------------
+
+pcm2 = axes[1].pcolormesh(
+    lon_SSC,
+    lat_SSC,
+    mean_DO_SSC_plot,
+    shading='auto',
+    cmap='viridis_r',
+    vmin=DO_min,
+    vmax=DO_max
+)
+
+axes[1].set_title('SalishSeaCast')
+axes[1].set_xlabel('Longitude')
+axes[1].set_ylabel('Latitude')
+
+pfun.add_coast(axes[1], color='black', linewidth=0.8)
+
+# ------------------------------------------------------------
+# Salish Sea Model
+# ------------------------------------------------------------
+
+pcm3 = axes[2].tripcolor(
+    triang,
+    facecolors= mean_DO_SSM_plot,
+    shading='flat',
+    cmap='viridis_r',
+    vmin=DO_min,
+    vmax=DO_max
+)
+
+axes[2].set_title('Salish Sea Model')
+axes[2].set_xlabel('Longitude')
+axes[2].set_ylabel('Latitude')
+
+pfun.add_coast(axes[2], color='black', linewidth=0.8)
+# ------------------------------------------------------------
+# Same colorbar for all
+# ------------------------------------------------------------
+
+cbar = fig.colorbar(
+    pcm2,
+    ax=axes,
+    shrink=0.85,
+    pad=0.02
+)
+
+cbar.set_label('Mean DO in bottom 14.6% (mg/L)')
+
+# limits from map extent above
+for ax in axes:
+    ax.set_xlim(lon_min, lon_max)
+    ax.set_ylim(lat_min, lat_max)
+
+plt.savefig(
+    out_dir / 'mean_DO_bottom146_comparison.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+
+plt.show()
+
+
+# ============================================================
+# Daily DO concentration in bottom 14.6% animation
+# with hypoxic area time series
+# ============================================================
+
+# Apply Puget Sound mask
+DO_LO_plot = np.where(
+    mask_ps[None, :, :] == 1,
+    DO_LO,
+    np.nan
+)
+
+DO_SSC_plot = np.where(
+    mask_ps_SSC[None, :, :],
+    DO_SSC,
+    np.nan
+)
+
+# mask nans for plotting
+DO_LO_frame = np.ma.masked_invalid(DO_LO_plot[0, :, :])
+DO_SSC_frame = np.ma.masked_invalid(DO_SSC_plot[0, :, :])
+
+# mask already applied to DO_elem
+# LO and SSC had masks applied to DA for hypoxic area and volume calculations, but DO_elem is already masked to Puget Sound elements.
+# DO_SSM_plot = np.where(
+#     mask_elem[None, :], #2D because [time, element] rather than [time, lat, lon]
+#     DO_elem,
+#     np.nan
+# )
+
+# ------------------------------------------------------------
+# Common color scale for both models and all days
+# ------------------------------------------------------------
+
+# DO_min = np.nanmin([
+#     np.nanmin(DO_LO_plot),
+#     np.nanmin(DO_SSC_plot),
+#     np.nanmin(DO_elem)
+# ])
+
+# DO_max = np.nanmax([
+#     np.nanmax(DO_LO_plot),
+#     np.nanmax(DO_SSC_plot),
+#     np.nanmax(DO_elem)
+# ])
+
+# Original oxygen colormap
+cmap = cmocean.cm.oxy
+
+# Crop the upper 20% of the colormap (supersaturated colors)
+cmap_oxy = cmocean.tools.crop_by_percent(
+    cmap,
+    20,
+    which='max',
+    N=None
+).copy()
+
+# Missing/invalid cells should not be colored as low oxygen
+cmap_oxy.set_bad('white')
+
+# Common oxygen limits for LO, SSC, and SSM
+DO_min = 0.0
+DO_max = 15.0  
+DO_threshold = 2.0  # mg/L
+
+# Map DO = 2 mg/L to 20% of the colormap
+# Since we cropped the top 20% of the colormap, this becomes 25% of cropped colormap
+hypoxic_fraction = 0.2 / 0.8 # 0.25
+
+# explicitly preserve invalid values (NaN) 
+def forward(x):
+    x = np.asarray(x, dtype=float)
+    out = np.full_like(x, np.nan)
+
+    valid = np.isfinite(x)
+    hypoxic = valid & (x <= DO_threshold)
+    oxic = valid & (x > DO_threshold)
+
+    out[hypoxic] = (
+        hypoxic_fraction * x[hypoxic] / DO_threshold
+    )
+
+    out[oxic] = (
+        hypoxic_fraction
+        + (1 - hypoxic_fraction)
+        * (x[oxic] - DO_threshold)
+        / (DO_max - DO_threshold)
+    )
+
+    return out
+
+
+def inverse(y):
+    y = np.asarray(y, dtype=float)
+    out = np.full_like(y, np.nan)
+
+    valid = np.isfinite(y)
+    hypoxic = valid & (y <= hypoxic_fraction)
+    oxic = valid & (y > hypoxic_fraction)
+
+    out[hypoxic] = (
+        DO_threshold * y[hypoxic] / hypoxic_fraction
+    )
+
+    out[oxic] = (
+        DO_threshold
+        + (DO_max - DO_threshold)
+        * (y[oxic] - hypoxic_fraction)
+        / (1 - hypoxic_fraction)
+    )
+
+    return out
+
+norm = FuncNorm(
+    (forward, inverse),
+    vmin=DO_min,
+    vmax=DO_max,
+    clip=True
+)
+
+# ------------------------------------------------------------
+# Time
+# ------------------------------------------------------------
+
+time_LO = pd.to_datetime(ds_LO['ocean_time'].values)
+time_SSC = pd.to_datetime(ds_LO['ocean_time'].values)
+time_SSM = pd.to_datetime(ds_SSM['time'].values)
+
+# ------------------------------------------------------------
+# Create figure
+# ------------------------------------------------------------
+
+fig = plt.figure(figsize=(22, 10))
+
+gs = fig.add_gridspec(
+    2, 4,
+    width_ratios=[1, 1, 1, 0.045],
+    height_ratios=[1, 3],
+    hspace=0.25,
+    wspace=0.05
+)
+
+# Time series spans all three columns
+ax_ts = fig.add_subplot(gs[0, :])
+
+# Map panels
+axes = [
+    fig.add_subplot(gs[1, 0]),
+    fig.add_subplot(gs[1, 1]),
+    fig.add_subplot(gs[1, 2])
+]
+
+# Dedicated colorbar axis
+cax = fig.add_subplot(gs[1, 3])
+# ------------------------------------------------------------
+# Initial frame
+# ------------------------------------------------------------
+
+pcm1 = axes[0].pcolormesh(
+    lon_LO,
+    lat_LO,
+    DO_LO_frame,
+    shading='auto',
+    # cmap='viridis_r',
+    # vmin=DO_min,
+    # vmax=DO_max,
+    cmap=cmap_oxy,
+    norm=norm,
+)
+
+pcm2 = axes[1].pcolormesh(
+    lon_SSC,
+    lat_SSC,
+    DO_SSC_frame,
+    shading='auto',
+    # cmap='viridis_r',
+    # vmin=DO_min,
+    # vmax=DO_max,
+    cmap=cmap_oxy,
+    norm=norm,
+)
+
+pcm3 = axes[2].tripcolor(
+    triang,
+    facecolors= DO_elem_SSM_ps[0, :],
+    shading='flat',
+    # cmap='viridis_r',
+    # vmin=DO_min,
+    # vmax=DO_max,
+    cmap=cmap_oxy,
+    norm=norm,
+)
+
+pfun.add_coast(axes[0], color='black', linewidth=0.8)
+pfun.add_coast(axes[1], color='black', linewidth=0.8)
+pfun.add_coast(axes[2], color='black', linewidth=0.8)
+
+# ------------------------------------------------------------
+# Titles and labels
+# ------------------------------------------------------------
+
+axes[0].set_title('LiveOcean')
+axes[1].set_title('SalishSeaCast')
+axes[2].set_title('Salish Sea Model')
+for ax in axes:
+    ax.set_facecolor('white')
+    
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+
+    ax.set_xlim(lon_min, lon_max)
+    ax.set_ylim(lat_min, lat_max)
+
+# ------------------------------------------------------------
+# Plot hypoxic area time series
+# ------------------------------------------------------------
+
+# Use the same dates as the animation frames
+time = pd.to_datetime(time_LO)
+
+ax_ts.plot(
+    time, hyp_area_LO_ts_ps,
+    color='red', label='LiveOcean'
+)
+ax_ts.plot(
+    time, hyp_area_SSC_ts_ps,
+    color='blue', label='SalishSeaCast'
+)
+ax_ts.plot(
+    time, hyp_area_SSM_ts_ps,
+    color='green', label='SSM'
+)
+
+ax_ts.set_ylabel('Hypoxic area (km²)')
+ax_ts.set_title('Daily hypoxic area (DO ≤ 2 mg/L)')
+ax_ts.legend(loc='upper right', ncol=3)
+ax_ts.grid(True, alpha=0.3)
+
+ax_ts.xaxis.set_major_locator(mdates.MonthLocator())
+ax_ts.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
+ax_ts.set_xlim(time[0], time[-1])
+
+# Animated vertical date marker
+time_marker = ax_ts.axvline(
+    time[0],
+    color='black',
+    linestyle='-',
+    linewidth=2
+)
+
+# Moving date label
+date_label = ax_ts.text(
+    0.01, 0.90, '',
+    transform=ax_ts.transAxes,
+    ha='left',
+    va='top'
+)
+
+# ------------------------------------------------------------
+# Common colorbar
+# ------------------------------------------------------------
+
+cbar = fig.colorbar(
+    pcm2,
+    cax=cax
+)
+
+cbar.set_label('DO in bottom 14.6% (mg/L)')
+
+# Keep latitude labels only on the leftmost map
+for ax in axes[1:]:
+    ax.set_ylabel('')
+    ax.tick_params(axis='y', labelleft=False)
+
+# ============================================================
+# Animation function
+# ============================================================
+
+def update(frame):
+    global pcm3
+
+    # Update LiveOcean
+    pcm1.set_array(
+        np.ma.masked_invalid(DO_LO_plot[frame, :, :]).ravel()
+    )
+
+    # Update SalishSeaCast
+    pcm2.set_array(
+        np.ma.masked_invalid(DO_SSC_plot[frame, :, :]).ravel()
+    )
+
+    # Remove the previous SSM collection
+    pcm3.remove()
+
+    # Recreate the SSM plot for this frame
+    pcm3 = axes[2].tripcolor(
+        triang,
+        facecolors=DO_elem_SSM_ps[frame, :],
+        shading='flat',
+        # cmap='viridis_r',
+        # vmin=DO_min,
+        # vmax=DO_max
+        cmap=cmap_oxy,
+        norm=norm,
+    )
+    
+    # Move the time-series marker to the current animation date
+    current_time = time[frame]
+
+    time_marker.set_xdata([current_time, current_time])
+    date_label.set_text(current_time.strftime('%Y-%m-%d'))
+
+    return pcm1, pcm2, pcm3, time_marker, date_label
+
+
+# ============================================================
+# Create animation
+# ============================================================
+
+print('Creating animation...')
+
+ani = FuncAnimation(
+    fig,
+    update,
+    frames=len(time),
+    interval=150,      # milliseconds between frames
+    blit=False
+)
+
+# TESTING
+# update(180)
+# fig.canvas.draw()
+# plt.show()
+# plt.savefig(
+#     out_dir / 'DO_bottom146_frame_test_update.png',
+#     dpi=300,
+#     bbox_inches='tight'
+# )
+
+
+ani.save(
+    out_dir / 'daily_DO_bottom146_comparison.mp4',
+    writer='ffmpeg',
+    fps=6,
+    dpi=200
+)
+
+# TESTING 
+# frame = 180
+
+# fig_test, ax_test = plt.subplots(figsize=(10, 8))
+
+# pcm_test = ax_test.tripcolor(
+#     triang,
+#     facecolors=DO_elem[frame, :],
+#     shading='flat',
+#     cmap='viridis_r',
+#     vmin=DO_min,
+#     vmax=DO_max
+# )
+
+# pfun.add_coast(ax_test, color='black', linewidth=0.8)
+# ax_test.set_xlim(lon_min, lon_max)
+# ax_test.set_ylim(lat_min, lat_max)
+# ax_test.set_title(time_SSM[frame].strftime('%Y-%m-%d'))
+
+# fig_test.colorbar(pcm_test, ax=ax_test, label='DO (mg/L)')
+# plt.savefig(
+#     out_dir / 'DO_bottom146_frame_test.png',
+#     dpi=300,
+#     bbox_inches='tight'
+# )
