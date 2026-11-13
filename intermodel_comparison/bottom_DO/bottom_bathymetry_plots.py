@@ -234,12 +234,12 @@ triang.set_mask(~mask_elem_SSM_ps)
 
 depth_LO = ds_LO['depth_bot'].values
 depth_SSC = ds_SSC['depth_bot'].values
-depth_SSM = ds_SSM['depth_bot'].values
+
+depth_SSM_plot = ds_SSM['depth_bot'].values # mask applied in triang
 
 # Apply Puget Sound masks
 depth_LO_plot = np.where(mask_ps == 1, depth_LO, np.nan)
 depth_SSC_plot = np.where(mask_ps_SSC, depth_SSC, np.nan)
-depth_SSM_plot = np.where(mask_node_SSM_ps, depth_SSM, np.nan)
 
 # Common color scale
 depth_min = np.nanmin([
@@ -312,15 +312,6 @@ axes[1].set_ylabel('Latitude')
 # ------------------------------------------------------------
 # Salish Sea Model
 # ------------------------------------------------------------
-
-print('depth_SSM shape:', depth_SSM.shape)
-print('lon_SSM shape:', lon_SSM.shape)
-print('lat_SSM shape:', lat_SSM.shape)
-print('triangles shape:', triangles.shape)
-print('Number of triangulation triangles:', triang.triangles.shape)
-print(ds_SSM['depth_bot'])
-print(ds_SSM['nv'])
-
 
 pcm3 = axes[2].tripcolor(
     triang,
