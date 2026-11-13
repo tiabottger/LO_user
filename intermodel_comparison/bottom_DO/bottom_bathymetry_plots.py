@@ -423,6 +423,16 @@ pcm = ax.pcolormesh(
     vmax=diff_max
 )
 
+# Overlay cross-hatching where LO cells are absent from SSC
+ax.contourf(
+    lon_LO,
+    lat_LO,
+    missing_SSC.astype(int),
+    levels=[0.5, 1.5],
+    colors='none',
+    hatches=['////']
+)
+
 ax.set_title('LiveOcean − SalishSeaCast Bathymetry')
 ax.set_xlabel('Longitude')
 ax.set_ylabel('Latitude')
