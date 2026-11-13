@@ -9,11 +9,11 @@ region "pugetsoundDO"
 # import things
 import numpy as np
 from scipy.stats import triang
-from scipy.stats import triang
 import xarray as xr
 import pandas as pd
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+import matplotlib.tri as mtri
 from scipy.spatial import cKDTree
 from lo_tools import Lfun
 
@@ -207,6 +207,19 @@ mask_j, mask_i = np.unravel_index(
 )
 
 mask_node_SSM_ps = mask_ps[mask_j, mask_i] == 1
+
+# Classify an element as Puget Sound if at least two of
+# its three vertices fall within the Puget Sound mask.
+mask_elem_SSM_ps = (
+    mask_node_SSM_ps[triangles].sum(axis=1) >= 2
+)
+
+triang = mtri.Triangulation(
+    lon_SSM, lat_SSM, triangles=triangles
+)
+
+# Mask triangles outside Puget Sound
+triang.set_mask(~mask_elem_SSM_ps)
 
 # ============================================================
 # BATHYMETRY — BOTTOM DEPTH
