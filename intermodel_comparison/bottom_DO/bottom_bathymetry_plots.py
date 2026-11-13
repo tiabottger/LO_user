@@ -360,6 +360,29 @@ print(
     np.nanmax(depth_SSC_on_LO[missing_SSC])
 )
 
+print('Total missing SSC cells:', np.sum(missing_SSC))
+
+print(
+    'Missing SSC cells inside Puget Sound mask:',
+    np.sum(missing_SSC & (mask_ps == 1))
+)
+
+print(
+    'Missing SSC cells outside Puget Sound mask:',
+    np.sum(missing_SSC & (mask_ps == 0))
+)
+
+print(
+    'Difference in missing SSC cells:',
+    np.nanmin(depth_difference[missing_SSC]),
+    np.nanmax(depth_difference[missing_SSC])
+)
+
+print(
+    'Difference plot in missing SSC cells:',
+    np.sum(np.isfinite(depth_difference_plot[missing_SSC]))
+)
+
 # ============================================================
 # PLOT BATHYMETRY DIFFERENCE
 # ============================================================
