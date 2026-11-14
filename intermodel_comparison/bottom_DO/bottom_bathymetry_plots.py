@@ -583,14 +583,14 @@ print(
 # ============================================================
 
 # Diverging colormaps
-cmap_LO_SSC = LinearSegmentedColormap.from_list(
-    'LO_SSC',
-    ["#984200", 'white', "#004A75"]
+cmap_SSC_LO = LinearSegmentedColormap.from_list(
+    'SSC_LO',
+    ["#004A75", 'white', "#984200"]
 )
 
-cmap_LO_SSM = LinearSegmentedColormap.from_list(
-    'LO_SSM',
-    ["#984200", 'white', "#00664B"]
+cmap_SSM_LO = LinearSegmentedColormap.from_list(
+    'SSM_LO',
+    ["#00664B", 'white', "#984200"]
 )
 # ============================================================
 # PLOT BATHYMETRY DIFFERENCE
@@ -611,7 +611,7 @@ pcm = ax.pcolormesh(
     depth_difference_plot,
     shading='auto',
     #cmap='RdBu_r',
-    cmap=cmap_LO_SSC,
+    cmap=cmap_SSC_LO,
     vmin=-diff_max,
     vmax=diff_max
 )
@@ -686,7 +686,7 @@ pcm = ax.pcolormesh(
     lon_LO,
     lat_LO,
     depth_difference_LO_SSM_plot,
-    cmap=cmap_LO_SSM,
+    cmap=cmap_SSM_LO,
     shading='auto',
     vmin=-diff_max,
     vmax=diff_max
