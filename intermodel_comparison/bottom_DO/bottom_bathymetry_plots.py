@@ -402,40 +402,6 @@ plt.savefig(
 plt.show()
 
 # ============================================================
-# MAP SSC BATHYMETRY ONTO LIVE OCEAN GRID FOR DIFFERENCE CALCULATION
-# ============================================================
-
-# ------------------------------------------------------------
-# Build nearest-neighbor tree from SSC grid
-# ------------------------------------------------------------
-
-ssc_points = np.column_stack((
-    lon_SSC.ravel(),
-    lat_SSC.ravel()
-))
-
-valid_ssc = (
-    np.isfinite(ssc_points[:, 0]) &
-    np.isfinite(ssc_points[:, 1])
-)
-
-tree_SSC = cKDTree(ssc_points[valid_ssc])
-
-# ------------------------------------------------------------
-# Find nearest SSC cell for every LiveOcean cell
-# ------------------------------------------------------------
-
-lo_points = np.column_stack((
-    lon_LO.ravel(),
-    lat_LO.ravel()
-))
-
-_, nearest_index = tree_SSC.query(lo_points)
-
-valid_flat_indices = np.flatnonzero(valid_ssc)
-nearest_flat_index = valid_flat_indices[nearest_index]
-
-# ============================================================
 # MAP SSC BATHYMETRY ONTO LIVE OCEAN GRID
 # ============================================================
 
@@ -491,10 +457,10 @@ lo_points = np.column_stack((
 ))
 
 # Find nearest SSM cell for every LO cell
-distance_to_SSM, nearest_index = tree_SSM.query(lo_points)
+distance_to_SSM, nearest_index_ssm = tree_SSM.query(lo_points)
 
 valid_flat_indices_ssm = np.flatnonzero(valid_ssm)
-nearest_flat_index_ssm = valid_flat_indices_ssm[nearest_index]
+nearest_flat_index_ssm = valid_flat_indices_ssm[nearest_index_ssm]
 
 # Map SSM bathymetry onto LO grid
 depth_SSM_on_LO = (
@@ -520,6 +486,29 @@ print(
 
 # Assign zero SSC bathymetry to these cells
 depth_SSC_on_LO[missing_SSC] = 0
+
+# ============================================================
+# IDENTIFY LO CELLS WITHOUT SSM BATHYMETRY
+# ============================================================
+
+inside_SSM = np.array([
+    SSM_footprint_prepared.covers(
+        Point(lon, lat)
+    )
+    for lon, lat in lo_points
+])
+
+inside_SSM = inside_SSM.reshape(depth_LO.shape)
+
+# LO wet cells absent from SSM
+missing_SSM = (
+    (mask_ps == 1) &
+    np.isfinite(depth_LO) &
+    ~inside_SSM
+)
+
+# Set SSM bathymetry to zero in cells outside its mesh
+depth_SSM_on_LO[missing_SSM] = 0
 
 # ============================================================
 # BATHYMETRY DIFFERENCE
