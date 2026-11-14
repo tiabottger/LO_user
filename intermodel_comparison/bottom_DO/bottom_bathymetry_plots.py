@@ -7,6 +7,7 @@ region "pugetsoundDO"
 """
 
 # import things
+from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 from scipy.stats import triang
 import xarray as xr
@@ -577,7 +578,20 @@ print(
     np.sum(np.isfinite(depth_difference_plot[missing_SSC]))
 )
 
+# ============================================================
+# COLORMAPS
+# ============================================================
 
+# Diverging colormaps
+cmap_LO_SSC = LinearSegmentedColormap.from_list(
+    'LO_SSC',
+    ["#984200", 'white', "#004A75"]
+)
+
+cmap_LO_SSM = LinearSegmentedColormap.from_list(
+    'LO_SSM',
+    ["#984200", 'white', "#00664B"]
+)
 # ============================================================
 # PLOT BATHYMETRY DIFFERENCE
 # ============================================================
@@ -596,7 +610,8 @@ pcm = ax.pcolormesh(
     lat_LO,
     depth_difference_plot,
     shading='auto',
-    cmap='RdBu_r',
+    #cmap='RdBu_r',
+    cmap=cmap_LO_SSC,
     vmin=-diff_max,
     vmax=diff_max
 )
@@ -662,13 +677,16 @@ plt.savefig(
 print('Figure saved to:', Path('bathymetry_difference_LO_minus_SSC.png').resolve())
 
 # LO - SSM
-fig, ax = plt.subplots(figsize=(10, 8))
+fig, ax = plt.subplots(
+    figsize=(8, 7),
+    constrained_layout=True
+)
 
 pcm = ax.pcolormesh(
     lon_LO,
     lat_LO,
     depth_difference_LO_SSM_plot,
-    cmap='RdBu_r',
+    cmap=cmap_LO_SSM,
     shading='auto',
     vmin=-diff_max,
     vmax=diff_max
