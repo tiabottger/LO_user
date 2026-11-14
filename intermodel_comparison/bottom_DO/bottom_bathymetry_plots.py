@@ -401,6 +401,7 @@ plt.savefig(
 )
 
 plt.show()
+print('Figure saved to:', Path('bathymetry_bottom_depth_comparison.png').resolve())
 
 # ============================================================
 # MAP SSC BATHYMETRY ONTO LIVE OCEAN GRID
@@ -501,6 +502,10 @@ inside_SSM = np.array([
 
 inside_SSM = inside_SSM.reshape(depth_LO.shape)
 
+
+# Find LO cells inside SSM mesh
+inside_indices = np.flatnonzero(inside_SSM.ravel())
+
 # LO wet cells absent from SSM
 missing_SSM = (
     (mask_ps == 1) &
@@ -529,53 +534,6 @@ depth_difference_LO_SSM_plot = np.where(
     mask_ps == 1,
     depth_difference_LO_SSM,
     np.nan
-)
-
-# ============================================================
-# BATHYMETRY DIFFERENCE
-# ============================================================
-
-depth_difference = depth_LO - depth_SSC_on_LO
-
-depth_difference_plot = np.where(
-    mask_ps == 1,
-    depth_difference,
-    np.nan
-)
-
-print(
-    'LO bathymetry in missing SSC cells:',
-    np.nanmin(depth_LO[missing_SSC]),
-    np.nanmax(depth_LO[missing_SSC])
-)
-
-print(
-    'SSC bathymetry in missing SSC cells:',
-    np.nanmin(depth_SSC_on_LO[missing_SSC]),
-    np.nanmax(depth_SSC_on_LO[missing_SSC])
-)
-
-print('Total missing SSC cells:', np.sum(missing_SSC))
-
-print(
-    'Missing SSC cells inside Puget Sound mask:',
-    np.sum(missing_SSC & (mask_ps == 1))
-)
-
-print(
-    'Missing SSC cells outside Puget Sound mask:',
-    np.sum(missing_SSC & (mask_ps == 0))
-)
-
-print(
-    'Difference in missing SSC cells:',
-    np.nanmin(depth_difference[missing_SSC]),
-    np.nanmax(depth_difference[missing_SSC])
-)
-
-print(
-    'Difference plot in missing SSC cells:',
-    np.sum(np.isfinite(depth_difference_plot[missing_SSC]))
 )
 
 # ============================================================
@@ -736,6 +694,7 @@ print('Figure saved to:', Path('bathymetry_difference_LO_minus_SSM.png').resolve
 
 thick_LO = ds_LO['thick_bot146'].values
 thick_SSC = ds_SSC['thick_bot146'].values
+thick_SSM = ds_SSM['thick_bot'].values
 
 # ============================================================
 # MAP SSC THICKNESS ONTO LIVE OCEAN GRID
@@ -789,10 +748,26 @@ for t in range(thick_SSC.shape[0]):
 
 thick_SSC_on_LO[:, missing_SSC] = 0
 
-print(
-    'LO cells absent from SSC:',
-    np.sum(missing_SSC)
+# ============================================================
+# MAP SSM THICKNESS ONTO LIVE OCEAN GRID
+# ============================================================
+
+thick_SSM_on_LO = np.full(
+    (thick_SSM.shape[0], *depth_LO.shape),
+    np.nan
 )
+
+thick_SSM_on_LO.reshape(
+    thick_SSM.shape[0], -1
+)[:, inside_indices] = (
+    thick_SSM[:, nearest_flat_index]
+)
+
+# ------------------------------------------------------------
+# Assign zero thickness where SSM has no grid coverage
+# ------------------------------------------------------------
+
+thick_SSM_on_LO[:, missing_SSM] = 0
 
 # ============================================================
 # THICKNESS DIFFERENCE
@@ -812,8 +787,21 @@ mean_thick_difference_plot = np.where(
     np.nan
 )
 
+thick_difference_LO_SSM = thick_LO - thick_SSM_on_LO
+
+mean_thick_difference_LO_SSM = np.nanmean(
+    thick_difference_LO_SSM,
+    axis=0
+)
+
+mean_thick_difference_LO_SSM_plot = np.where(
+    mask_ps == 1,
+    mean_thick_difference_LO_SSM,
+    np.nan
+)
+
 # ============================================================
-# PLOT THICK_BOT146 DIFFERENCE
+# PLOT THICK_BOT146 DIFFERENCE LO SSC
 # ============================================================
 
 fig, ax = plt.subplots(
@@ -829,9 +817,20 @@ pcm = ax.pcolormesh(
     lat_LO,
     mean_thick_difference_plot,
     shading='auto',
-    cmap='RdBu_r',
+    #cmap='RdBu_r',
+    cmap= cmap_SSC_LO,
     vmin=-diff_max,
     vmax=diff_max
+)
+
+# Overlay cross-hatching where LO cells are absent from SSM
+ax.contourf(
+    lon_LO,
+    lat_LO,
+    missing_SSC.astype(int),
+    levels=[0.5, 1.5],
+    colors='none',
+    hatches=['////']
 )
 
 ax.set_title(
@@ -888,3 +887,72 @@ plt.savefig(
 plt.show()
 
 print('Figure saved to:', Path('thick_bot146_difference_LO_minus_SSC.png').resolve())
+
+# ============================================================
+# PLOT THICK_BOT146 DIFFERENCE LO SSM
+# ============================================================
+
+fig, ax = plt.subplots(
+    figsize=(8, 7),
+    constrained_layout=True
+)
+
+pcm = ax.pcolormesh(
+    lon_LO,
+    lat_LO,
+    mean_thick_difference_LO_SSM_plot,
+    shading='auto',
+    cmap= cmap_SSM_LO,
+    vmin=-diff_max,
+    vmax=diff_max
+)
+
+# Overlay cross-hatching where LO cells are absent from SSM
+ax.contourf(
+    lon_LO,
+    lat_LO,
+    missing_SSM.astype(int),
+    levels=[0.5, 1.5],
+    colors='none',
+    hatches=['////']
+)
+
+ax.set_title(
+    'LiveOcean − Salish Sea Model\n'
+    'Mean Bottom 14.6% Layer (Bottom SSM layer) Thickness Difference'
+)
+
+ax.set_xlabel('Longitude')
+ax.set_ylabel('Latitude')
+
+# Colorbar
+cbar = fig.colorbar(
+    pcm,
+    ax=ax,
+    shrink=0.85,
+    pad=0.02
+)
+
+cbar.set_label(
+    'thick_bot146 difference (m)'
+)
+
+ax.set_xlim(
+    lon_min - lon_pad,
+    lon_max + lon_pad
+)
+
+ax.set_ylim(
+    lat_min - lat_pad,
+    lat_max + lat_pad
+)
+
+plt.savefig(
+    'thick_bot146_difference_LO_minus_SSM.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+
+plt.show()
+
+print('Figure saved to:', Path('thick_bot146_difference_LO_minus_SSM.png').resolve())
