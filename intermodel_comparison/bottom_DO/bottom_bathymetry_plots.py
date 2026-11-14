@@ -752,6 +752,15 @@ thick_SSC_on_LO[:, missing_SSC] = 0
 # MAP SSM THICKNESS ONTO LIVE OCEAN GRID
 # ============================================================
 
+# Find nearest SSM node ONLY for LO cells inside SSM footprint
+_, nearest_index_ssm = tree_SSM.query(
+    lo_points[inside_indices]
+)
+
+nearest_flat_index_ssm = (
+    valid_flat_indices_ssm[nearest_index_ssm]
+)
+
 thick_SSM_on_LO = np.full(
     (thick_SSM.shape[0], *depth_LO.shape),
     np.nan
