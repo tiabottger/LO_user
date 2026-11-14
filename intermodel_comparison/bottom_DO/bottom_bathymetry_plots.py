@@ -388,10 +388,10 @@ for ax in axes.flat:
     )
     
 # Dark grey background
-fig.patch.set_facecolor('0.25')
+fig.patch.set_facecolor('0.35')
 
 for ax in axes:
-    ax.set_facecolor('0.25')
+    ax.set_facecolor('0.35')
 
 plt.savefig(
     'bathymetry_bottom_depth_comparison.png',
