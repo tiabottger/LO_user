@@ -757,12 +757,12 @@ thick_SSM_on_LO = np.full(
     np.nan
 )
 
-thick_SSM_on_LO.reshape(
-    thick_SSM.shape[0], -1
-)[:, inside_indices] = (
-    thick_SSM[:, nearest_flat_index_ssm]
-)
+for t in range(thick_SSM.shape[0]):
 
+    thick_SSM_on_LO[t].ravel()[inside_indices] = (
+        thick_SSM[t, nearest_flat_index_ssm]
+    )
+    
 # ------------------------------------------------------------
 # Assign zero thickness where SSM has no grid coverage
 # ------------------------------------------------------------
