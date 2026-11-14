@@ -585,12 +585,12 @@ print(
 # Diverging colormaps
 cmap_SSC_LO = LinearSegmentedColormap.from_list(
     'SSC_LO',
-    ["#004A75", 'white', "#984200"]
+    ["#004A75", 'white', "#982900"]
 )
 
 cmap_SSM_LO = LinearSegmentedColormap.from_list(
     'SSM_LO',
-    ["#00664B", 'white', "#984200"]
+    ["#00664B", 'white', "#982900"]
 )
 # ============================================================
 # PLOT BATHYMETRY DIFFERENCE
