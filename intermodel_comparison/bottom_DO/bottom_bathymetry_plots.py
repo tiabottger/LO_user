@@ -386,6 +386,12 @@ for ax in axes.flat:
         lat_min - lat_pad,
         lat_max + lat_pad
     )
+    
+# Dark grey background
+fig.patch.set_facecolor('0.25')
+
+for ax in axes:
+    ax.set_facecolor('0.25')
 
 plt.savefig(
     'bathymetry_bottom_depth_comparison.png',
