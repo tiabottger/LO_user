@@ -760,7 +760,7 @@ thick_SSM_on_LO = np.full(
 thick_SSM_on_LO.reshape(
     thick_SSM.shape[0], -1
 )[:, inside_indices] = (
-    thick_SSM[:, nearest_flat_index]
+    thick_SSM[:, nearest_flat_index_ssm]
 )
 
 # ------------------------------------------------------------
