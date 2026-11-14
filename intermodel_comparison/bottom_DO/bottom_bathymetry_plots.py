@@ -700,39 +700,6 @@ thick_SSM = ds_SSM['thick_bot'].values
 # MAP SSC THICKNESS ONTO LIVE OCEAN GRID
 # ============================================================
 
-# SSC grid points
-ssc_points = np.column_stack((
-    lon_SSC.ravel(),
-    lat_SSC.ravel()
-))
-
-valid_ssc = (
-    np.isfinite(ssc_points[:, 0]) &
-    np.isfinite(ssc_points[:, 1])
-)
-
-tree_SSC = cKDTree(ssc_points[valid_ssc])
-
-# LiveOcean grid points
-lo_points = np.column_stack((
-    lon_LO.ravel(),
-    lat_LO.ravel()
-))
-
-distance_to_SSC, nearest_index = tree_SSC.query(lo_points)
-
-valid_flat_indices = np.flatnonzero(valid_ssc)
-nearest_flat_index = valid_flat_indices[nearest_index]
-
-# Identify LO cells not represented by SSC
-missing_SSC = (
-    distance_to_SSC.reshape(depth_LO.shape) > 0.01
-)
-
-# ------------------------------------------------------------
-# Map every SSC timestep onto LO grid
-# ------------------------------------------------------------
-
 thick_SSC_on_LO = np.empty_like(thick_LO)
 
 for t in range(thick_SSC.shape[0]):
@@ -742,10 +709,7 @@ for t in range(thick_SSC.shape[0]):
         .reshape(thick_LO.shape[1:])
     )
 
-# ------------------------------------------------------------
-# Assign zero thickness where SSC has no grid coverage
-# ------------------------------------------------------------
-
+# Use missing-cell mask from bathymetry comparison
 thick_SSC_on_LO[:, missing_SSC] = 0
 
 # ============================================================
