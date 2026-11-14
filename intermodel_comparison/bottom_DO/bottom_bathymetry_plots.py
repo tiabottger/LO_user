@@ -680,6 +680,16 @@ plt.colorbar(
     label='LO - SSM bottom depth (m)'
 )
 
+# Overlay cross-hatching where LO cells are absent from SSM
+ax.contourf(
+    lon_LO,
+    lat_LO,
+    missing_SSM.astype(int),
+    levels=[0.5, 1.5],
+    colors='none',
+    hatches=['////']
+)
+
 ax.set_title('Bottom Bathymetry Difference: LO - SSM')
 ax.set_xlabel('Longitude')
 ax.set_ylabel('Latitude')
