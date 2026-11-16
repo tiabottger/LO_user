@@ -1724,10 +1724,10 @@ ax.xaxis.set_major_formatter(
 )
 
 ax.set_ylim(0, max(
-    np.nanmax(hyp_area_LO_ts_hc),
-    np.nanmax(hyp_area_SSC_ts_hc),
-    np.nanmax(hyp_area_SSM_ts_hc),
-    np.nanmax(hyp_area_SSM_ecology_ts_hc)
+    np.nanmax(hyp_volume_LO_ts_hc),
+    np.nanmax(hyp_volume_SSC_ts_hc),
+    np.nanmax(hyp_volume_SSM_ts_hc),
+    np.nanmax(hyp_volume_SSM_ecology_ts_hc)
 ))
 
 ax.tick_params(
@@ -1779,10 +1779,10 @@ ax.xaxis.set_major_formatter(
 )
 
 ax.set_ylim(0, max(
-    np.nanmax(hyp_area_LO_ts_hc),
-    np.nanmax(hyp_area_SSC_ts_hc),
-    np.nanmax(hyp_area_SSM_ts_hc),
-    np.nanmax(hyp_area_SSM_ecology_ts_hc)
+    np.nanmax(hyp_volume_LO_ts_hc),
+    np.nanmax(hyp_volume_SSC_ts_hc),
+    np.nanmax(hyp_volume_SSM_ts_hc),
+    np.nanmax(hyp_volume_SSM_ecology_ts_hc)
 ))
 
 ax.tick_params(
@@ -1834,10 +1834,10 @@ ax.xaxis.set_major_formatter(
 )
 
 ax.set_ylim(0, max(
-    np.nanmax(hyp_area_LO_ts_hc),
-    np.nanmax(hyp_area_SSC_ts_hc),
-    np.nanmax(hyp_area_SSM_ts_hc),
-    np.nanmax(hyp_area_SSM_ecology_ts_hc)
+    np.nanmax(hyp_volume_LO_ts_hc),
+    np.nanmax(hyp_volume_SSC_ts_hc),
+    np.nanmax(hyp_volume_SSM_ts_hc),
+    np.nanmax(hyp_volume_SSM_ecology_ts_hc)
 ))
 
 ax.tick_params(
@@ -1889,10 +1889,10 @@ ax.xaxis.set_major_formatter(
 )
 
 ax.set_ylim(0, max(
-    np.nanmax(hyp_area_LO_ts_hc),
-    np.nanmax(hyp_area_SSC_ts_hc),
-    np.nanmax(hyp_area_SSM_ts_hc),
-    np.nanmax(hyp_area_SSM_ecology_ts_hc)
+    np.nanmax(hyp_volume_LO_ts_hc),
+    np.nanmax(hyp_volume_SSC_ts_hc),
+    np.nanmax(hyp_volume_SSM_ts_hc),
+    np.nanmax(hyp_volume_SSM_ecology_ts_hc)
 ))
 
 ax.tick_params(
