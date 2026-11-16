@@ -1445,6 +1445,13 @@ ax.xaxis.set_major_formatter(
     mdates.DateFormatter('%Y-%m')
 )
 
+ax.set_ylim(0, max(
+    np.nanmax(hyp_area_LO_ts_hc),
+    np.nanmax(hyp_area_SSC_ts_hc),
+    np.nanmax(hyp_area_SSM_ts_hc),
+    np.nanmax(hyp_area_SSM_ecology_ts_hc)
+))
+
 ax.tick_params(
     axis='x', rotation=30)
 ax.tick_params(
@@ -1494,6 +1501,13 @@ ax.legend(loc='upper left')
 ax.xaxis.set_major_formatter(
     mdates.DateFormatter('%Y-%m')
 )
+
+ax.set_ylim(0, max(
+    np.nanmax(hyp_area_LO_ts_hc),
+    np.nanmax(hyp_area_SSC_ts_hc),
+    np.nanmax(hyp_area_SSM_ts_hc),
+    np.nanmax(hyp_area_SSM_ecology_ts_hc)
+))
 
 ax.tick_params(
     axis='x', rotation=30)
@@ -1545,6 +1559,13 @@ ax.xaxis.set_major_formatter(
     mdates.DateFormatter('%Y-%m')
 )
 
+ax.set_ylim(0, max(
+    np.nanmax(hyp_area_LO_ts_hc),
+    np.nanmax(hyp_area_SSC_ts_hc),
+    np.nanmax(hyp_area_SSM_ts_hc),
+    np.nanmax(hyp_area_SSM_ecology_ts_hc)
+))
+
 ax.tick_params(
     axis='x', rotation=30)
 ax.tick_params(
@@ -1594,6 +1615,13 @@ ax.legend(loc='upper left')
 ax.xaxis.set_major_formatter(
     mdates.DateFormatter('%Y-%m')
 )
+
+ax.set_ylim(0, max(
+    np.nanmax(hyp_area_LO_ts_hc),
+    np.nanmax(hyp_area_SSC_ts_hc),
+    np.nanmax(hyp_area_SSM_ts_hc),
+    np.nanmax(hyp_area_SSM_ecology_ts_hc)
+))
 
 ax.tick_params(
     axis='x', rotation=30)
@@ -1695,6 +1723,13 @@ ax.xaxis.set_major_formatter(
     mdates.DateFormatter('%Y-%m')
 )
 
+ax.set_ylim(0, max(
+    np.nanmax(hyp_area_LO_ts_hc),
+    np.nanmax(hyp_area_SSC_ts_hc),
+    np.nanmax(hyp_area_SSM_ts_hc),
+    np.nanmax(hyp_area_SSM_ecology_ts_hc)
+))
+
 ax.tick_params(
     axis='x', rotation=30)
 ax.tick_params(
@@ -1742,6 +1777,13 @@ ax.legend(loc='upper right')
 ax.xaxis.set_major_formatter(
     mdates.DateFormatter('%Y-%m')
 )
+
+ax.set_ylim(0, max(
+    np.nanmax(hyp_area_LO_ts_hc),
+    np.nanmax(hyp_area_SSC_ts_hc),
+    np.nanmax(hyp_area_SSM_ts_hc),
+    np.nanmax(hyp_area_SSM_ecology_ts_hc)
+))
 
 ax.tick_params(
     axis='x', rotation=30)
@@ -1791,6 +1833,13 @@ ax.xaxis.set_major_formatter(
     mdates.DateFormatter('%Y-%m')
 )
 
+ax.set_ylim(0, max(
+    np.nanmax(hyp_area_LO_ts_hc),
+    np.nanmax(hyp_area_SSC_ts_hc),
+    np.nanmax(hyp_area_SSM_ts_hc),
+    np.nanmax(hyp_area_SSM_ecology_ts_hc)
+))
+
 ax.tick_params(
     axis='x', rotation=30)
 ax.tick_params(
@@ -1838,6 +1887,13 @@ ax.legend(loc='upper right')
 ax.xaxis.set_major_formatter(
     mdates.DateFormatter('%Y-%m')
 )
+
+ax.set_ylim(0, max(
+    np.nanmax(hyp_area_LO_ts_hc),
+    np.nanmax(hyp_area_SSC_ts_hc),
+    np.nanmax(hyp_area_SSM_ts_hc),
+    np.nanmax(hyp_area_SSM_ecology_ts_hc)
+))
 
 ax.tick_params(
     axis='x', rotation=30)
