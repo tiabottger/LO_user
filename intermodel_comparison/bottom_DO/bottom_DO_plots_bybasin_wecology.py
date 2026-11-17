@@ -1100,13 +1100,13 @@ print(f'Salish Sea Model Ecology Main Basin volume: {mb_volume_SSM_ecology:.2f} 
 # NORMALIZED HYPOXIC VOLUME AS PERCENT
 # ============================================================
 
-hyp_volume_pct_LO = (
+hyp_volume_pct_LO_ps = (
     hyp_volume_LO_ts_ps / total_volume_LO
 ) * 100
-hyp_volume_pct_SSC = (
+hyp_volume_pct_SSC_ps = (
     hyp_volume_SSC_ts_ps / total_volume_SSC
 ) * 100
-hyp_volume_pct_SSM = (
+hyp_volume_pct_SSM_ps = (
     hyp_volume_SSM_ts_ps / total_volume_SSM
 ) * 100
 
