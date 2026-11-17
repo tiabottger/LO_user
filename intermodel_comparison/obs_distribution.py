@@ -137,8 +137,8 @@ obs = obs.loc[
 # ============================================================
 
 # Load LiveOcean grid
+Ldir = Lfun.Lstart(gridname='cas7')
 grid_fn = Ldir['grid'] / 'grid.nc'
-
 grid_ds = xr.open_dataset(grid_fn)
 
 lon_rho = grid_ds['lon_rho'].values
