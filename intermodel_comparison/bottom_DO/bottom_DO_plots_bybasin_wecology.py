@@ -1109,6 +1109,9 @@ hyp_volume_pct_SSC_ps = (
 hyp_volume_pct_SSM_ps = (
     hyp_volume_SSM_ts_ps / total_volume_SSM
 ) * 100
+hyp_volume_pct_SSM_ecology_ps = (
+    hyp_volume_SSM_ts_ps / total_volume_SSM_ecology
+) * 100
 
 # Hood Canal
 hyp_volume_pct_LO_hc = (
@@ -1119,6 +1122,9 @@ hyp_volume_pct_SSC_hc = (
 ) * 100
 hyp_volume_pct_SSM_hc = (
     hyp_volume_SSM_ts_hc / hc_volume_SSM
+) * 100
+hyp_volume_pct_SSM_ecology_hc = (
+    hyp_volume_SSM_ts_hc / hc_volume_SSM_ecology
 ) * 100
 
 # Whidbey Basin
@@ -1131,6 +1137,9 @@ hyp_volume_pct_SSC_wb = (
 hyp_volume_pct_SSM_wb = (
     hyp_volume_SSM_ts_wb / wb_volume_SSM
 ) * 100
+hyp_volume_pct_SSM_ecology_wb = (
+    hyp_volume_SSM_ts_wb / wb_volume_SSM_ecology
+) * 100
 
 # South Sound
 hyp_volume_pct_LO_ss = (
@@ -1142,6 +1151,9 @@ hyp_volume_pct_SSC_ss = (
 hyp_volume_pct_SSM_ss = (
     hyp_volume_SSM_ts_ss / ss_volume_SSM
 ) * 100
+hyp_volume_pct_SSM_ecology_ss = (
+    hyp_volume_SSM_ts_ss / ss_volume_SSM_ecology
+) * 100
 
 # Main Basin
 hyp_volume_pct_LO_mb = (
@@ -1152,6 +1164,9 @@ hyp_volume_pct_SSC_mb = (
 ) * 100
 hyp_volume_pct_SSM_mb = (
     hyp_volume_SSM_ts_mb / mb_volume_SSM
+) * 100
+hyp_volume_pct_SSM_ecology_mb = (
+    hyp_volume_SSM_ts_mb / mb_volume_SSM_ecology
 ) * 100
 
 # ============================================================
@@ -2055,7 +2070,7 @@ fig, ax = plt.subplots(figsize=(11, 4.5))
 
 ax.plot(
     pd.to_datetime(ds_LO['ocean_time'].values),
-    hyp_volume_pct_LO,
+    hyp_volume_pct_LO_ps,
     linewidth=2,
     color=colors['LO'],
     label='LiveOcean'
@@ -2063,7 +2078,7 @@ ax.plot(
 
 ax.plot(
     pd.to_datetime(ds_LO['ocean_time'].values),
-    hyp_volume_pct_SSC,
+    hyp_volume_pct_SSC_ps,
     linewidth=2,
     color=colors['SSC'],
     label='SalishSeaCast'
@@ -2071,10 +2086,18 @@ ax.plot(
 
 ax.plot(
     pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
-    hyp_volume_pct_SSM,
+    hyp_volume_pct_SSM_ps,
     linewidth=2,
     color=colors['SSM PNNL'],
     label='SSM PNNL'
+)
+
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_pct_SSM_ecology_ps,
+    linewidth=2,
+    color=colors['SSM Ecology'],
+    label='SSM Ecology'
 )
 
 ax.set_ylabel(
@@ -2108,18 +2131,333 @@ ax.tick_params(
 )
 
 ax.set_title(
-    'Hypoxic Volume (% of Total Volume)',
+    'Hypoxic Volume (% of Total Volume) — Puget Sound',
     fontsize=13
 )
 
 plt.savefig(
-    out_dir / 'hypoxic_volume_percent_comparison.png',
+    out_dir / 'hypoxic_volume_pct_comparison.png',
     dpi=300,
     bbox_inches='tight'
 )
 
 plt.show()
 
+print('Plotting hypoxic volume as percent of total volume — Hood Canal')
+
+fig, ax = plt.subplots(figsize=(11, 4.5))
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_pct_LO_hc,
+    linewidth=2,
+    color=colors['LO'],
+    label='LiveOcean'
+)
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_pct_SSC_hc,
+    linewidth=2,
+    color=colors['SSC'],
+    label='SalishSeaCast'
+)
+
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_pct_SSM_hc,
+    linewidth=2,
+    color=colors['SSM PNNL'],
+    label='SSM PNNL'
+)
+
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_pct_SSM_ecology_hc,
+    linewidth=2,
+    color=colors['SSM Ecology'],
+    label='SSM Ecology'
+)
+
+ax.set_ylabel(
+    'Hypoxic Volume (% of Basin Volume)',
+    fontsize=12
+)
+
+ax.set_xlabel('Date', fontsize=12)
+
+ax.grid(
+    visible=True,
+    axis='both',
+    color='silver',
+    linestyle='--'
+)
+
+ax.legend(loc='upper right')
+
+ax.xaxis.set_major_formatter(
+    mdates.DateFormatter('%Y-%m')
+)
+
+ax.tick_params(
+    axis='x',
+    rotation=30
+)
+
+ax.tick_params(
+    axis='both',
+    labelsize=11
+)
+
+ax.set_title(
+    'Hypoxic Volume (% of Basin Volume) — Hood Canal',
+    fontsize=13
+)
+
+plt.savefig(
+    out_dir / 'hypoxic_volume_pct_comparison_hc.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+
+plt.show()
+
+print('Plotting hypoxic volume as percent of total volume — Whidbey Basin')
+
+fig, ax = plt.subplots(figsize=(11, 4.5))
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_pct_LO_wb,
+    linewidth=2,
+    color=colors['LO'],
+    label='LiveOcean'
+)
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_pct_SSC_wb,
+    linewidth=2,
+    color=colors['SSC'],
+    label='SalishSeaCast'
+)
+
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_pct_SSM_wb,
+    linewidth=2,
+    color=colors['SSM PNNL'],
+    label='SSM PNNL'
+)
+
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_pct_SSM_ecology_wb,
+    linewidth=2,
+    color=colors['SSM Ecology'],
+    label='SSM Ecology'
+)
+
+ax.set_ylabel(
+    'Hypoxic Volume (% of Basin Volume)',
+    fontsize=12
+)
+
+ax.set_xlabel('Date', fontsize=12)
+
+ax.grid(
+    visible=True,
+    axis='both',
+    color='silver',
+    linestyle='--'
+)
+
+ax.legend(loc='upper right')
+
+ax.xaxis.set_major_formatter(
+    mdates.DateFormatter('%Y-%m')
+)
+
+ax.tick_params(
+    axis='x',
+    rotation=30
+)
+
+ax.tick_params(
+    axis='both',
+    labelsize=11
+)
+
+ax.set_title(
+    'Hypoxic Volume (% of Basin Volume) — Whidbey Basin',
+    fontsize=13
+)
+
+plt.savefig(
+    out_dir / 'hypoxic_volume_pct_comparison_wb.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+
+plt.show()
+
+print('Plotting hypoxic volume as percent of total volume — South Sound')
+
+fig, ax = plt.subplots(figsize=(11, 4.5))
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_pct_LO_ss,
+    linewidth=2,
+    color=colors['LO'],
+    label='LiveOcean'
+)
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_pct_SSC_ss,
+    linewidth=2,
+    color=colors['SSC'],
+    label='SalishSeaCast'
+)
+
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_pct_SSM_ss,
+    linewidth=2,
+    color=colors['SSM PNNL'],
+    label='SSM PNNL'
+)
+
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_pct_SSM_ecology_ss,
+    linewidth=2,
+    color=colors['SSM Ecology'],
+    label='SSM Ecology'
+)
+
+ax.set_ylabel(
+    'Hypoxic Volume (% of Basin Volume)',
+    fontsize=12
+)
+
+ax.set_xlabel('Date', fontsize=12)
+
+ax.grid(
+    visible=True,
+    axis='both',
+    color='silver',
+    linestyle='--'
+)
+
+ax.legend(loc='upper right')
+
+ax.xaxis.set_major_formatter(
+    mdates.DateFormatter('%Y-%m')
+)
+
+ax.tick_params(
+    axis='x',
+    rotation=30
+)
+
+ax.tick_params(
+    axis='both',
+    labelsize=11
+)
+
+ax.set_title(
+    'Hypoxic Volume (% of Basin Volume) — South Sound',
+    fontsize=13
+)
+
+plt.savefig(
+    out_dir / 'hypoxic_volume_pct_comparison_ss.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+
+plt.show()
+
+print('Plotting hypoxic volume as percent of total volume — Main Basin')
+
+fig, ax = plt.subplots(figsize=(11, 4.5))
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_pct_LO_mb,
+    linewidth=2,
+    color=colors['LO'],
+    label='LiveOcean'
+)
+
+ax.plot(
+    pd.to_datetime(ds_LO['ocean_time'].values),
+    hyp_volume_pct_SSC_mb,
+    linewidth=2,
+    color=colors['SSC'],
+    label='SalishSeaCast'
+)
+
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_pct_SSM_mb,
+    linewidth=2,
+    color=colors['SSM PNNL'],
+    label='SSM PNNL'
+)
+
+ax.plot(
+    pd.to_datetime(pd.to_datetime(ds_SSM['time'].values)),
+    hyp_volume_pct_SSM_ecology_mb,
+    linewidth=2,
+    color=colors['SSM Ecology'],
+    label='SSM Ecology'
+)
+
+ax.set_ylabel(
+    'Hypoxic Volume (% of Basin Volume)',
+    fontsize=12
+)
+
+ax.set_xlabel('Date', fontsize=12)
+
+ax.grid(
+    visible=True,
+    axis='both',
+    color='silver',
+    linestyle='--'
+)
+
+ax.legend(loc='upper right')
+
+ax.xaxis.set_major_formatter(
+    mdates.DateFormatter('%Y-%m')
+)
+
+ax.tick_params(
+    axis='x',
+    rotation=30
+)
+
+ax.tick_params(
+    axis='both',
+    labelsize=11
+)
+
+ax.set_title(
+    'Hypoxic Volume (% of Basin Volume) — Hood Canal',
+    fontsize=13
+)
+
+plt.savefig(
+    out_dir / 'hypoxic_volume_pct_comparison_hc.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+
+plt.show()
 # ============================================================
 # HYPOXIA OCCURRENCE
 # ============================================================
