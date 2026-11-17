@@ -1110,7 +1110,7 @@ hyp_volume_pct_SSM_ps = (
     hyp_volume_SSM_ts_ps / total_volume_SSM
 ) * 100
 hyp_volume_pct_SSM_ecology_ps = (
-    hyp_volume_SSM_ts_ps / total_volume_SSM_ecology
+    hyp_volume_SSM_ecology_ts_ps / total_volume_SSM_ecology
 ) * 100
 
 # Hood Canal
@@ -1124,7 +1124,7 @@ hyp_volume_pct_SSM_hc = (
     hyp_volume_SSM_ts_hc / hc_volume_SSM
 ) * 100
 hyp_volume_pct_SSM_ecology_hc = (
-    hyp_volume_SSM_ts_hc / hc_volume_SSM_ecology
+    hyp_volume_SSM_ecology_ts_hc / hc_volume_SSM_ecology
 ) * 100
 
 # Whidbey Basin
@@ -1138,7 +1138,7 @@ hyp_volume_pct_SSM_wb = (
     hyp_volume_SSM_ts_wb / wb_volume_SSM
 ) * 100
 hyp_volume_pct_SSM_ecology_wb = (
-    hyp_volume_SSM_ts_wb / wb_volume_SSM_ecology
+    hyp_volume_SSM_ecology_ts_wb / wb_volume_SSM_ecology
 ) * 100
 
 # South Sound
@@ -1152,7 +1152,7 @@ hyp_volume_pct_SSM_ss = (
     hyp_volume_SSM_ts_ss / ss_volume_SSM
 ) * 100
 hyp_volume_pct_SSM_ecology_ss = (
-    hyp_volume_SSM_ts_ss / ss_volume_SSM_ecology
+    hyp_volume_SSM_ecology_ts_ss / ss_volume_SSM_ecology
 ) * 100
 
 # Main Basin
@@ -1166,7 +1166,7 @@ hyp_volume_pct_SSM_mb = (
     hyp_volume_SSM_ts_mb / mb_volume_SSM
 ) * 100
 hyp_volume_pct_SSM_ecology_mb = (
-    hyp_volume_SSM_ts_mb / mb_volume_SSM_ecology
+    hyp_volume_SSM_ecology_ts_mb / mb_volume_SSM_ecology
 ) * 100
 
 # ============================================================
