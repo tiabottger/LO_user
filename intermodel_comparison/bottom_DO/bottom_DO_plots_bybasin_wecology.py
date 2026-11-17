@@ -2447,12 +2447,12 @@ ax.tick_params(
 )
 
 ax.set_title(
-    'Hypoxic Volume (% of Basin Volume) — Hood Canal',
+    'Hypoxic Volume (% of Basin Volume) — Main Basin',
     fontsize=13
 )
 
 plt.savefig(
-    out_dir / 'hypoxic_volume_pct_comparison_hc.png',
+    out_dir / 'hypoxic_volume_pct_comparison_mb.png',
     dpi=300,
     bbox_inches='tight'
 )
