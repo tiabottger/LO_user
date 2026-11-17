@@ -1097,213 +1097,261 @@ print(f'Salish Sea Model Main Basin volume: {mb_volume_SSM:.2f} km3')
 print(f'Salish Sea Model Ecology Main Basin volume: {mb_volume_SSM_ecology:.2f} km3')
 
 # ============================================================
+# NORMALIZED HYPOXIC VOLUME AS PERCENT
+# ============================================================
+
+hyp_volume_pct_LO = (
+    hyp_volume_LO_ts_ps / total_volume_LO
+) * 100
+hyp_volume_pct_SSC = (
+    hyp_volume_SSC_ts_ps / total_volume_SSC
+) * 100
+hyp_volume_pct_SSM = (
+    hyp_volume_SSM_ts_ps / total_volume_SSM
+) * 100
+
+# Hood Canal
+hyp_volume_pct_LO_hc = (
+    hyp_volume_LO_ts_hc / hc_volume_LO
+) * 100
+hyp_volume_pct_SSC_hc = (
+    hyp_volume_SSC_ts_hc / hc_volume_SSC
+) * 100
+hyp_volume_pct_SSM_hc = (
+    hyp_volume_SSM_ts_hc / hc_volume_SSM
+) * 100
+
+# Whidbey Basin
+hyp_volume_pct_LO_wb = (
+    hyp_volume_LO_ts_wb / wb_volume_LO
+) * 100
+hyp_volume_pct_SSC_wb = (
+    hyp_volume_SSC_ts_wb / wb_volume_SSC
+) * 100
+hyp_volume_pct_SSM_wb = (
+    hyp_volume_SSM_ts_wb / wb_volume_SSM
+) * 100
+
+# South Sound
+hyp_volume_pct_LO_ss = (
+    hyp_volume_LO_ts_ss / ss_volume_LO
+) * 100
+hyp_volume_pct_SSC_ss = (
+    hyp_volume_SSC_ts_ss / ss_volume_SSC
+) * 100
+hyp_volume_pct_SSM_ss = (
+    hyp_volume_SSM_ts_ss / ss_volume_SSM
+) * 100
+
+# Main Basin
+hyp_volume_pct_LO_mb = (
+    hyp_volume_LO_ts_mb / mb_volume_LO
+) * 100
+hyp_volume_pct_SSC_mb = (
+    hyp_volume_SSC_ts_mb / mb_volume_SSC
+) * 100
+hyp_volume_pct_SSM_mb = (
+    hyp_volume_SSM_ts_mb / mb_volume_SSM
+) * 100
+
+# ============================================================
 # TIME-AVERAGED HYPOXIC AREA
 # ============================================================
 
-# Calculate hypoxic area under the curve
-hyp_area_auc_LO_ps = np.trapezoid(
-    hyp_area_LO_ts_ps,
-    dx=1
-)
+# Helper function to calculate time-averaged hypoxic area
+def calculate_mean_hyp_area(hyp_area_ts):
+    
+    # Calculate hypoxic area under the curve
+    hyp_area_auc = np.trapezoid(
+        hyp_area_ts,
+        dx=1
+    )
 
-# Divide by the number of elapsed days
-mean_hyp_area_LO_ps = (
-    hyp_area_auc_LO_ps /
-    (len(hyp_area_LO_ts_ps) - 1)
-)
+    # Divide by the number of elapsed days
+    mean_hyp_area = (
+        hyp_area_auc / (len(hyp_area_ts) - 1)
+    )
 
-hyp_area_auc_SSC_ps = np.trapezoid(
-    hyp_area_SSC_ts_ps,
-    dx=1
-)
-mean_hyp_area_SSC_ps = (
-    hyp_area_auc_SSC_ps /
-    (len(hyp_area_SSC_ts_ps) - 1)
-)
-hyp_area_auc_SSM_ps = np.trapezoid(
-    hyp_area_SSM_ts_ps,
-    dx=1
-)
-mean_hyp_area_SSM_ps = (
-    hyp_area_auc_SSM_ps /
-    (len(hyp_area_SSM_ts_ps) - 1)
-)
-hyp_area_auc_SSM_ecology_ps = np.trapezoid(
-    hyp_area_SSM_ecology_ts_ps,
-    dx=1
-)
-mean_hyp_area_SSM_ecology_ps = (
-    hyp_area_auc_SSM_ecology_ps /
-    (len(hyp_area_SSM_ecology_ts_ps) - 1)
-)
+    return mean_hyp_area
 
-# Hood Canal
-hyp_area_auc_LO_hc = np.trapezoid(
-    hyp_area_LO_ts_hc,
-    dx=1
-)
-mean_hyp_area_LO_hc = (
-    hyp_area_auc_LO_hc /
-    (len(hyp_area_LO_ts_hc) - 1)
-)
-hyp_area_auc_SSC_hc = np.trapezoid(
-    hyp_area_SSC_ts_hc,
-    dx=1
-)
-mean_hyp_area_SSC_hc = (
-    hyp_area_auc_SSC_hc /
-    (len(hyp_area_SSC_ts_hc) - 1)
-)
-hyp_area_auc_SSM_hc = np.trapezoid(
-    hyp_area_SSM_ts_hc,
-    dx=1
-)
-mean_hyp_area_SSM_hc = (
-    hyp_area_auc_SSM_hc /
-    (len(hyp_area_SSM_ts_hc) - 1)
-)
-hyp_area_auc_SSM_ecology_hc = np.trapezoid(
-    hyp_area_SSM_ecology_ts_hc,
-    dx=1
-)
-mean_hyp_area_SSM_ecology_hc = (
-    hyp_area_auc_SSM_ecology_hc /
-    (len(hyp_area_SSM_ecology_ts_hc) - 1)
-)
+basins = ['ps', 'hc', 'wb', 'ss', 'mb']
+models = ['LO', 'SSC', 'SSM', 'SSM_ecology']
 
-# Whidbey Basin
-hyp_area_auc_LO_wb = np.trapezoid(
-    hyp_area_LO_ts_wb,
-    dx=1
-)
-mean_hyp_area_LO_wb = (
-    hyp_area_auc_LO_wb /
-    (len(hyp_area_LO_ts_wb) - 1)
-)
-hyp_area_auc_SSC_wb = np.trapezoid(
-    hyp_area_SSC_ts_wb,
-    dx=1
-)
-mean_hyp_area_SSC_wb = (
-    hyp_area_auc_SSC_wb /
-    (len(hyp_area_SSC_ts_wb) - 1)
-)
-hyp_area_auc_SSM_wb = np.trapezoid(
-    hyp_area_SSM_ts_wb,
-    dx=1
-)
-mean_hyp_area_SSM_wb = (
-    hyp_area_auc_SSM_wb /
-    (len(hyp_area_SSM_ts_wb) - 1)
-)
-hyp_area_auc_SSM_ecology_wb = np.trapezoid(
-    hyp_area_SSM_ecology_ts_wb,
-    dx=1
-)
-mean_hyp_area_SSM_ecology_wb = (
-    hyp_area_auc_SSM_ecology_wb /
-    (len(hyp_area_SSM_ecology_ts_wb) - 1)
-)
+mean_hyp_area = {}
 
-# South Sound
-hyp_area_auc_LO_ss = np.trapezoid(
-    hyp_area_LO_ts_ss,
-    dx=1
-)
-mean_hyp_area_LO_ss = (
-    hyp_area_auc_LO_ss /
-    (len(hyp_area_LO_ts_ss) - 1)
-)
-hyp_area_auc_SSC_ss = np.trapezoid(
-    hyp_area_SSC_ts_ss,
-    dx=1
-)
-mean_hyp_area_SSC_ss = (
-    hyp_area_auc_SSC_ss /
-    (len(hyp_area_SSC_ts_ss) - 1)
-)
-hyp_area_auc_SSM_ss = np.trapezoid(
-    hyp_area_SSM_ts_ss,
-    dx=1
-)
-mean_hyp_area_SSM_ss = (
-    hyp_area_auc_SSM_ss /
-    (len(hyp_area_SSM_ts_ss) - 1)
-)
-hyp_area_auc_SSM_ecology_ss = np.trapezoid(
-    hyp_area_SSM_ecology_ts_ss,
-    dx=1
-)
-mean_hyp_area_SSM_ecology_ss = (
-    hyp_area_auc_SSM_ecology_ss /
-    (len(hyp_area_SSM_ecology_ts_ss) - 1)
-)
+for basin in basins:
 
-# Main Basin
-hyp_area_auc_LO_mb = np.trapezoid(
-    hyp_area_LO_ts_mb,
-    dx=1
-)
-mean_hyp_area_LO_mb = (
-    hyp_area_auc_LO_mb /
-    (len(hyp_area_LO_ts_mb) - 1)
-)
-hyp_area_auc_SSC_mb = np.trapezoid(
-    hyp_area_SSC_ts_mb,
-    dx=1
-)
-mean_hyp_area_SSC_mb = (
-    hyp_area_auc_SSC_mb /
-    (len(hyp_area_SSC_ts_mb) - 1)
-)
-hyp_area_auc_SSM_mb = np.trapezoid(
-    hyp_area_SSM_ts_mb,
-    dx=1
-)
-mean_hyp_area_SSM_mb = (
-    hyp_area_auc_SSM_mb /
-    (len(hyp_area_SSM_ts_mb) - 1)
-)
-hyp_area_auc_SSM_ecology_mb = np.trapezoid(
-    hyp_area_SSM_ecology_ts_mb,
-    dx=1
-)
-mean_hyp_area_SSM_ecology_mb = (
-    hyp_area_auc_SSM_ecology_mb /
-    (len(hyp_area_SSM_ecology_ts_mb) - 1)
-)
+    mean_hyp_area[basin] = {}
 
-# Organize mean hypoxic areas
+    for model in models:
+
+        # Construct time-series variable name
+        var_name = f'hyp_area_{model}_ts_{basin}'
+
+        # Calculate time-averaged hypoxic area
+        mean_hyp_area[basin][model] = (
+            calculate_mean_hyp_area(
+                globals()[var_name]
+            )
+        )
+
 mean_hyp_area = {
     'Puget Sound': {
-        'LO': mean_hyp_area_LO_ps,
-        'SSC': mean_hyp_area_SSC_ps,
-        'SSM PNNL': mean_hyp_area_SSM_ps,
-        'SSM Ecology': mean_hyp_area_SSM_ecology_ps
+        'LO': mean_hyp_area['ps']['LO'],
+        'SSC': mean_hyp_area['ps']['SSC'],
+        'SSM PNNL': mean_hyp_area['ps']['SSM'],
+        'SSM Ecology': mean_hyp_area['ps']['SSM_ecology']
     },
     'Hood Canal': {
-        'LO': mean_hyp_area_LO_hc,
-        'SSC': mean_hyp_area_SSC_hc,
-        'SSM PNNL': mean_hyp_area_SSM_hc,
-        'SSM Ecology': mean_hyp_area_SSM_ecology_hc
+        'LO': mean_hyp_area['hc']['LO'],
+        'SSC': mean_hyp_area['hc']['SSC'],
+        'SSM PNNL': mean_hyp_area['hc']['SSM'],
+        'SSM Ecology': mean_hyp_area['hc']['SSM_ecology']
     },
     'Whidbey Basin': {
-        'LO': mean_hyp_area_LO_wb,
-        'SSC': mean_hyp_area_SSC_wb,
-        'SSM PNNL': mean_hyp_area_SSM_wb,
-        'SSM Ecology': mean_hyp_area_SSM_ecology_wb
+        'LO': mean_hyp_area['wb']['LO'],
+        'SSC': mean_hyp_area['wb']['SSC'],
+        'SSM PNNL': mean_hyp_area['wb']['SSM'],
+        'SSM Ecology': mean_hyp_area['wb']['SSM_ecology']
     },
     'South Sound': {
-        'LO': mean_hyp_area_LO_ss,
-        'SSC': mean_hyp_area_SSC_ss,
-        'SSM PNNL': mean_hyp_area_SSM_ss,
-        'SSM Ecology': mean_hyp_area_SSM_ecology_ss
+        'LO': mean_hyp_area['ss']['LO'],
+        'SSC': mean_hyp_area['ss']['SSC'],
+        'SSM PNNL': mean_hyp_area['ss']['SSM'],
+        'SSM Ecology': mean_hyp_area['ss']['SSM_ecology']
     },
     'Main Basin': {
-        'LO': mean_hyp_area_LO_mb,
-        'SSC': mean_hyp_area_SSC_mb,
-        'SSM PNNL': mean_hyp_area_SSM_mb,
-        'SSM Ecology': mean_hyp_area_SSM_ecology_mb
+        'LO': mean_hyp_area['mb']['LO'],
+        'SSC': mean_hyp_area['mb']['SSC'],
+        'SSM PNNL': mean_hyp_area['mb']['SSM'],
+        'SSM Ecology': mean_hyp_area['mb']['SSM_ecology']
+    }
+}
+
+# ============================================================
+# TIME-AVERAGED HYPOXIC VOLUME
+# ============================================================
+
+# Helper function to calculate time-averaged hypoxic volume
+def calculate_mean_hyp_volume(hyp_vol_ts):
+
+    hyp_vol_auc = np.trapezoid(
+        hyp_vol_ts,
+        dx=1
+    )
+
+    mean_hyp_vol = (
+        hyp_vol_auc / (len(hyp_vol_ts) - 1)
+    )
+
+    return mean_hyp_vol
+
+basins = ['ps', 'hc', 'wb', 'ss', 'mb']
+models = ['LO', 'SSC', 'SSM', 'SSM_ecology']
+
+mean_hyp_volume = {}
+
+for basin in basins:
+
+    mean_hyp_volume[basin] = {}
+
+    for model in models:
+
+        # Construct time-series variable name
+        var_name = f'hyp_vol_{model}_ts_{basin}'
+
+        # Calculate time-averaged hypoxic volume
+        mean_hyp_volume[basin][model] = (
+            calculate_mean_hyp_volume(
+                globals()[var_name]
+            )
+        )
+
+mean_hyp_volume = {
+    'Puget Sound': {
+        'LO': mean_hyp_volume['ps']['LO'],
+        'SSC': mean_hyp_volume['ps']['SSC'],
+        'SSM PNNL': mean_hyp_volume['ps']['SSM'],
+        'SSM Ecology': mean_hyp_volume['ps']['SSM_ecology']
+    },
+    'Hood Canal': {
+        'LO': mean_hyp_volume['hc']['LO'],
+        'SSC': mean_hyp_volume['hc']['SSC'],
+        'SSM PNNL': mean_hyp_volume['hc']['SSM'],
+        'SSM Ecology': mean_hyp_volume['hc']['SSM_ecology']
+    },
+    'Whidbey Basin': {
+        'LO': mean_hyp_volume['wb']['LO'],
+        'SSC': mean_hyp_volume['wb']['SSC'],
+        'SSM PNNL': mean_hyp_volume['wb']['SSM'],
+        'SSM Ecology': mean_hyp_volume['wb']['SSM_ecology']
+    },
+    'South Sound': {
+        'LO': mean_hyp_volume['ss']['LO'],
+        'SSC': mean_hyp_volume['ss']['SSC'],
+        'SSM PNNL': mean_hyp_volume['ss']['SSM'],
+        'SSM Ecology': mean_hyp_volume['ss']['SSM_ecology']
+    },
+    'Main Basin': {
+        'LO': mean_hyp_volume['mb']['LO'],
+        'SSC': mean_hyp_volume['mb']['SSC'],
+        'SSM PNNL': mean_hyp_volume['mb']['SSM'],
+        'SSM Ecology': mean_hyp_volume['mb']['SSM_ecology']
+    }
+}
+
+# ============================================================
+# TIME-AVERAGED HYPOXIC VOLUME AS PERCENT
+# ============================================================
+
+mean_hyp_volume_pct = {}
+
+for basin in basins:
+
+    mean_hyp_volume_pct[basin] = {}
+
+    for model in models:
+
+        # Construct time-series variable name
+        var_name = f'hyp_volume_pct_{model}_{basin}'
+
+        # Calculate time-averaged hypoxic volume
+        mean_hyp_volume_pct[basin][model] = (
+            calculate_mean_hyp_volume(
+                globals()[var_name]
+            )
+        )
+
+mean_hyp_volume_pct = {
+    'Puget Sound': {
+        'LO': mean_hyp_volume_pct['ps']['LO'],
+        'SSC': mean_hyp_volume_pct['ps']['SSC'],
+        'SSM PNNL': mean_hyp_volume_pct['ps']['SSM'],
+        'SSM Ecology': mean_hyp_volume_pct['ps']['SSM_ecology']
+    },
+    'Hood Canal': {
+        'LO': mean_hyp_volume_pct['hc']['LO'],
+        'SSC': mean_hyp_volume_pct['hc']['SSC'],
+        'SSM PNNL': mean_hyp_volume_pct['hc']['SSM'],
+        'SSM Ecology': mean_hyp_volume_pct['hc']['SSM_ecology']
+    },
+    'Whidbey Basin': {
+        'LO': mean_hyp_volume_pct['wb']['LO'],
+        'SSC': mean_hyp_volume_pct['wb']['SSC'],
+        'SSM PNNL': mean_hyp_volume_pct['wb']['SSM'],
+        'SSM Ecology': mean_hyp_volume_pct['wb']['SSM_ecology']
+    },
+    'South Sound': {
+        'LO': mean_hyp_volume_pct['ss']['LO'],
+        'SSC': mean_hyp_volume_pct['ss']['SSC'],
+        'SSM PNNL': mean_hyp_volume_pct['ss']['SSM'],
+        'SSM Ecology': mean_hyp_volume_pct['ss']['SSM_ecology']
+    },
+    'Main Basin': {
+        'LO': mean_hyp_volume_pct['mb']['LO'],
+        'SSC': mean_hyp_volume_pct['mb']['SSC'],
+        'SSM PNNL': mean_hyp_volume_pct['mb']['SSM'],
+        'SSM Ecology': mean_hyp_volume_pct['mb']['SSM_ecology']
     }
 }
 
@@ -1346,6 +1394,94 @@ fig.suptitle('Time-averaged Hypoxic Area by Basin', fontsize=14)
 plt.tight_layout()
 plt.savefig(
     out_dir / 'timeavg_hypoxic_area_comparison.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+plt.show()
+
+# ============================================================
+# PLOT TIME AVERAGED HYPOXIC VOLUME
+# ============================================================
+
+colors = {
+    'LO': '#D55E00',
+    'SSC': '#0072B2',
+    'SSM PNNL': '#009E73',
+    'SSM Ecology': "#CC79A7"
+}
+
+fig, ax = plt.subplots(1, 5, figsize=(15, 5), sharey=True)
+
+for i, (basin, values) in enumerate(mean_hyp_volume.items()):
+
+    models = list(values.keys())
+    averages = list(values.values())
+
+    ax[i].bar(
+        models,
+        averages,
+        color=[colors[m] for m in models],
+        edgecolor='black',
+        linewidth=0.7
+    )
+
+    ax[i].set_title(basin)
+    ax[i].set_xlabel('Model')
+    ax[i].spines[['top', 'right']].set_visible(False)
+
+    ax[i].tick_params(axis='x', rotation=45)
+
+ax[0].set_ylabel('Time-averaged Hypoxic Volume (km³)')
+
+fig.suptitle('Time-averaged Hypoxic Volume by Basin', fontsize=14)
+
+plt.tight_layout()
+plt.savefig(
+    out_dir / 'timeavg_hypoxic_volume_comparison.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+plt.show()
+
+# ============================================================
+# PLOT TIME AVERAGED HYPOXIC VOLUME AS PERCENT
+# ============================================================
+
+colors = {
+    'LO': '#D55E00',
+    'SSC': '#0072B2',
+    'SSM PNNL': '#009E73',
+    'SSM Ecology': "#CC79A7"
+}
+
+fig, ax = plt.subplots(1, 5, figsize=(15, 5), sharey=True)
+
+for i, (basin, values) in enumerate(mean_hyp_volume_pct.items()):
+
+    models = list(values.keys())
+    averages = list(values.values())
+
+    ax[i].bar(
+        models,
+        averages,
+        color=[colors[m] for m in models],
+        edgecolor='black',
+        linewidth=0.7
+    )
+
+    ax[i].set_title(basin)
+    ax[i].set_xlabel('Model')
+    ax[i].spines[['top', 'right']].set_visible(False)
+
+    ax[i].tick_params(axis='x', rotation=45)
+
+ax[0].set_ylabel('Time-averaged Percent Hypoxic Volume (%)')
+
+fig.suptitle('Time-averaged Percent Hypoxic Volume by Basin', fontsize=14)
+
+plt.tight_layout()
+plt.savefig(
+    out_dir / 'timeavg_hypoxic_volume_pct_comparison.png',
     dpi=300,
     bbox_inches='tight'
 )
@@ -1912,18 +2048,6 @@ plt.show()
 # ============================================================
 # PLOT HYPOXIC VOLUME (% OF TOTAL VOLUME)
 # ============================================================
-
-hyp_volume_pct_LO = (
-    hyp_volume_LO_ts_ps / total_volume_LO
-) * 100
-
-hyp_volume_pct_SSC = (
-    hyp_volume_SSC_ts_ps / total_volume_SSC
-) * 100
-
-hyp_volume_pct_SSM = (
-    hyp_volume_SSM_ts_ps / total_volume_SSM
-) * 100
 
 print('Plotting hypoxic volume as percent of total volume')
 
