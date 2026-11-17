@@ -222,15 +222,15 @@ for otype in ['bottle']:#, 'ctd']:
                 fs = 12
                 pfun.start_plot(figsize=(20,12), fs=fs)
 
-                # gtx_list = ['cas7_t1_x11ab', 'ssc', 'ssm']
-                gtx_list = ['ssm', 'ecology']
+                gtx_list = ['cas7_t1_x11ab', 'ssc', 'ssm']
+                # gtx_list = ['ssm', 'ecology']
                 # gtx_list = ['cas7_t1_x11ab', 'ssc']
                 # c_dict = dict(zip(gtx_list,['r','b','g']))
-                # c_dict = dict(zip(gtx_list,['#D55E00','#0072B2','#009E73']))
+                c_dict = dict(zip(gtx_list,["#C24003","#0031D1","#00753B"]))
                 # c_dict = dict(zip(gtx_list,['forestgreen','blueviolet']))
-                c_dict = dict(zip(gtx_list,['#009E73', '#CC79A7']))
-                # t_dict = dict(zip(gtx_list,[.05,.15,0.25])) # vertical position of stats text
-                t_dict = dict(zip(gtx_list,[.05,.15]))
+                # c_dict = dict(zip(gtx_list,["#007556", "#8F2D63FF"]))
+                t_dict = dict(zip(gtx_list,[.05,.15,0.25])) # vertical position of stats text
+                # t_dict = dict(zip(gtx_list,[.05,.15]))
 
                 alpha = 0.3
                 fig = plt.figure()
@@ -372,7 +372,7 @@ for otype in ['bottle']:#, 'ctd']:
                     plt.show()
                 else:
                     #plt.savefig(out_dir / (ff_str + '.png'))
-                    plt.savefig(out_dir / (ff_str + '_ssmpnnl_ecology.png'))
+                    plt.savefig(out_dir / (ff_str + '_withssmpnnl.png'))
                     plt.close('all')
 
     
