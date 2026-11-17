@@ -826,7 +826,7 @@ cmap.set_bad('white')
 
 fig, axes = plt.subplots(
     1, 2,
-    figsize=(20, 7),
+    figsize=(12, 6),
     constrained_layout=True,
     facecolor = 'white'
 )

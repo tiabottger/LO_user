@@ -228,7 +228,7 @@ for otype in ['bottle']:#, 'ctd']:
                 # c_dict = dict(zip(gtx_list,['r','b','g']))
                 c_dict = dict(zip(gtx_list,["#C24003","#0031D1","#00753B"]))
                 # c_dict = dict(zip(gtx_list,['forestgreen','blueviolet']))
-                # c_dict = dict(zip(gtx_list,["#007556", "#8F2D63FF"]))
+                # c_dict = dict(zip(gtx_list,["#00753B", "#8F2D63FF"]))
                 t_dict = dict(zip(gtx_list,[.05,.15,0.25])) # vertical position of stats text
                 # t_dict = dict(zip(gtx_list,[.05,.15]))
 
