@@ -26,7 +26,9 @@ otype = 'bottle'
 # ============================================================
 
 # Load the basin masks
-mask_ds = xr.open_dataset(
+basin_mask_ds = xr.open_dataset(
+    Ldir['LOu'] /
+    'obsmod' /
     'basin_masks_from_pugetsoundDObox.nc'
 )
 
