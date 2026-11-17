@@ -599,7 +599,7 @@ cbar = fig.colorbar(
     pad=0.02
 )
 
-cbar.set_label('Depth difference (m)')
+cbar.set_label('LO - SSC bottom depth (m)')
 
 # ------------------------------------------------------------
 # MAP EXTENT — PUGET SOUND ONLY
@@ -666,7 +666,7 @@ ax.contourf(
     hatches=['////']
 )
 
-ax.set_title('Bottom Bathymetry Difference: LO - SSM')
+ax.set_title('LiveOcean − Salish Sea Model Bathymetry')
 ax.set_xlabel('Longitude')
 ax.set_ylabel('Latitude')
 
@@ -823,7 +823,7 @@ cbar = fig.colorbar(
 )
 
 cbar.set_label(
-    'thick_bot146 difference (m)'
+    'LO - SSC bottom layer difference (m)'
 )
 
 # ============================================================
@@ -907,7 +907,7 @@ cbar = fig.colorbar(
 )
 
 cbar.set_label(
-    'thick_bot146 difference (m)'
+    'LO - SSM bottom layer difference (m)'
 )
 
 ax.set_xlim(
