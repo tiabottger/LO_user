@@ -1233,15 +1233,15 @@ mean_hyp_area = {
 # ============================================================
 
 # Helper function to calculate time-averaged hypoxic volume
-def calculate_mean_hyp_volume(hyp_vol_ts):
+def calculate_mean_hyp_volume(hyp_volume_ts):
 
     hyp_vol_auc = np.trapezoid(
-        hyp_vol_ts,
+        hyp_volume_ts,
         dx=1
     )
 
     mean_hyp_vol = (
-        hyp_vol_auc / (len(hyp_vol_ts) - 1)
+        hyp_vol_auc / (len(hyp_volume_ts) - 1)
     )
 
     return mean_hyp_vol
@@ -1258,7 +1258,7 @@ for basin in basins:
     for model in models:
 
         # Construct time-series variable name
-        var_name = f'hyp_vol_{model}_ts_{basin}'
+        var_name = f'hyp_volume_{model}_ts_{basin}'
 
         # Calculate time-averaged hypoxic volume
         mean_hyp_volume[basin][model] = (
