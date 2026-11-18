@@ -1073,6 +1073,8 @@ plt.savefig(
     bbox_inches='tight'
 )
 
+print('Figure saved to:', Path('bathymetry_crosssection_comparison.png').resolve())
+
 # ============================================================
 # MAP EAST-WEST TRANSECT LOCATION
 # ============================================================
@@ -1130,3 +1132,5 @@ plt.savefig(
     dpi=300,
     bbox_inches='tight'
 )
+
+print('Figure saved to:', Path('bathymetry_crosssection_map.png').resolve())
