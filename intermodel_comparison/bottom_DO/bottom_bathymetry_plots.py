@@ -940,10 +940,10 @@ print('Figure saved to:', Path('thick_bot146_difference_LO_minus_SSM.png').resol
 
 # Approximate east-west transect through Main Basin.
 # Adjust latitude to move the transect north or south.
-transect_lat = 47.85
+transect_lat = 47.7
 
 # Restrict transect to Main Basin longitude range
-lon_min = -123.25
+lon_min = -122.8
 lon_max = -122.25
 
 transect_lon = np.linspace(lon_min, lon_max, 500)
@@ -1077,7 +1077,7 @@ ax.set_title(
 )
 
 ax.grid(alpha=0.3)
-ax.legend(frameon=False)
+ax.legend()
 
 plt.tight_layout()
 plt.show()
