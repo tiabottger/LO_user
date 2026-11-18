@@ -953,7 +953,7 @@ transect_lon = np.linspace(lon_min, lon_max, 500)
 # ------------------------------------------------------------
 
 lo_wet = (
-    (mask_ps == 1) &
+    (mask_rho == 1) &
     np.isfinite(depth_LO)
 )
 
@@ -1021,6 +1021,21 @@ _, idx_SSM = tree_SSM.query(
 
 depth_SSM_section = depth_SSM[ssm_wet][idx_SSM]
 
+# ============================================================
+# CHECK TRANSECT DATA
+# ============================================================
+
+for name, values in [
+    ('LO', depth_LO_section),
+    ('SSC', depth_SSC_section),
+    ('SSM', depth_SSM_section)
+]:
+    print(f'\n{name}:')
+    print('  Shape:', values.shape)
+    print('  Valid values:', np.sum(np.isfinite(values)))
+    print('  Min:', np.nanmin(values) if np.any(np.isfinite(values)) else 'All NaN')
+    print('  Max:', np.nanmax(values) if np.any(np.isfinite(values)) else 'All NaN')
+
 # ------------------------------------------------------------
 # PLOT
 # ------------------------------------------------------------
@@ -1048,7 +1063,7 @@ ax.plot(
     depth_SSM_section,
     color='#009E73',
     linewidth=2,
-    label='SSM PNNL'
+    label='Salish Sea Model'
 )
 
 ax.set_xlabel('Longitude')
@@ -1057,9 +1072,6 @@ ax.set_title(
     f'Main Basin East–West Bathymetry Cross Section '
     f'(Latitude = {transect_lat:.2f}°N)'
 )
-
-ax.invert_yaxis()
-ax.set_ylim(0, None)
 
 ax.grid(alpha=0.3)
 ax.legend()
@@ -1119,9 +1131,6 @@ ax.set_ylim(47.4, 48.3)
 ax.set_aspect('equal', adjustable='box')
 
 ax.set_facecolor('0.25')
-
-cbar = plt.colorbar(pcm, ax=ax)
-cbar.set_label('Bathymetric depth (m)')
 
 ax.legend(loc='best')
 
