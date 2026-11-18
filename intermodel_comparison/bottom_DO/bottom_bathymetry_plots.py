@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 from scipy.spatial import cKDTree
 from lo_tools import Lfun
+from lo_tools import plotting_functions as pfun
 
 from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
@@ -1025,7 +1026,7 @@ depth_SSM_section = depth_SSM[ssm_wet][idx_SSM]
 # PLOT
 # ------------------------------------------------------------
 
-fig, ax = plt.subplots(figsize=(12, 5))
+fig, ax = plt.subplots(figsize=(7, 4))
 
 ax.plot(
     transect_lon,
@@ -1081,33 +1082,15 @@ print('Figure saved to:', Path('bathymetry_crosssection_comparison.png').resolve
 
 fig, ax = plt.subplots(figsize=(10, 7))
 
-# Plot coastline using LiveOcean land/water mask
-ax.contour(
-    lon_LO,
-    lat_LO,
-    mask_ps.astype(float),
-    levels=[0.5],
-    colors='black',
-    linewidths=0.8
-)
+pfun.add_coast(axes[0], color='black', linewidth=0.8)
 
 # Transect line
 ax.plot(
     [lon_min, lon_max],
     [transect_lat, transect_lat],
-    color='#D55E00',
+    color='red',
     linewidth=2.5,
     label='East–west transect'
-)
-
-# Transect endpoints
-ax.scatter(
-    [lon_min, lon_max],
-    [transect_lat, transect_lat],
-    color='#D55E00',
-    edgecolor='black',
-    s=45,
-    zorder=5
 )
 
 ax.set_xlabel('Longitude')
