@@ -929,3 +929,204 @@ plt.savefig(
 plt.show()
 
 print('Figure saved to:', Path('thick_bot146_difference_LO_minus_SSM.png').resolve())
+
+# ============================================================
+# EAST-WEST BATHYMETRY CROSS SECTION: MAIN BASIN
+# ============================================================
+
+# ------------------------------------------------------------
+# DEFINE TRANSECT
+# ------------------------------------------------------------
+
+# Approximate east-west transect through Main Basin.
+# Adjust latitude to move the transect north or south.
+transect_lat = 47.85
+
+# Restrict transect to Main Basin longitude range
+lon_min = -123.25
+lon_max = -122.25
+
+transect_lon = np.linspace(lon_min, lon_max, 500)
+
+# ------------------------------------------------------------
+# EXTRACT LIVE OCEAN BATHYMETRY
+# ------------------------------------------------------------
+
+lo_wet = (
+    (mask_ps == 1) &
+    np.isfinite(depth_LO)
+)
+
+lo_points = np.column_stack((
+    lon_LO[lo_wet],
+    lat_LO[lo_wet]
+))
+
+tree_LO = cKDTree(lo_points)
+
+_, idx_LO = tree_LO.query(
+    np.column_stack((
+        transect_lon,
+        np.full_like(transect_lon, transect_lat)
+    ))
+)
+
+depth_LO_section = depth_LO[lo_wet][idx_LO]
+
+# ------------------------------------------------------------
+# EXTRACT SSC BATHYMETRY
+# ------------------------------------------------------------
+
+ssc_wet = np.isfinite(depth_SSC)
+
+ssc_points = np.column_stack((
+    lon_SSC[ssc_wet],
+    lat_SSC[ssc_wet]
+))
+
+tree_SSC = cKDTree(ssc_points)
+
+_, idx_SSC = tree_SSC.query(
+    np.column_stack((
+        transect_lon,
+        np.full_like(transect_lon, transect_lat)
+    ))
+)
+
+depth_SSC_section = depth_SSC[ssc_wet][idx_SSC]
+
+# ------------------------------------------------------------
+# EXTRACT SSM BATHYMETRY
+# ------------------------------------------------------------
+
+ssm_wet = (
+    np.isfinite(lon_SSM) &
+    np.isfinite(lat_SSM) &
+    np.isfinite(depth_SSM)
+)
+
+ssm_points = np.column_stack((
+    lon_SSM[ssm_wet],
+    lat_SSM[ssm_wet]
+))
+
+tree_SSM = cKDTree(ssm_points)
+
+_, idx_SSM = tree_SSM.query(
+    np.column_stack((
+        transect_lon,
+        np.full_like(transect_lon, transect_lat)
+    ))
+)
+
+depth_SSM_section = depth_SSM[ssm_wet][idx_SSM]
+
+# ------------------------------------------------------------
+# PLOT
+# ------------------------------------------------------------
+
+fig, ax = plt.subplots(figsize=(12, 5))
+
+ax.plot(
+    transect_lon,
+    depth_LO_section,
+    color='#D55E00',
+    linewidth=2,
+    label='LiveOcean'
+)
+
+ax.plot(
+    transect_lon,
+    depth_SSC_section,
+    color='#0072B2',
+    linewidth=2,
+    label='SalishSeaCast'
+)
+
+ax.plot(
+    transect_lon,
+    depth_SSM_section,
+    color='#009E73',
+    linewidth=2,
+    label='SSM PNNL'
+)
+
+ax.set_xlabel('Longitude')
+ax.set_ylabel('Bathymetric depth (m)')
+ax.set_title(
+    f'Main Basin East–West Bathymetry Cross Section '
+    f'(Latitude = {transect_lat:.2f}°N)'
+)
+
+ax.invert_yaxis()
+ax.set_ylim(0, None)
+
+ax.grid(alpha=0.3)
+ax.legend()
+
+plt.tight_layout()
+plt.show()
+
+plt.savefig(
+    'bathymetry_crosssection_comparison.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+
+# ============================================================
+# MAP EAST-WEST TRANSECT LOCATION
+# ============================================================
+
+fig, ax = plt.subplots(figsize=(10, 7))
+
+# Plot coastline using LiveOcean land/water mask
+ax.contour(
+    lon_LO,
+    lat_LO,
+    mask_ps.astype(float),
+    levels=[0.5],
+    colors='black',
+    linewidths=0.8
+)
+
+# Transect line
+ax.plot(
+    [lon_min, lon_max],
+    [transect_lat, transect_lat],
+    color='#D55E00',
+    linewidth=2.5,
+    label='East–west transect'
+)
+
+# Transect endpoints
+ax.scatter(
+    [lon_min, lon_max],
+    [transect_lat, transect_lat],
+    color='#D55E00',
+    edgecolor='black',
+    s=45,
+    zorder=5
+)
+
+ax.set_xlabel('Longitude')
+ax.set_ylabel('Latitude')
+ax.set_title('Main Basin Bathymetry and Cross-Section Location')
+
+ax.set_xlim(lon_min - 0.1, lon_max + 0.1)
+ax.set_ylim(47.4, 48.3)
+ax.set_aspect('equal', adjustable='box')
+
+ax.set_facecolor('0.25')
+
+cbar = plt.colorbar(pcm, ax=ax)
+cbar.set_label('Bathymetric depth (m)')
+
+ax.legend(loc='best')
+
+plt.tight_layout()
+plt.show()
+plt.savefig(
+    'bathymetry_crosssection_map.png',
+    dpi=300,
+    bbox_inches='tight'
+)
