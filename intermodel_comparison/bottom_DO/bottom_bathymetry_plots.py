@@ -1063,18 +1063,21 @@ ax.plot(
     depth_SSM_section,
     color='#009E73',
     linewidth=2,
-    label='Salish Sea Model'
+    label='SSM PNNL'
 )
+
+# Positive-down depth axis
+ax.set_ylim(275, 0)
 
 ax.set_xlabel('Longitude')
 ax.set_ylabel('Bathymetric depth (m)')
 ax.set_title(
     f'Main Basin East–West Bathymetry Cross Section '
-    f'(Latitude = {transect_lat:.2f}°N)'
+    f'({transect_lat:.2f}°N)'
 )
 
 ax.grid(alpha=0.3)
-ax.legend()
+ax.legend(frameon=False)
 
 plt.tight_layout()
 plt.show()
