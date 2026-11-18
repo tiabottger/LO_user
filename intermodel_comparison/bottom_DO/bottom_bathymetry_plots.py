@@ -1080,7 +1080,7 @@ print('Figure saved to:', Path('bathymetry_crosssection_comparison.png').resolve
 # MAP EAST-WEST TRANSECT LOCATION
 # ============================================================
 
-fig, ax = plt.subplots(figsize=(10, 7))
+fig, ax = plt.subplots(figsize=(5, 3))
 
 pfun.add_coast(axes[0], color='black', linewidth=0.8)
 
@@ -1090,20 +1090,15 @@ ax.plot(
     [transect_lat, transect_lat],
     color='red',
     linewidth=2.5,
-    label='East–west transect'
 )
 
 ax.set_xlabel('Longitude')
 ax.set_ylabel('Latitude')
-ax.set_title('Main Basin Bathymetry and Cross-Section Location')
+ax.set_title('Cross-Section Location')
 
 ax.set_xlim(lon_min - 0.1, lon_max + 0.1)
 ax.set_ylim(47.4, 48.3)
 ax.set_aspect('equal', adjustable='box')
-
-ax.set_facecolor('0.25')
-
-ax.legend(loc='best')
 
 plt.tight_layout()
 plt.show()
