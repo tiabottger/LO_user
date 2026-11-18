@@ -940,10 +940,10 @@ print('Figure saved to:', Path('thick_bot146_difference_LO_minus_SSM.png').resol
 
 # Approximate east-west transect through Main Basin.
 # Adjust latitude to move the transect north or south.
-transect_lat = 47.7
+transect_lat = 47.75
 
 # Restrict transect to Main Basin longitude range
-lon_min = -122.8
+lon_min = -122.6
 lon_max = -122.25
 
 transect_lon = np.linspace(lon_min, lon_max, 500)
@@ -1020,21 +1020,6 @@ _, idx_SSM = tree_SSM.query(
 )
 
 depth_SSM_section = depth_SSM[ssm_wet][idx_SSM]
-
-# ============================================================
-# CHECK TRANSECT DATA
-# ============================================================
-
-for name, values in [
-    ('LO', depth_LO_section),
-    ('SSC', depth_SSC_section),
-    ('SSM', depth_SSM_section)
-]:
-    print(f'\n{name}:')
-    print('  Shape:', values.shape)
-    print('  Valid values:', np.sum(np.isfinite(values)))
-    print('  Min:', np.nanmin(values) if np.any(np.isfinite(values)) else 'All NaN')
-    print('  Max:', np.nanmax(values) if np.any(np.isfinite(values)) else 'All NaN')
 
 # ------------------------------------------------------------
 # PLOT
