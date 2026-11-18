@@ -276,6 +276,7 @@ axes[0].hist(
     obs['depth_m'].dropna(),
     bins=depth_bins,
     color='gray',
+    orientation='horizontal',
     edgecolor='black',
     linewidth=0.7
 )
@@ -292,6 +293,7 @@ axes[1].hist(
     obs['depth_pct'].dropna(),
     bins=pct_bins,
     color='gray',
+    orientation='horizontal',
     edgecolor='black',
     linewidth=0.7
 )
@@ -312,37 +314,53 @@ plt.savefig(
 )
 
 # ============================================================
-# Plot observation depth values vs local bathymetry
+# HISTOGRAM OF WATER COLUMN DEPTHS AT OBSERVATION LOCATIONS
 # ============================================================
 
-fig, ax = plt.subplots(figsize=(7, 6))
+fig, ax = plt.subplots(figsize=(8, 5))
 
-ax.scatter(
-    obs['LO_h'],
-    obs['depth_m'],
-    s=8,
-    alpha=0.25,
-    color='black'
+water_depth = obs['LO_h'].dropna()
+
+bins = np.arange(
+    0,
+    np.ceil(water_depth.max() / 10) * 10 + 10,
+    10
 )
 
-ax.plot(
-    [0, obs['LO_h'].max()],
-    [0, obs['LO_h'].max()],
-    'r--',
-    linewidth=1.5,
-    label='Seafloor'
+ax.hist(
+    water_depth,
+    bins=bins,
+    color='gray',
+    orientation='horizontal',
+    edgecolor='black',
+    linewidth=0.8
 )
 
-ax.set_xlabel('LiveOcean Water Depth (m)')
-ax.set_ylabel('Observation Depth (m)')
-ax.set_title('Observation Depth vs. Local Bathymetry')
+ax.axvline(
+    water_depth.mean(),
+    color='red',
+    linestyle='--',
+    linewidth=2,
+    label=f'Mean = {water_depth.mean():.1f} m'
+)
+
+ax.axvline(
+    water_depth.median(),
+    color='blue',
+    linestyle=':',
+    linewidth=2,
+    label=f'Median = {water_depth.median():.1f} m'
+)
+
+ax.set_xlabel('Total Water Column Depth (m)')
+ax.set_ylabel('Number of Observations')
+ax.set_title('Water Column Depth at Observational Locations')
 
 ax.legend()
 plt.tight_layout()
 plt.show()
-
 plt.savefig(
-    out_dir / 'obs_depth_vs_bathymetry.png',
+    out_dir / 'obs_bathy_distribution.png',
     dpi=300,
     bbox_inches='tight'
 )
