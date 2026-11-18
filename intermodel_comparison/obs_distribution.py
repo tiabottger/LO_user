@@ -281,8 +281,8 @@ axes[0].hist(
     linewidth=0.7
 )
 
-axes[0].set_xlabel('Observation Depth (m)')
-axes[0].set_ylabel('Number of Observations')
+axes[0].set_xlabel('Number of Observations')
+axes[0].set_ylabel('Observation Depth (m)')
 axes[0].set_title('Observational Depth Distribution')
 
 
@@ -298,8 +298,8 @@ axes[1].hist(
     linewidth=0.7
 )
 
-axes[1].set_xlabel('Depth (% of Water Column)')
-axes[1].set_ylabel('Number of Observations')
+axes[1].set_xlabel('Number of Observations')
+axes[1].set_ylabel('Depth (% of Water Column)')
 axes[1].set_title('Relative Observational Depth Distribution')
 
 axes[1].set_xlim(0, 100)
@@ -336,24 +336,8 @@ ax.hist(
     linewidth=0.8
 )
 
-ax.axvline(
-    water_depth.mean(),
-    color='red',
-    linestyle='--',
-    linewidth=2,
-    label=f'Mean = {water_depth.mean():.1f} m'
-)
-
-ax.axvline(
-    water_depth.median(),
-    color='blue',
-    linestyle=':',
-    linewidth=2,
-    label=f'Median = {water_depth.median():.1f} m'
-)
-
-ax.set_xlabel('Total Water Column Depth (m)')
-ax.set_ylabel('Number of Observations')
+ax.set_xlabel('Number of Observations')
+ax.set_ylabel('Total Water Column Depth (m)')
 ax.set_title('Water Column Depth at Observational Locations')
 
 ax.legend()
