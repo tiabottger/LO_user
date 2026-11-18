@@ -944,7 +944,7 @@ print('Figure saved to:', Path('thick_bot146_difference_LO_minus_SSM.png').resol
 transect_lat = 47.76
 
 # Restrict transect to Main Basin longitude range
-lon_min = -122.56
+lon_min = -122.55
 lon_max = -122.35
 
 transect_lon = np.linspace(lon_min, lon_max, 500)
