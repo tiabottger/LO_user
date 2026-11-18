@@ -285,6 +285,8 @@ axes[0].set_xlabel('Number of Observations')
 axes[0].set_ylabel('Observation Depth (m)')
 axes[0].set_title('Observational Depth Distribution')
 
+axes[0].invert_yaxis()
+
 
 # Relative depth
 pct_bins = np.arange(0, 105, 2)
@@ -302,16 +304,18 @@ axes[1].set_xlabel('Number of Observations')
 axes[1].set_ylabel('Depth (% of Water Column)')
 axes[1].set_title('Relative Observational Depth Distribution')
 
-axes[1].set_xlim(0, 100)
+axes[1].set_ylim(0, 100)
+axes[1].invert_yaxis()
 
 plt.tight_layout()
-plt.show()
 
 plt.savefig(
     out_dir / 'obs_depth_distribution.png',
     dpi=300,
     bbox_inches='tight'
 )
+plt.show()
+plt.close()
 
 # ============================================================
 # HISTOGRAM OF WATER COLUMN DEPTHS AT OBSERVATION LOCATIONS
@@ -342,9 +346,10 @@ ax.set_title('Water Column Depth at Observational Locations')
 
 ax.legend()
 plt.tight_layout()
-plt.show()
 plt.savefig(
     out_dir / 'obs_bathy_distribution.png',
     dpi=300,
     bbox_inches='tight'
 )
+plt.show()
+plt.close()
