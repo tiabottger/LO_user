@@ -1080,9 +1080,9 @@ print('Figure saved to:', Path('bathymetry_crosssection_comparison.png').resolve
 # MAP EAST-WEST TRANSECT LOCATION
 # ============================================================
 
-fig, ax = plt.subplots(figsize=(5, 3))
+fig, ax = plt.subplots(figsize=(6, 4))
 
-pfun.add_coast(axes[0], color='black', linewidth=0.8)
+pfun.add_coast(ax, color='black', linewidth=0.8)
 
 # Transect line
 ax.plot(
