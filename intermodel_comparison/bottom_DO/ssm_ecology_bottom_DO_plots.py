@@ -62,6 +62,16 @@ basin_mask_ds = xr.open_dataset(
     'basin_masks_from_pugetsoundDObox.nc'
 )
 
+# READ Hypoxic area from Mike Brett's xlsx file
+SSM_hypoxic_area = pd.read_excel(
+    in_dir / 'SSM_hypoxic_area_2014.xlsx',
+    sheet_name='Sheet1',
+    header=0,
+    index_col=0
+)
+# convert Julian day to datetime
+SSM_hypoxic_area['Datetime'] = pd.to_datetime(SSM_hypoxic_area['Julian Day'], format='%j', origin=pd.Timestamp(f'{year}-01-01'))
+
 mask_ps = basin_mask_ds['mask_pugetsound'].values
 mask_lon = basin_mask_ds['lon_rho'].values
 mask_lat = basin_mask_ds['lat_rho'].values
@@ -520,6 +530,15 @@ print(
 # PLOT HYPOXIC AREA AND VOLUME TS
 # ============================================================
 
+# Okabe-Ito colorblind-friendly palette
+colors = {
+    'LO': '#D55E00',
+    'SSC': '#0072B2',
+    'SSM PNNL': '#009E73',
+    'SSM Ecology': "#CC79A7",
+    'SSM UW': '#E69F00'
+}
+
 # ------------------------------------------------------------
 # Hypoxic area
 # ------------------------------------------------------------
@@ -532,7 +551,7 @@ ax.plot(
     time_SSM,
     hyp_area_SSM_ts,
     linewidth=2,
-    color='green',
+    color=colors['SSM PNNL'],
     label='SSM PNNL'
 )
 
@@ -540,8 +559,16 @@ ax.plot(
     time_SSM_ecology,
     hyp_area_SSM_ecology_ts,
     linewidth=2,
-    color='purple',
+    color=colors['SSM Ecology'],
     label='SSM Ecology'
+)
+
+ax.plot(
+    SSM_hypoxic_area['Datetime'],
+    SSM_hypoxic_area['Control'],
+    linewidth=2,
+    color=colors['SSM UW'],
+    label='SSM UW'
 )
 
 ax.set_ylabel(
@@ -562,7 +589,7 @@ ax.tick_params(
 ax.set_title('Hypoxic Area — Bottom Cell', fontsize=13)
 
 plt.savefig(
-    out_dir / 'ssm_ecology_hypoxic_area_comparison.png',
+    out_dir / 'ssm_ecology_uw_hypoxic_area_comparison.png',
     dpi=300,
     bbox_inches='tight'
 )
