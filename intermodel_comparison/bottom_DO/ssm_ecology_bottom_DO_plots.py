@@ -70,7 +70,13 @@ SSM_hypoxic_area = pd.read_excel(
     index_col=0
 )
 # convert Julian day to datetime
-SSM_hypoxic_area['Datetime'] = pd.to_datetime(SSM_hypoxic_area['Julian Day'], format='%j') + pd.DateOffset(year=year - 1900)
+SSM_hypoxic_area['Datetime'] = (
+    pd.Timestamp(f'{year}-01-01') +
+    pd.to_timedelta(
+        SSM_hypoxic_area['Julian Day'],
+        unit='D'
+    )
+)
 
 mask_ps = basin_mask_ds['mask_pugetsound'].values
 mask_lon = basin_mask_ds['lon_rho'].values
