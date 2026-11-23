@@ -64,7 +64,7 @@ basin_mask_ds = xr.open_dataset(
 
 # READ Hypoxic area from Mike Brett's xlsx file
 SSM_hypoxic_area = pd.read_excel(
-    in_dir / 'SSM_hypoxic_area_2014.xlsx',
+    in_dir / 'SSM_2014_bottom_hypoxic_area.xlsx',
     sheet_name='Sheet1',
     header=0,
     index_col=0
